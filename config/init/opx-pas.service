@@ -1,0 +1,18 @@
+[Unit]
+Description= This PAS service is to initialize platform.
+After=opx-object-library.service
+Wants=opx-object-library.service
+DefaultDependencies=no
+
+[Service]
+ExecStartPre=/usr/bin/platform_init.sh
+ExecStart=/usr/bin/opx_pas_service
+KillSignal=SIGKILL
+SuccessExitStatus=SIGKILL
+
+# Resource Limitations
+LimitCORE=infinity
+
+[Install]
+WantedBy=multi-user.target
+
