@@ -6,7 +6,8 @@ lib_LTLIBRARIES = libopx_pas.la
 libopx_pas_la_SOURCES=   src/platform-utils/dn_platform_utils_imp.c
 libopx_pas_la_CPPFLAGS= -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top_srcdir)/inc/opx/private -I$(includedir)/opx
 libopx_pas_la_CXXFLAGS=-std=c++11
-libopx_pas_la_LDFLAGS= -shared -lopx_common -lopx_cps_api_common -lopx_cps_class_map -lopx_logging -version-info 1:1:0
+libopx_pas_la_LDFLAGS= -shared -version-info 1:1:0
+libopx_pas_la_LIBADD= -lopx_common -lopx_cps_api_common -lopx_cps_class_map -lopx_logging
 
 #copy opx-pas systemd service file to target
 systemdconfdir=/lib/systemd/system
@@ -32,7 +33,7 @@ opx_pas_service_SOURCES+= src/fuse/pas_fuse_fan.c src/fuse/pas_fuse_common.c src
 			src/fuse/pas_fuse_parser.c src/fuse/pas_fuse_diag_mode.c src/remote_poller/pas_remote_poller.c \
 			src/fuse/pas_fuse_nvram.c
 
-opx_pas_service_CPPFLAGS = -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top_srcdir)/inc/opx/private -I$(includedir)/opx
+opx_pas_service_CPPFLAGS= -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top_srcdir)/inc/opx/private -I$(includedir)/opx
 opx_pas_service_CXXFLAGS= -std=c++11
-opx_pas_service_LDFLAGS  = -shared -lopx_pas -lfuse -lopx_common -lopx_sdi_sys -lopx_cps_api_common -lopx_cps_class_map -lrt -lopx_logging -lpthread 
-
+opx_pas_service_LDFLAGS= -shared
+opx_pas_service_LDADD= libopx_pas.la -lfuse -lopx_common -lopx_sdi_sys -lopx_cps_api_common -lopx_cps_class_map -lrt -lopx_logging -lpthread
