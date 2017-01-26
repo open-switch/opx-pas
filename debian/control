@@ -11,7 +11,7 @@ Standards-Version: 3.9.3
 Package: opx-pas
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
- libopx-pas1 (=${binary:Version}),fuse,opx-platform-config,opx-object-library
+ libopx-pas1 (=${binary:Version}),fuse
 Description: This package contains the Platform Adaptation Service.
 
 Package: libopx-pas1
