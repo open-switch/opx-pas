@@ -1,11 +1,11 @@
 [Unit]
 Description= This PAS service is to initialize platform.
-After=opx-object-library.service
-Wants=opx-object-library.service
+After=opx-cps.service
+Wants=opx-cps.service
 DefaultDependencies=no
 
 [Service]
-ExecStartPre=/usr/bin/platform_init.sh
+EnvironmentFile=/etc/opx/opx-environment
 ExecStart=/usr/bin/opx_pas_service
 KillSignal=SIGKILL
 SuccessExitStatus=SIGKILL
@@ -15,4 +15,3 @@ LimitCORE=infinity
 
 [Install]
 WantedBy=multi-user.target
-
