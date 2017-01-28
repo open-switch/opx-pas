@@ -37,3 +37,8 @@ opx_pas_service_CPPFLAGS= -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top
 opx_pas_service_CXXFLAGS= -std=c++11
 opx_pas_service_LDFLAGS= -shared
 opx_pas_service_LDADD= libopx_pas.la -lfuse -lopx_common -lopx_sdi_sys -lopx_cps_api_common -lopx_cps_class_map -lrt -lopx_logging -lpthread
+
+
+# Tool scripts
+
+bin_SCRIPTS =	scripts/opx-show-env
