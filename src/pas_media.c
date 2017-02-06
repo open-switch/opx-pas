@@ -3476,7 +3476,7 @@ bool dn_pas_media_phy_supported_speed_config_set (uint_t port, uint_t channel,
 
     if (((mtbl = dn_phy_media_entry_get(port)) == NULL)
             || (dn_phy_is_media_channel_valid(port, channel) == false)){
-        PAS_ERR("Invlaid port (%u)", port);
+        PAS_ERR("Invalid port (%u)", port);
 
         return false;
     }
