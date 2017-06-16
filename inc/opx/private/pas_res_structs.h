@@ -30,8 +30,10 @@
 #include "dell-base-interface-common.h"
 #include "dell-base-platform-common.h"
 #include "sdi_media.h"
+#include "sdi_comm_dev.h"
 #include "sdi_entity_info.h"
 #include "private/pas_config.h"
+#include "sdi_led.h"
 
 #include <time.h>
 #include <stdio.h>
@@ -96,6 +98,32 @@ static inline const char *dn_pas_res_key_chassis(void)
 {
     return ("chassis");
 }
+
+/*
+ * pas_comm_dev_t structure is to hold Communication device data
+ */
+
+typedef struct _pas_comm_dev_t {
+    sdi_resource_hdl_t   sdi_comm_dev_hdl; /* SDI resource handle */
+    bool                 valid;            /* Contents valid flag */
+    bool                 present;          /* Comm-dev present status */
+    char                 chasis_service_tag[SDI_COMM_DEV_SERVICE_TAG_SIZE]; /* chassis service tag */
+    char                 comm_dev_firmware_rev[SDI_COMM_DEV_FW_VERSION_SIZE]; /*  Firmware revision */
+} pas_comm_dev_t;
+
+/*
+ * pas_host_system_t structure is to hold IOM data
+ */
+
+typedef struct _pas_host_system_t {
+    sdi_resource_hdl_t   sdi_host_system_hdl; /* SDI resource handle */
+    bool                 valid;            /* Contents valid flag */
+    bool                 present;          /* host-system present status */
+    bool                 booted;           /* IOM boot state */
+    uint_t               slot_occupation;  /* Occupied slot number */
+    char                 software_rev[SDI_COMM_DEV_FW_VERSION_SIZE]; /* IOM software version */
+} pas_host_system_t;
+
 
 /*
  * pas_entity_t structure is to hold common attributes
@@ -282,7 +310,8 @@ typedef struct _pas_display_t {
     sdi_resource_hdl_t     sdi_resource_hdl; /* SDI resource handle */
     char                   name[PAS_NAME_LEN_MAX];
     pas_oper_fault_state_t oper_fault_state[1];
-    char                   *mesg;
+    char                   mesg[SDI_MAX_DIGIT_DISPLAY_LED_LEN];
+    bool                    on;
 } pas_display_t;
 
 static inline const char *dn_pas_res_key_disp_idx(
@@ -425,7 +454,7 @@ typedef struct _pas_media_t {
     BASE_IF_SPEED_t              capability;
     char                         vendor_id [SDI_MEDIA_MAX_VENDOR_OUI_LEN];
     char                         serial_number [SDI_MEDIA_MAX_VENDOR_SERIAL_NUMBER_LEN];
-    bool                         dell_qualified;
+    bool                         qualified;
     bool                         high_power_mode;
     uint_t                       identifier;
     uint_t                       ext_identifier;
@@ -443,6 +472,7 @@ typedef struct _pas_media_t {
     uint_t                       length_om3;
     char                         vendor_name [SDI_MEDIA_MAX_VENDOR_NAME_LEN];
     uint_t                       ext_transceiver;
+    uint_t                       free_side_dev_prop;
     uint8_t                      vendor_pn [SDI_MEDIA_MAX_VENDOR_PART_NUMBER_LEN];
     char                         vendor_rev [SDI_MEDIA_MAX_VENDOR_REVISION_LEN];
     uint_t                       wavelength;
@@ -532,6 +562,8 @@ typedef struct _pas_media_channel_t {
     PLATFORM_MEDIA_STATUS_t      tx_bias_state;
     bool                         cdr_enable;
     BASE_IF_SPEED_t              speed;
+    bool                         phy_link_status;
+    bool                         is_link_status_valid;
     /* User configured phy config  */
     uint8_t                      is_conf;
     bool                         autoneg;

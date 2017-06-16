@@ -128,7 +128,7 @@ pas_display_t *dn_pas_disp_rec_get_idx(
             );
 }
 
-/* Delete a temperature sensor cache record */
+/* Delete a display object cache record */
 
 void dn_cache_del_disp(pas_entity_t *parent)
 {

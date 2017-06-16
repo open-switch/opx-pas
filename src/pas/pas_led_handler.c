@@ -216,21 +216,23 @@ static t_std_error dn_pas_led_set1(
         sdi_on = on_foundf ? false : grec->req_on;
 
         if (!grec->sdi_on_valid || grec->sdi_on != sdi_on) {
+            
             /* New SDI state != current SDI state */
-
-            grec->sdi_on       = sdi_on; /* Update SDI state */
-            grec->sdi_on_valid = true;
-
-            if (!on_foundf) {
-                /* Haven't higher pri LED on => Set state in SDI */
-                dn_pas_lock();
+            dn_pas_lock();
     
-                if(!dn_pald_diag_mode_get()) {
+            if(!dn_pald_diag_mode_get()) {
+
+                grec->sdi_on       = sdi_on; /* Update SDI state */
+                grec->sdi_on_valid = true;
+
+                if (!on_foundf) {
+                /* Haven't higher pri LED on => Set state in SDI */
         
                     (*(grec->sdi_on ? sdi_led_on : sdi_led_off))(grec->sdi_resource_hdl);
                 }
-                dn_pas_unlock();
             }
+            
+            dn_pas_unlock();
         }
 
         /* Found an LED request to be on */

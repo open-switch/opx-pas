@@ -5,6 +5,7 @@ Wants=opx-cps.service
 DefaultDependencies=no
 
 [Service]
+Type=notify
 EnvironmentFile=/etc/opx/opx-environment
 ExecStart=/usr/bin/opx_pas_service
 KillSignal=SIGKILL

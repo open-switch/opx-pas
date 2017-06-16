@@ -226,7 +226,7 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
                             struct pas_config_media *cfg = dn_pas_config_media_get();
 
                             if ((cfg->lockdown == true)
-                                    && (mtbl->res_data->dell_qualified == false)
+                                    && (mtbl->res_data->qualified == false)
                                     && dn_pas_is_capability_10G_plus(mtbl->res_data->capability)
                                     &&(status == true)) {
                                 status = false;
@@ -243,6 +243,7 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
 
                                 ret = STD_ERR(PAS, FAIL, 0);
                             }
+                            mtbl->channel_data[ch_start].is_link_status_valid = false;
 
                             if (status == true) {
                                 phy_config_entry = dn_pas_media_phy_config_entry_get(mtbl->res_data->type);

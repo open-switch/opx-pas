@@ -30,6 +30,7 @@
 
 static uint_t dn_pas_media_pas_id_get (const sdi_to_pas_map_t *pmap,
         uint_t count, uint_t id);
+static PLATFORM_MEDIA_TYPE_t dn_pas_sfp_media_type_find (pas_media_t *res_data);
 /*
  * identifier to pas media category map table.
  */
@@ -41,7 +42,8 @@ static const sdi_to_pas_map_t id_to_category [] = {
     {0x0d, PLATFORM_MEDIA_CATEGORY_QSFP_PLUS},
     {0x0e, PLATFORM_MEDIA_CATEGORY_CXP},
     {0x11, PLATFORM_MEDIA_CATEGORY_QSFP28},
-    {0x12, PLATFORM_MEDIA_CATEGORY_CXP28}
+    {0x12, PLATFORM_MEDIA_CATEGORY_CXP28},
+    {0x18, PLATFORM_MEDIA_CATEGORY_QSFP_DD}
 };
 
 /*
@@ -55,7 +57,15 @@ static const sdi_to_pas_map_t speed_to_capability [] = {
     {SDI_MEDIA_SPEED_10G, BASE_IF_SPEED_10GIGE},
     {SDI_MEDIA_SPEED_25G, BASE_IF_SPEED_25GIGE},
     {SDI_MEDIA_SPEED_40G, BASE_IF_SPEED_40GIGE},
-    {SDI_MEDIA_SPEED_100G, BASE_IF_SPEED_100GIGE}
+    {SDI_MEDIA_SPEED_100G, BASE_IF_SPEED_100GIGE},
+    {SDI_MEDIA_SPEED_20G, BASE_IF_SPEED_20GIGE},
+    {SDI_MEDIA_SPEED_50G, BASE_IF_SPEED_50GIGE},
+    {SDI_MEDIA_SPEED_200G, BASE_IF_SPEED_200GIGE},
+    {SDI_MEDIA_SPEED_400G, BASE_IF_SPEED_400GIGE},
+    {SDI_MEDIA_SPEED_4GFC, BASE_IF_SPEED_4GFC},
+    {SDI_MEDIA_SPEED_8GFC, BASE_IF_SPEED_8GFC},
+    {SDI_MEDIA_SPEED_16GFC, BASE_IF_SPEED_16GFC},
+    {SDI_MEDIA_SPEED_32GFC, BASE_IF_SPEED_32GFC}
 };
 
 /*
@@ -70,7 +80,9 @@ static const sdi_to_pas_map_t channel_count [] = {
     {PLATFORM_MEDIA_CATEGORY_QSFP, 4},
     {PLATFORM_MEDIA_CATEGORY_QSFP_PLUS, 4},
     {PLATFORM_MEDIA_CATEGORY_QSFP28, 4},
-    {PLATFORM_MEDIA_CATEGORY_CXP28, 4}
+    {PLATFORM_MEDIA_CATEGORY_CXP28, 4},
+    {PLATFORM_MEDIA_CATEGORY_QSFP_DD, 8},
+    {PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28, 1}
 };
 
 /*
@@ -86,8 +98,16 @@ static sdi_to_pas_map_t media_type_map [] = {
  */
 
 static const media_type_map_t media_qsfp_type_tbl [] = {
+    {1, 0, 5, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFPPLUS_4X16_16GBASE_FC_SW},
+    {1, 0, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFPPLUS_64GBASE_FC_SW4},
     {1, MEDIA_DIST_DONT_CARE, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_SR4},
+    {2, 0, 5, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFPPLUS_4X16_16GBASE_FC_LW},
+    {2, 0, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFPPLUS_64GBASE_FC_LW4},
     {2, 1, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_LR4},
     {2, 2, 1, MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFP_40GBASE_ER4},
@@ -118,13 +138,10 @@ static const media_type_map_t media_qsfp_type_tbl [] = {
         PLATFORM_MEDIA_TYPE_QSFP_4X10_10GBASE_CR1_2M},
     {9, 6, MEDIA_PROT_DONT_CARE,
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_CR4_HALFM},
-    {9, 2, 4, MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFPPLUS_50GBASE_CR2_1M},
     {9, 2, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_CR4_1M},
-    {9, 9, 4, MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFPPLUS_50GBASE_CR2_2M},
     {9, 9, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_CR4_2M},
-    {9, 3, 4, MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFPPLUS_50GBASE_CR2_3M},
     {9, 3, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_CR4_3M},
     {9, 4, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
@@ -135,8 +152,6 @@ static const media_type_map_t media_qsfp_type_tbl [] = {
         PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_CR4_10M},
     {9, 8 , MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_CR4_50M},
-    {9, MEDIA_DIST_DONT_CARE, 4,
-        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFPPLUS_50GBASE_CR2},
     {9, MEDIA_DIST_DONT_CARE, MEDIA_PROT_DONT_CARE,
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_CR4},
     {10, 5, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
@@ -162,8 +177,16 @@ static const media_type_map_t media_qsfp_type_tbl [] = {
 };
 
 static const media_type_map_t media_qsfp28_type_tbl [] = {
+    {1, 0, 4, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_4X32_32GBASE_FC_SW},
+    {1, 0, MEDIA_PROT_DONT_CARE,
+        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFP28_128GBASE_FC_SW4},
     {1, 1, MEDIA_PROT_DONT_CARE,
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_QSFP28_100GBASE_SR4},
+    {2, 0, 4, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_4X32_32GBASE_FC_LW},
+    {2, 0, MEDIA_PROT_DONT_CARE,
+        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFP28_128GBASE_FC_LW4},
     {2, 1, MEDIA_PROT_DONT_CARE,
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_QSFP28_100GBASE_LR4},
     {2, 4, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
@@ -224,23 +247,89 @@ static const media_type_map_t media_qsfp28_type_tbl [] = {
         PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_PSM4_PIGTAIL}
 };
 
+static const media_type_map_t media_depop_qsfp28_type_tbl [] = {
+    {9, 2, 4, MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFPPLUS_50GBASE_CR2_1M},
+    {9, 3, 4, MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFPPLUS_50GBASE_CR2_3M},
+    {9, 9, 4, MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFPPLUS_50GBASE_CR2_2M},
+    {9, MEDIA_DIST_DONT_CARE, 4, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFPPLUS_50GBASE_CR2}
+};
+
+static const media_type_map_t media_qsfp28_dd_type_tbl [] = {
+    {8, 1, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_LPBK},
+    {9, 0, 1, 1,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_1M},
+    {9, 0, 1, 2,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_2M},
+    {9, 0, 1, 3,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_3M},
+    {9, 0, 1, 5,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_5M},
+    {9, 0, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4},
+    {9, 0, 2, 1,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4_1M},
+    {9, 0, 2, 2,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4_2M},
+    {9, 0, 2, 3,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4_3M},
+    {9, 0, 3, 1,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_CR4_1M},
+    {9, 0, 3, 2,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_CR4_2M},
+    {9, 0, 3, 3,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_CR4_3M},
+    {9, 7, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_HALFM},
+    {9, 8, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_1_HALFM},
+    {9, 9, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_2_HALFM}
+};
 
 static const media_type_map_t media_sfp28_type_tbl [] = {
     {1, 0, 1, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_SFP28_25GBASE_SR},
+    {1, 0, 5, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP28_32GBASE_FC_SW},
+    {1, 5, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP28_25GBASE_SR_NOF},
+    {1, 6, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP28_25GBASE_ESR},
+    {2, 0, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP28_25GBASE_LR},
+    {2, 0, 5, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP28_32GBASE_FC_LW},
+    {2, 4, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP28_25GBASE_LR_LITE},
+    {8, 1, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP28_25GBASE_CR1_LPBK},
     {10, 0, 1, 1, PLATFORM_MEDIA_TYPE_SFP28_25GBASE_CR1_1M},
     {10, 0, 1, 2, PLATFORM_MEDIA_TYPE_SFP28_25GBASE_CR1_2M},
     {10, 0, 1, 3, PLATFORM_MEDIA_TYPE_SFP28_25GBASE_CR1_3M},
     {10, 0, 4, 1, PLATFORM_MEDIA_TYPE_SFP28_25GBASE_CR1_1M},
     {10, 0, 4, 2, PLATFORM_MEDIA_TYPE_SFP28_25GBASE_CR1_2M},
     {10, 0, 4, 3, PLATFORM_MEDIA_TYPE_SFP28_25GBASE_CR1_3M},
+    {10, 11, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP28_25GBASE_CR1_HALFM},
     {10, 11, 4, MEDIA_LENGTH_DONT_CARE,
-        PLATFORM_MEDIA_TYPE_SFP28_25GBASE_CR1_HALFM}
+        PLATFORM_MEDIA_TYPE_SFP28_25GBASE_CR1_HALFM},
+    {11, 0, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP28_25GBASE_SR_AOCXXM},
+    {11, 0, 4, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP28_25GBASE_SR_AOCXXM}
 };
 
 static const media_type_map_t media_sfpp_type_tbl [] = {
+    {0, MEDIA_DIST_DONT_CARE, MEDIA_PROT_DONT_CARE,
+        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_SW},
+    {1, MEDIA_DIST_DONT_CARE, 6,
+        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_SFPPLUS_16GBASE_FC_SW},
     {1, MEDIA_DIST_DONT_CARE, MEDIA_PROT_DONT_CARE,
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_SFPPLUS_10GBASE_SR},
+    {2, MEDIA_DIST_DONT_CARE, 6,
+        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_SFPPLUS_16GBASE_FC_LW},
     {2, MEDIA_DIST_DONT_CARE, MEDIA_PROT_DONT_CARE,
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_SFPPLUS_10GBASE_LR},
     {3, 4, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
@@ -523,30 +612,6 @@ static uint_t dn_pas_media_sdi_id_get (const sdi_to_pas_map_t *pmap,
 }
 
 /*
- * dn_pas_product_id_get to validate and get the product id of the media
- */
-
-static uint16_t dn_pas_product_id_get (sdi_media_dell_product_info_t *info)
-{
-    uint16_t id = PAS_MEDIA_QSFP_INVALID_ID;
-
-    /* check if vendor data contains F10 specific IDs */
-
-    if (info == NULL) return id;
-
-    if (((info->magic_key0 == PAS_PRODUCT_ID_MAGIC0) ||
-            (info->magic_key0 == PAS_PRODUCT_ID_QSFP28_MAGIC0)) &&
-            (info->magic_key1 == PAS_PRODUCT_ID_MAGIC1))
-        /* now read the Qsfp product ID  */
-    {
-        id = (uint16_t)info->product_id[1];
-        id |= (uint16_t)info->product_id[0] << 8;
-    }
-
-    return(id);
-}
-
-/*
  * dn_pas_product_id_to_optics_type is to derive the optics type based on
  * product id.
  */
@@ -587,11 +652,45 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_product_id_to_optics_type (
             optics_type = dn_pas_media_type_find(media_sfp28_type_tbl,
                     ARRAY_SIZE(media_sfp28_type_tbl), wave_len,
                     distance, protocol, cable_length);
+        } else if (category == PLATFORM_MEDIA_CATEGORY_QSFP_DD) {
+            optics_type = dn_pas_media_type_find(media_qsfp28_dd_type_tbl,
+                    ARRAY_SIZE(media_qsfp28_dd_type_tbl), wave_len,
+                    distance, protocol, cable_length);
+        } else if (category == PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28) {
+            optics_type = dn_pas_media_type_find(media_depop_qsfp28_type_tbl,
+                    ARRAY_SIZE(media_depop_qsfp28_type_tbl), wave_len,
+                    distance, protocol, cable_length);
         }
 
     }  /* If qsfp is not 0xffff */
     return(optics_type);
 }
+
+/*
+ * dn_pas_max_fc_supported_speed is to derive the max supported optics speed
+ * based on MSA fields.
+ */
+
+static uint8_t dn_pas_max_fc_supported_speed(uint8_t sfp_fc_speed)
+{
+    if(sfp_fc_speed & 0x08) {
+        return 32;
+    } else if(sfp_fc_speed & 0x20) {
+        return 16;
+    } else if(sfp_fc_speed & 0x80) {
+        return 12;
+    } else if(sfp_fc_speed & 0x40) {
+        return 8;
+    } else if(sfp_fc_speed & 0x10) {
+        return 4;
+    } else if(sfp_fc_speed & 0x04) {
+        return 2;
+    } else if(sfp_fc_speed & 0x01) {
+        return 1;
+    }
+    return 0;
+}
+
 
 static PLATFORM_MEDIA_TYPE_t dn_pas_std_optics_type_get (pas_media_t *res_data)
 {
@@ -613,6 +712,13 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_std_optics_type_get (pas_media_t *res_data)
             case QSFP_100GBASE_PSM4_IR:
                 return (PLATFORM_MEDIA_TYPE_AR_QSFP28_100GBASE_PSM4_IR);
             case QSFP_100GBASE_CR4:
+            case QSFP28_BRKOUT_CR_CAS:
+            case QSFP28_BRKOUT_CR_CAN:
+                if (res_data->free_side_dev_prop == 0x40) {
+                    return PLATFORM_MEDIA_TYPE_4X25_25GBASE_CR1;
+                } else if (res_data->free_side_dev_prop == 0x50) {
+                    return PLATFORM_MEDIA_TYPE_2X50_50GBASE_CR2;
+                }
                 switch (res_data->length_cable) {
                     case 1:
                         return (PLATFORM_MEDIA_TYPE_AR_QSFP28_100GBASE_CR4_1M);
@@ -728,27 +834,103 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_std_optics_type_get (pas_media_t *res_data)
                 default:
                     return PLATFORM_MEDIA_TYPE_AR_SFPPLUS_10GBASE_CU7M;
             }
+        } else if (trans_desc->sfp_descr.sdi_sfp_fc_media == 0x01) {
+            switch(dn_pas_max_fc_supported_speed(trans_desc->sfp_descr.sdi_sfp_fc_speed)) {
+                case 8:
+                    return PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_LW;
+                case 16:
+                    return PLATFORM_MEDIA_TYPE_SFPPLUS_16GBASE_FC_LW;
+                default:
+                    return PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
+            }
+        } else if (trans_desc->sfp_descr.sdi_sfp_fc_media == 0x0C) {
+            switch(dn_pas_max_fc_supported_speed(trans_desc->sfp_descr.sdi_sfp_fc_speed)) {
+                case 8:
+                    return PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_SW;
+                case 16:
+                    return PLATFORM_MEDIA_TYPE_SFPPLUS_16GBASE_FC_SW;
+                default:
+                    return PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
+            }
         }
+    } else if (res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD) {
+        /* \todo add extra support for handling QSFP-DD media types. */
+        uint_t length = res_data->length_cable;
+        /* This used the information in the "options' field when the Dell string fails*/
+        /* Relevant data is upper byte of 32 bits */
+        switch((char)( (res_data->options >> 24) & 0xFF) ){
+            /* 2xCR4 */
+            case 0x0B:
+                switch(length){
+                    case 0x01:
+                        return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_1M;
+                    case 0x02:
+                        return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_2M;
+                    case 0x03:
+                        return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_3M;
+                    case 0x05:
+                        return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_5M;
+                }
+            break;
+            /* 2xSR4 */
+            case 0x02:
+                    return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_SR4;
+            break;
+
+            /* The following have yet to be added */
+            /* 2xLR4 */
+            case 0x03:
+            break;
+
+            /* 2xCWDM4 */
+            case 0x06:
+            break;
+
+            /* 2xPSM4 */
+            case 0x07:
+            break;
+
+            /* Unkown or not yet supported*/
+            default:
+                return PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
+        }
+    } else if (res_data->category == PLATFORM_MEDIA_CATEGORY_SFP28) {
+        if (res_data->ext_transceiver == 0x2) {
+            if ((res_data->length_om3 == 0x7)
+                    && (res_data->length_cable == 0xA)) {
+                return PLATFORM_MEDIA_TYPE_SFP28_25GBASE_SR;
+            } else if ((res_data->length_om3 == 0x3)
+                    && (res_data->length_cable == 0x4)) {
+                return PLATFORM_MEDIA_TYPE_SFP28_25GBASE_SR_NOF;
+            } else if ((res_data->length_om3 == 0x14)
+                    && (res_data->length_cable == 0x1E)) {
+                return PLATFORM_MEDIA_TYPE_SFP28_25GBASE_ESR;
+            }
+        } else if (res_data->ext_transceiver == 0x3) {
+            if (res_data->length_sfm_km == 0xA) {
+                return PLATFORM_MEDIA_TYPE_SFP28_25GBASE_LR;
+            } else if (res_data->length_sfm_km == 0x2) {
+                return PLATFORM_MEDIA_TYPE_SFP28_25GBASE_LR_LITE;
+            }
+        } else if ((res_data->ext_transceiver == 0xB)
+                || (res_data->ext_transceiver == 0xC)
+                || (res_data->ext_transceiver == 0xD)) {
+            return PLATFORM_MEDIA_TYPE_SFP28_25GBASE_CR1;
+        }
+    } else if (res_data->category == PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28) {
+        return PLATFORM_MEDIA_TYPE_QSFPPLUS_50GBASE_CR2;
     }
 
     return (PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN);
 }
 
-/*
- * dn_pas_media_type_get to handle the media type based on
- * sdi_media_dell_product_info_t struct.
- */
-
 PLATFORM_MEDIA_TYPE_t dn_pas_media_type_get (pas_media_t *res_data)
 {
     PLATFORM_MEDIA_TYPE_t     op_type = PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
-    uint16_t                  id;
+    uint16_t                  id = PAS_MEDIA_QSFP_INVALID_ID;
     sdi_media_transceiver_descr_t *ptr = NULL;
 
     /* read programmed product Id */
-
-    id =  dn_pas_product_id_get((sdi_media_dell_product_info_t*)
-            res_data->vendor_specific);
 
     ptr = (sdi_media_transceiver_descr_t *) &(res_data->transceiver);
 
@@ -758,16 +940,24 @@ PLATFORM_MEDIA_TYPE_t dn_pas_media_type_get (pas_media_t *res_data)
             && (ptr->sfp_descr.sdi_sfp_plus_cable_technology == PAS_SFP_INVALID_GIGE_CODE)) {
 
         res_data->category = PLATFORM_MEDIA_CATEGORY_SFP;
+        res_data->qualified = true;
         return dn_pas_sfp_media_type_find(res_data);
     }
 
     op_type = dn_pas_product_id_to_optics_type(res_data->category, id, res_data->length_cable);
+    
+    if(op_type == PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_SW) {
+        
+        if(res_data->wavelength == 1310 && res_data->length_sfm_km == 10) {
+            op_type = PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_LW;
+        }
+    }
 
     if (op_type == PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN) {
         /* Look at the optics serial ID EEPROM for further
          * information about optics type */
         op_type = dn_pas_std_optics_type_get(res_data);
-        PAS_NOTICE("Dell non-qualified media adapater");
+        PAS_NOTICE("Non-qualified media adapater");
     }
     return(op_type);
 }
@@ -805,8 +995,15 @@ PLATFORM_MEDIA_CATEGORY_t dn_pas_category_get (pas_media_t *res_data)
 
         if ((res_data->ext_transceiver == 0xB)
                 || (res_data->ext_transceiver == 0xC)
-                || (res_data->ext_transceiver == 0xD)) {
+                || (res_data->ext_transceiver == 0xD)
+                || (res_data->ext_transceiver == 0x1)
+                || (res_data->ext_transceiver == 0x2)
+                || (res_data->ext_transceiver == 0x3)) {
             category = PLATFORM_MEDIA_CATEGORY_SFP28;
+        }
+    } else if (category == PLATFORM_MEDIA_CATEGORY_QSFP28) {
+        if (res_data->free_side_dev_prop == 0x1C) {
+            category = PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28;
         }
     }
 

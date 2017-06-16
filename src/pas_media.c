@@ -29,10 +29,13 @@
 #include "private/pas_event.h"
 #include "private/pas_utils.h"
 #include "private/pas_config.h"
+#include "dn_pas_media_vendor.h"
 #include "cps_api_operation.h"
 #include "cps_api_service.h"
 #include "cps_api_events.h"
 #include <stdlib.h>
+#include <dlfcn.h>
+#include <unistd.h>
 
 #define ARRAY_SIZE(a)         (sizeof(a)/sizeof(a[0]))
 
@@ -91,8 +94,8 @@ static const phy_media_member_info_t  media_mem_info[] = {
     {BASE_PAS_MEDIA_SERIAL_NUMBER, offsetof(pas_media_t, serial_number),
         MEMEBER_SIZEOF(pas_media_t, serial_number), cps_api_object_ATTR_T_BIN},
 
-    {BASE_PAS_MEDIA_DELL_QUALIFIED, offsetof(pas_media_t, dell_qualified),
-        MEMEBER_SIZEOF(pas_media_t, dell_qualified),
+    {BASE_PAS_MEDIA_QUALIFIED, offsetof(pas_media_t, qualified),
+        MEMEBER_SIZEOF(pas_media_t, qualified),
         cps_api_object_ATTR_T_BIN},
 
     {BASE_PAS_MEDIA_HIGH_POWER_MODE, offsetof(pas_media_t, high_power_mode),
@@ -196,10 +199,6 @@ static const phy_media_member_info_t  media_mem_info[] = {
 
     {BASE_PAS_MEDIA_CC_EXT, offsetof(pas_media_t, cc_ext),
         MEMEBER_SIZEOF(pas_media_t, cc_ext), cps_api_object_ATTR_T_U32},
-
-    {BASE_PAS_MEDIA_VENDOR_SPECIFIC, offsetof(pas_media_t, vendor_specific),
-        MEMEBER_SIZEOF(pas_media_t, vendor_specific),
-        cps_api_object_ATTR_T_BIN},
 
     {BASE_PAS_MEDIA_RATE_SELECT_STATE, offsetof(pas_media_t, rate_select_state),
         MEMEBER_SIZEOF(pas_media_t, rate_select_state), cps_api_object_ATTR_T_BIN},
@@ -393,7 +392,7 @@ static const cps_api_attr_id_t pp_list[] = { BASE_PAS_MEDIA_PRESENT,
                                       BASE_PAS_MEDIA_CAPABILITY,
                                       BASE_PAS_MEDIA_VENDOR_ID,
                                       BASE_PAS_MEDIA_SERIAL_NUMBER,
-                                      BASE_PAS_MEDIA_DELL_QUALIFIED };
+                                      BASE_PAS_MEDIA_QUALIFIED };
 
 /* static declarations */
 
@@ -977,6 +976,8 @@ static bool dn_pas_media_category_poll (uint_t port, cps_api_object_t obj)
                 &ext_tran);
 
     mtbl->res_data->ext_transceiver = ext_tran;
+    pas_sdi_media_parameter_get(mtbl->res_hdl, SDI_FREE_SIDE_DEV_PROP,
+            &mtbl->res_data->free_side_dev_prop);
 
     pcategory = dn_pas_category_get(mtbl->res_data);
 
@@ -1059,6 +1060,7 @@ static bool dn_pas_media_type_poll (uint_t port, cps_api_object_t obj)
 
     if ((mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP)
             || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28)
+            || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD)
             || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_PLUS)) {
         dn_pas_media_int_attr_poll(mtbl->res_hdl, SDI_MEDIA_DEVICE_TECH,
                 &mtbl->res_data->device_tech, NULL, 0, &ret);
@@ -1174,7 +1176,7 @@ static bool dn_pas_media_capability_poll (uint_t port, cps_api_object_t obj)
 
     struct pas_config_media *cfg = dn_pas_config_media_get();
 
-    if (cfg->lockdown && (mtbl->res_data->dell_qualified == false)) {
+    if (cfg->lockdown && (mtbl->res_data->qualified == false)) {
 
         if (dn_pas_is_capability_10G_plus(capability)) {
             dn_pas_media_transceiver_state_set(port, cfg->lockdown);
@@ -1235,8 +1237,23 @@ static bool dn_pas_media_wavelength_poll (uint_t port, cps_api_object_t obj)
     return true;
 }
 
+/* Look up a function in the vendor media plug-in */
+
+static void *pas_media_vendor_func(const char *name)
+{
+    static const char filename[] = "/usr/lib/libopx_pas_media_vendor.so";
+    static void       *dlhdl;
+
+    if (dlhdl == 0 && access(filename, R_OK) == 0) {
+        dlhdl = dlopen(filename, RTLD_NOW);
+        if (dlhdl == 0)  PAS_ERR("Failed to load media vendor plug-in, %s", dlerror());
+    }
+    return (dlhdl == 0 ? 0 : dlsym(dlhdl, name));
+}
+#define PAS_MEDIA_VENDOR_FUNC(nm)  ((typeof(& nm)) pas_media_vendor_func(# nm))
+
 /*
- * dn_pas_media_dq_poll is to poll and get the dell qualified attribute
+ * dn_pas_media_dq_poll is to poll and get the qualified attribute
  * of the media present in the specified port.
  */
 
@@ -1244,26 +1261,27 @@ static bool dn_pas_media_dq_poll (uint_t port, cps_api_object_t obj)
 {
 
     phy_media_tbl_t        *mtbl = NULL;
-    bool                   dell_qualified = false;
+    bool                   qualified = true; /* Assume is qualified */
 
     mtbl = dn_phy_media_entry_get(port);
     STD_ASSERT(mtbl != NULL);
 
-    if (pas_sdi_media_is_dell_qualified(mtbl->res_hdl, &dell_qualified)
-            != STD_ERR_OK) {
-        PAS_ERR("Failed to get Dell-qualified attribute, port %u", port);
+    /* Call vendor media plug-in */
+    typeof(&dn_pas_media_vendor_is_qualified) func = PAS_MEDIA_VENDOR_FUNC(dn_pas_media_vendor_is_qualified);
+    if (func != 0 && (*func)(mtbl->res_hdl, &qualified) != STD_ERR_OK) {
+        PAS_ERR("Failed to get qualified attribute, port %u", port);
 
         return false;
     }
 
-    if(mtbl->res_data->dell_qualified != dell_qualified) {
+    if(mtbl->res_data->qualified != qualified) {
 
-        mtbl->res_data->dell_qualified = dell_qualified;
+        mtbl->res_data->qualified = qualified;
 
         if (obj != NULL) {
             if (cps_api_object_attr_add(obj,
-                        BASE_PAS_MEDIA_DELL_QUALIFIED, &dell_qualified,
-                        sizeof(dell_qualified)) == false) {
+                        BASE_PAS_MEDIA_QUALIFIED, &qualified,
+                        sizeof(qualified)) == false) {
                 PAS_ERR("Failed to add object attribute, port %u", port);
 
                 return false;
@@ -1590,6 +1608,7 @@ static bool dn_pas_media_channel_tx_control_status_poll (uint_t port,
 
     if (((mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP)
                 || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28)
+                || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD)
                 || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_PLUS))
             && (mtbl->res_data->supported_feature.qsfp_features.tx_control_support_status
                 == false)) return true;
@@ -2108,6 +2127,7 @@ static bool dn_pas_media_data_poll (uint_t port, cps_api_object_t obj)
 
     if ((mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP)
             || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28)
+            || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD)
             || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_PLUS)) {
 
         dn_pas_media_int_attr_poll(mtbl->res_hdl, SDI_MEDIA_WAVELENGTH_TOLERANCE,
@@ -2213,6 +2233,7 @@ static bool dn_pas_media_threshold_poll (uint_t port, cps_api_object_t obj)
 
     if ((((mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP)
                 || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28)
+                || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD)
                 || (mtbl->res_data->category ==
                     PLATFORM_MEDIA_CATEGORY_QSFP_PLUS))
           && (mtbl->res_data->supported_feature.qsfp_features.paging_support_status
@@ -2450,31 +2471,29 @@ static bool dn_pas_media_product_info_poll (uint_t port, cps_api_object_t obj)
 {
 
     phy_media_tbl_t                *mtbl = NULL;
-    sdi_media_dell_product_info_t  prod_info;
-
 
     mtbl = dn_phy_media_entry_get(port);
     STD_ASSERT(mtbl != NULL);
 
-    memset(&prod_info, 0, sizeof(prod_info));
+    typeof(mtbl->res_data->vendor_specific) buf;
 
-    if (pas_sdi_media_dell_product_info_get(mtbl->res_hdl, &prod_info)
-            != STD_ERR_OK) {
-        PAS_ERR("Failed to get media Dell product info, port %u",
+    typeof(&dn_pas_media_vendor_product_info_get) func = PAS_MEDIA_VENDOR_FUNC(dn_pas_media_vendor_product_info_get);
+    if (func != 0 && (*func)(mtbl->res_hdl, buf) != STD_ERR_OK) {
+        PAS_ERR("Failed to get media vendor product info, port %u",
                 port
                 );
 
         return false;
     }
 
-    if (memcmp(mtbl->res_data->vendor_specific, &prod_info,
-                sizeof(prod_info)) != 0) {
+    if (memcmp(mtbl->res_data->vendor_specific, buf,
+                sizeof(mtbl->res_data->vendor_specific)) != 0) {
 
-        memcpy(mtbl->res_data->vendor_specific, &prod_info, sizeof(prod_info));
+        memcpy(mtbl->res_data->vendor_specific, buf, sizeof(mtbl->res_data->vendor_specific));
 
         if (obj) {
             if (cps_api_object_attr_add(obj, BASE_PAS_MEDIA_VENDOR_SPECIFIC,
-                        &prod_info, sizeof(prod_info))
+                        mtbl->res_data->vendor_specific, sizeof(mtbl->res_data->vendor_specific))
                     == false) {
                 PAS_ERR("Failed to add attribute to object");
 
@@ -2510,9 +2529,17 @@ static bool dn_pas_media_oir_poll (uint_t port, cps_api_object_t obj)
 
         return false;
     }
+    bool cur_presence = dn_pas_phy_media_is_present(port);
+    if ((cur_presence == true)
+            && (mtbl->res_data->type == PLATFORM_MEDIA_TYPE_SFP_T)) {
 
+        if (cur_presence != presence) {
+            mtbl->channel_data[PAS_MEDIA_CH_START].is_link_status_valid = false;
+        }
+        dn_pas_media_channel_serdes_control(port, PAS_MEDIA_CH_START);
+    }
 
-    if (presence == dn_pas_phy_media_is_present(port)) {
+    if (presence == cur_presence) {
         return ret;
     }
 
@@ -2543,6 +2570,7 @@ static bool dn_pas_media_oir_poll (uint_t port, cps_api_object_t obj)
 
                 if ((mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP)
                         || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28)
+                        || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD)
                         || (mtbl->res_data->category
                             == PLATFORM_MEDIA_CATEGORY_QSFP_PLUS)) {
 
@@ -2569,6 +2597,13 @@ static bool dn_pas_media_oir_poll (uint_t port, cps_api_object_t obj)
 
         ret = false;
     }
+    if (dn_pas_media_vendor_oui_poll(port, obj) == false) {
+        PAS_ERR("Failed to poll media vendor OUI, port %u",
+                port
+                );
+
+        ret = false;
+    }
 
     if (dn_pas_media_type_poll(port, obj) == false) {
         PAS_ERR("Failed to poll media type, port %u",
@@ -2578,8 +2613,8 @@ static bool dn_pas_media_oir_poll (uint_t port, cps_api_object_t obj)
         ret = false;
     }
 
-    PAS_NOTICE("Optic inserted in front panel port (%d), Dell qualified: %s.",
-            port, (mtbl->res_data->dell_qualified == true) ?
+    PAS_NOTICE("Optic inserted in front panel port (%d), qualified: %s.",
+            port, (mtbl->res_data->qualified == true) ?
             "Yes" : "No");
 
     if (dn_pas_media_capability_poll(port, obj) == false) {
@@ -2598,13 +2633,6 @@ static bool dn_pas_media_oir_poll (uint_t port, cps_api_object_t obj)
         ret = false;
     }
 
-    if (dn_pas_media_vendor_oui_poll(port, obj) == false) {
-        PAS_ERR("Failed to poll media vendor OUI, port %u",
-                port
-                );
-
-        ret = false;
-    }
 
     return ret;
 }
@@ -2818,6 +2846,12 @@ void dn_pas_phy_media_poll (uint_t port, bool publish)
 
     if ((dn_pas_phy_media_is_present(port) == true)
             &&(presence != dn_pas_phy_media_is_present(port))) {
+
+        /*Record Insertion: store unix time and increment count*/
+        time_t insert_time;
+        time(&insert_time);
+        mtbl->res_data->insertion_timestamp = (uint64_t)&insert_time;
+        ++mtbl->res_data->insertion_cnt;
 
         if (obj != CPS_API_OBJECT_NULL) {
 
@@ -3125,7 +3159,8 @@ bool dn_pas_media_channel_cdr_enable (uint_t port, uint_t channel, bool enable)
         return false;
     }
 
-    if (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28) {
+    if ((mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28)
+            || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD)) {
         if ((rc = sdi_media_cdr_status_set(mtbl->res_hdl, channel, enable))
                     != STD_ERR_OK) {
             if (STD_ERR_EXT_PRIV(ret) != EOPNOTSUPP) {
@@ -3159,7 +3194,8 @@ bool dn_pas_media_channel_cdr_get (uint_t port, uint_t channel, bool * enable)
         return false;
     }
 
-    if (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28) {
+    if ((mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28)
+            || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD)) {
         if ((rc = sdi_media_cdr_status_get(mtbl->res_hdl, channel, enable))
                 != STD_ERR_OK) {
             if (STD_ERR_EXT_PRIV(rc) != EOPNOTSUPP) {
@@ -3191,6 +3227,7 @@ bool dn_pas_media_channel_state_set (uint_t port, uint_t channel,
 
     if (((mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP)
                 || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28)
+                || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD)
                 || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_PLUS))
             && (mtbl->res_data->supported_feature.qsfp_features.tx_control_support_status
                 == false)) return true;
@@ -3202,6 +3239,8 @@ bool dn_pas_media_channel_state_set (uint_t port, uint_t channel,
                 );
 
         ret = false;
+    } else {
+        mtbl->channel_data[channel].state = state;
     }
 
     return ret;
@@ -3209,7 +3248,62 @@ bool dn_pas_media_channel_state_set (uint_t port, uint_t channel,
 }
 
 /*
- *
+ * dn_pas_media_channel_serdes_control is to control Fiber/Serdes TX and RX 
+ * based on phy link status and tx-disable.
+ */
+
+bool dn_pas_media_channel_serdes_control (uint_t port, uint_t channel)
+{
+    bool ret = true;
+    phy_media_tbl_t *mtbl;
+
+    if (((mtbl = dn_phy_media_entry_get(port)) == NULL)
+            || (dn_phy_is_media_channel_valid(port, channel) == false)){
+        PAS_NOTICE("Invalid port (%u)", port);
+        return false;
+    }
+
+    if ((mtbl->res_data->type == PLATFORM_MEDIA_TYPE_SFP_T)
+            && (mtbl->channel_data[channel].state == true)) {
+        bool state = false;
+        bool serdes_set = false;
+
+        if (sdi_media_phy_link_status_get(mtbl->res_hdl, channel, SDI_MEDIA_DEFAULT,
+                    &state) == STD_ERR_OK) {
+            if (state == false) {
+                sdi_media_phy_link_status_get(mtbl->res_hdl, channel, SDI_MEDIA_DEFAULT,
+                        &state);
+            }
+
+            if ((mtbl->channel_data[channel].is_link_status_valid == false)
+                    || (mtbl->channel_data[channel].phy_link_status != state)) {
+                mtbl->channel_data[channel].is_link_status_valid = true;
+                serdes_set = true;
+            } 
+            mtbl->channel_data[channel].phy_link_status = state;
+
+            if (serdes_set == true) {
+                if (sdi_media_phy_serdes_control(mtbl->res_hdl, channel,
+                            SDI_MEDIA_DEFAULT, state) != STD_ERR_OK) {
+                    ret = false;
+                    PAS_ERR("Serdes control failed, port(%u), channel(%u), state(%u)",
+                            port, channel, state);
+                }
+            }
+
+        } else {
+            PAS_ERR("PHY link status get failed port(%u), channel (%u)",
+                    port, channel);
+            ret = false;
+        }
+
+    }
+    return ret;
+}
+
+
+/*
+ * dn_pas_media_channel_led_set is to set the led per channel based on the speed.
  */
 
 bool dn_pas_media_channel_led_set (uint_t port, uint_t channel,
@@ -3582,7 +3676,7 @@ bool dn_pas_media_lockdown_handle (bool lockdown)
             continue;
         }
 
-        if ((mtbl->res_data->dell_qualified == false)
+        if ((mtbl->res_data->qualified == false)
                 && (dn_pas_is_capability_10G_plus(mtbl->res_data->capability))){
             if (dn_pas_media_transceiver_state_set(port, lockdown) == false) {
                 ret = false;

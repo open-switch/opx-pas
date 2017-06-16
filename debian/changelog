@@ -1,3 +1,13 @@
+opx-pas (2.3.0) unstable; urgency=medium
+
+  * Feature: Support for PLD versions
+  * Feature: FC suport
+  * Feature: Added suport for new optical media types (QSFP28, QSFP28-DD, depopulated QSFP28-DD)
+  * Update: Conform to requirements of a systemd 'notify' service type
+  * Bugfix: Miscellaneous fixes
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Fri, 28 Apr 2017 12:04:00 -0800
+
 opx-pas (1.0.1) unstable; urgency=medium
 
   * Initial release.

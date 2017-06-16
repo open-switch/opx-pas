@@ -75,13 +75,31 @@ static t_std_error dn_pas_disp_get1(
                                BASE_PAS_DISPLAY_FAULT_TYPE,
                                rec->oper_fault_state->fault_type
                                );
-    
+
+    /*If the realtime value is requested, get string from hardware*/
+    if (qual == cps_api_qualifier_REALTIME) {
+        dn_pas_lock();
+        if(!dn_pald_diag_mode_get()) {
+            /* Get message and state */
+            sdi_digital_display_led_get(rec->sdi_resource_hdl, rec->mesg, sizeof(rec->mesg));
+            sdi_digital_display_led_get_state(rec->sdi_resource_hdl, &rec->on);
+        }
+        dn_pas_unlock();
+    }
+
+    /* Send message that was read or cached value */
     cps_api_object_attr_add(resp_obj,
                             BASE_PAS_DISPLAY_MESSAGE,
                             rec->mesg,
                             rec->mesg != 0 ? strlen(rec->mesg) : 0
                             );
-    
+
+    /* Send power state */
+    cps_api_object_attr_add_u8(resp_obj,
+                               BASE_PAS_DISPLAY_ON,
+                               rec->on
+                               );
+ 
     /* Add response object to get response */
 
     if (!cps_api_object_list_append(param->list, resp_obj)) {
@@ -157,7 +175,9 @@ static t_std_error dn_pas_disp_set1(
     pas_display_t                *rec,
     bool                         mesg_valid,
     char                         *mesg,
-    unsigned                     mesg_len
+    unsigned                     mesg_len,
+    bool                         on_value_valid,
+    bool                         on
                                    )
 {
     cps_api_object_t old_obj;
@@ -177,8 +197,13 @@ static t_std_error dn_pas_disp_set1(
     cps_api_object_attr_add(old_obj,
                             BASE_PAS_DISPLAY_MESSAGE,
                             rec->mesg,
-                            rec->mesg != 0 ? strlen(rec->mesg) : 0
+                            mesg_len 
                             );
+
+    cps_api_object_attr_add_u8(old_obj,
+                               BASE_PAS_DISPLAY_ON,
+                               rec->on
+                               );
 
     if (!cps_api_object_list_append(param->prev, old_obj)) {
         cps_api_object_delete(old_obj);
@@ -188,36 +213,19 @@ static t_std_error dn_pas_disp_set1(
 
     old_obj = CPS_API_OBJECT_NULL; /* No longer owned */
 
-    if (!mesg_valid)  return (STD_ERR_OK);
-
-    if (rec->mesg != 0) {
-        free(rec->mesg);
-        rec->mesg = 0;
-    }
- 
-    if (mesg_len == 0) {
-
-        dn_pas_lock();
-        if(!dn_pald_diag_mode_get()) {
-          
-            sdi_digital_display_led_off(rec->sdi_resource_hdl);
-        }
-        dn_pas_unlock();
-       
-        return (STD_ERR_OK);
-    }
-
-    rec->mesg = malloc(mesg_len + 1);
-    if (rec->mesg == 0)  return (STD_ERR(PAS, NOMEM, 0));
-
-    memcpy(rec->mesg, mesg, mesg_len);
-    rec->mesg[mesg_len] = 0;
-
     dn_pas_lock();
     if(!dn_pald_diag_mode_get()) {
-        
-        sdi_digital_display_led_set(rec->sdi_resource_hdl, rec->mesg); 
-        sdi_digital_display_led_on(rec->sdi_resource_hdl);
+        if (mesg_valid && (mesg_len > 1) && (mesg != NULL)){  /* Valid and not empty string*/
+             memcpy(rec->mesg, mesg, mesg_len);
+            rec->mesg[mesg_len] = 0;
+            sdi_digital_display_led_set(rec->sdi_resource_hdl, rec->mesg);
+        }
+        if (on_value_valid) 
+        {
+        on ? 
+        sdi_digital_display_led_on(rec->sdi_resource_hdl) :
+        sdi_digital_display_led_off(rec->sdi_resource_hdl);
+        }
     }
     dn_pas_unlock();
     
@@ -232,7 +240,8 @@ t_std_error dn_pas_display_set(cps_api_transaction_params_t *param, cps_api_obje
     uint_t                   slot_start, slot_limit;
     char                     disp_name[PAS_NAME_LEN_MAX];
     cps_api_object_attr_t    a;
-    bool                     mesg_valid;
+    bool                     mesg_valid, state_valid;
+    bool                     on;
     char                     *mesg;
     uint_t                   mesg_len;
     struct pas_config_entity *e;
@@ -247,9 +256,15 @@ t_std_error dn_pas_display_set(cps_api_transaction_params_t *param, cps_api_obje
     if ((mesg_valid = (a != CPS_API_ATTR_NULL))) {
         mesg_len = cps_api_object_attr_len(a);
         mesg     = (char *) cps_api_object_attr_data_bin(a);
-    } else {
-        return cps_api_ret_code_ERR;
+    } 
+    else {
+        mesg = NULL;
+        mesg_len = 0;
     }
+    state_valid = ((a = cps_api_object_attr_get(obj, BASE_PAS_DISPLAY_ON))
+                   != CPS_API_ATTR_NULL);
+    on = (state_valid ? (bool)cps_api_object_attr_data_uint(a) : false);
+
 
     dn_pas_obj_key_display_get(obj,
                                &qual,
@@ -277,7 +292,7 @@ t_std_error dn_pas_display_set(cps_api_transaction_params_t *param, cps_api_obje
                                                     );
                 if (disp_rec == 0)  continue;
 
-                dn_pas_disp_set1(param, qual, disp_rec, mesg_valid, mesg, mesg_len);
+                dn_pas_disp_set1(param, qual, disp_rec, mesg_valid, mesg, mesg_len,state_valid, on);
                 
                 continue;
             }
@@ -289,7 +304,7 @@ t_std_error dn_pas_display_set(cps_api_transaction_params_t *param, cps_api_obje
                 disp_rec = dn_pas_disp_rec_get_idx(e->entity_type, slot, disp_idx);
                 if (disp_rec == 0)  continue;
 
-                dn_pas_disp_set1(param, qual, disp_rec, mesg_valid, mesg, mesg_len);
+                dn_pas_disp_set1(param, qual, disp_rec, mesg_valid, mesg, mesg_len,state_valid,on);
             }
         }
     }

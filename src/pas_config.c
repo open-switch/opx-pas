@@ -417,6 +417,33 @@ struct pas_config_temperature *dn_pas_config_temperature_get(void)
     return (cfg_temperature);
 }
 
+/*
+ * Default config for communication device 
+ */
+static struct pas_config_comm_dev cfg_comm_dev[1] = {{poll_interval:1000}};
+
+/* dn_pas_config_comm_dev_get to get comm-dev config information */
+
+struct pas_config_comm_dev *dn_pas_config_comm_dev_get (void)
+{
+    return cfg_comm_dev;
+}
+
+/* dn_pas_config_comm_dev is to read and update comm-dev config from
+ * pas config file.
+ */
+
+static void dn_pas_config_comm_dev (std_config_node_t nd)
+{
+    char *a;
+
+    a = std_config_attr_get(nd, "poll-interval");
+    if (a != 0) {
+        sscanf(a, "%u", &cfg_comm_dev->poll_interval);
+    }
+}
+
+
 static config_entry_t media_app_cfg_tbl [] = {{"media", dn_pas_media_read_app_config}};
 
 static struct pas_config_media cfg_media[1] = {
@@ -792,6 +819,18 @@ static struct pas_config_subcat {
     { subcat:        BASE_PAS_MEDIA_CONFIG_OBJ,
       name:          "media-config",
       inst_scheme:   SUBCAT_INST_SCHEME_SLOT
+    },
+    { subcat:        BASE_PAS_PLD_OBJ,
+      name:          "pld",
+      inst_scheme:   SUBCAT_INST_SCHEME_ENTITY_TYPE_SLOT
+    },
+    { subcat:        BASE_PAS_COMM_DEV_OBJ,
+      name:          "comm-dev",
+      inst_scheme:   SUBCAT_INST_SCHEME_NONE
+    },
+    { subcat:        BASE_PAS_HOST_SYSTEM_OBJ,
+      name:          "host-system",
+      inst_scheme:   SUBCAT_INST_SCHEME_NONE
     }
 };
 
@@ -890,7 +929,8 @@ static config_entry_t element_tbl[] = {
     { "led-groups",  dn_pas_config_led_groups },
     { "temperature", dn_pas_config_temp },
     { "media",       dn_pas_config_media },
-    { "phy-config",  dn_pas_media_read_phy_default_config }
+    { "phy-config",  dn_pas_media_read_phy_default_config },
+    { "comm-dev", dn_pas_config_comm_dev}
 };
 
 

@@ -119,7 +119,7 @@ static inline void chassis_resp_set(
     }
 
     if (s == 0) {
-        PAS_WARN("%s not configured", mesg);
+        PAS_ERR("Chassis EEPROM %s not programmed", mesg);
 
         dn_pas_oper_fault_state_update(oper_fault_state,
                                        PLATFORM_FAULT_TYPE_ECFG
@@ -166,7 +166,7 @@ bool dn_pas_chassis_poll(pas_chassis_t *rec)
                      sdi_entity_info->vendor_name,
                      chassis_cfg->vendor_name,
                      oper_fault_state,
-                     "Vendor name"
+                     "vendor name"
                      );
     chassis_resp_set(&result,
                      rec->eeprom->product_name,
@@ -174,7 +174,7 @@ bool dn_pas_chassis_poll(pas_chassis_t *rec)
                      sdi_entity_info->prod_name,
                      chassis_cfg->prod_name,
                      oper_fault_state,
-                     "Product name"
+                     "product name"
                      );
     chassis_resp_set(&result,
                      rec->eeprom->hw_version,
@@ -182,7 +182,7 @@ bool dn_pas_chassis_poll(pas_chassis_t *rec)
                      sdi_entity_info->hw_revision,
                      chassis_cfg->hw_revision,
                      oper_fault_state,
-                     "Hardware revision"
+                     "hardware revision"
                      );
     chassis_resp_set(&result,
                      rec->eeprom->platform_name,
@@ -190,7 +190,7 @@ bool dn_pas_chassis_poll(pas_chassis_t *rec)
                      sdi_entity_info->platform_name,
                      chassis_cfg->platform_name,
                      oper_fault_state,
-                     "Platform name"
+                     "platform name"
                      );
     chassis_resp_set(&result,
                      rec->eeprom->ppid,
@@ -206,7 +206,7 @@ bool dn_pas_chassis_poll(pas_chassis_t *rec)
                      sdi_entity_info->part_number,
                      chassis_cfg->part_number,
                      oper_fault_state,
-                     "Part number"
+                     "part number"
                      );
     chassis_resp_set(&result,
                      rec->eeprom->service_tag,
@@ -214,7 +214,7 @@ bool dn_pas_chassis_poll(pas_chassis_t *rec)
                      sdi_entity_info->service_tag,
                      chassis_cfg->service_tag,
                      oper_fault_state,
-                     "Service tag"
+                     "service tag"
                      );
 
     uint8_t empty_mac_addr[6] = { 0 }, *m = 0;
@@ -235,7 +235,7 @@ bool dn_pas_chassis_poll(pas_chassis_t *rec)
         m = chassis_cfg->base_mac;
     }
     if (m == 0) {
-        PAS_WARN("Base mac address not configured");
+        PAS_ERR("Chassis EEPROM base mac address not programmed");
 
         dn_pas_oper_fault_state_update(oper_fault_state,
                                        PLATFORM_FAULT_TYPE_ECFG
@@ -251,7 +251,7 @@ bool dn_pas_chassis_poll(pas_chassis_t *rec)
         rec->num_mac_addresses = chassis_cfg->mac_size;
     }
     if (rec->num_mac_addresses == 0) {
-        PAS_WARN("Number of mac addresses not configured");
+        PAS_ERR("Chassis EEPROM number of mac addresses not programmed");
 
         dn_pas_oper_fault_state_update(oper_fault_state,
                                        PLATFORM_FAULT_TYPE_ECFG
@@ -411,7 +411,7 @@ static t_std_error dn_pas_chassis_set1(
 
     rec->reboot_type = reboot_type;
 
-    if (system("reboot") != 0) {
+    if (system("/usr/sbin/opx-reload") != 0) {
         PAS_ERR("Reboot failed");
 
         return (STD_ERR(PAS, FAIL, 0));

@@ -121,6 +121,14 @@ cps_api_return_code_t dn_pas_read_function (void *context,
               dn_pas_status_get(param, key_ix);
               break;
      
+        case BASE_PAS_COMM_DEV_OBJ:
+              dn_pas_comm_dev_get(param, key_ix);
+              break;
+
+        case BASE_PAS_HOST_SYSTEM_OBJ:
+              dn_pas_host_system_get(param, key_ix);
+              break;
+
         default:
             PAS_WARN("Invalid subcategory");
 
@@ -160,16 +168,18 @@ cps_api_return_code_t dn_pas_write_function(void *context,
     STD_ASSERT(obj != CPS_API_OBJECT_NULL);
     the_key  = cps_api_object_key(obj);
 
-    if (cps_api_key_get_qual(the_key) != cps_api_qualifier_TARGET) {
-        /* Attempt to set object not in target space */
-
-        return (cps_api_ret_code_ERR);
-    }
-
     cat      = cps_api_key_get_cat(the_key);
     sub_cat  = cps_api_key_get_subcat(the_key);
 
     if (cat == cps_api_obj_CAT_BASE_PAS) {
+
+        if ((sub_cat != BASE_PAS_COMM_DEV_OBJ)  &&
+                (sub_cat != BASE_PAS_HOST_SYSTEM_OBJ)) {
+            if (cps_api_key_get_qual(the_key) != cps_api_qualifier_TARGET) {
+                /* Attempt to set object not in target space */
+                return (cps_api_ret_code_ERR);
+            }
+        }
         switch (sub_cat) {
             case BASE_PAS_CHASSIS_OBJ:
                   dn_pas_chassis_set(param, obj);
@@ -233,6 +243,14 @@ cps_api_return_code_t dn_pas_write_function(void *context,
 
             case BASE_PAS_PHY_OBJ:
                   dn_pas_phy_set(the_key, obj);
+                  break;
+
+            case BASE_PAS_COMM_DEV_OBJ:
+                  dn_pas_comm_dev_set(param, obj);
+                  break;
+
+            case BASE_PAS_HOST_SYSTEM_OBJ:
+                  dn_pas_host_system_set(param, obj);
                   break;
          
             default:

@@ -63,6 +63,12 @@ struct pas_config_temperature {
     uint_t num_thresholds;      /* Number of temperature thresholds */
 };
 
+/* Comm-Dev configuration */
+
+struct pas_config_comm_dev {
+    uint_t poll_interval;  /* Polling interval */
+};
+
 /*
  * Media config for each media type.
  */
@@ -125,6 +131,9 @@ struct pas_config_card *dn_pas_config_card_get(void);
 
 /* Get the temperature configuration */
 struct pas_config_temperature *dn_pas_config_temperature_get(void);
+
+/* Get comm dev configuration */
+struct pas_config_comm_dev *dn_pas_config_comm_dev_get (void);
 
 /* Get the media configuration */
 struct pas_config_media *dn_pas_config_media_get(void);

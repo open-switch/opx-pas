@@ -63,3 +63,25 @@ bool dn_pas_cps_notify(cps_api_object_t obj)
 
     return (result);
 }
+
+/*
+ * Issue a CPS event with specified qualifier 
+ */
+
+bool dn_pas_cps_notify_qual(cps_api_object_t obj,cps_api_qualifier_t qual)
+{
+    bool result = false;
+
+    /* Keys for events always have OBSERVED qualifier */
+    cps_api_key_set(cps_api_object_key(obj),
+                    CPS_OBJ_KEY_INST_POS, qual);
+
+    if (handle == 0) return (result);
+
+    result = (cps_api_event_publish(handle, obj) == cps_api_ret_code_OK);
+
+    cps_api_object_delete(obj);
+
+    return (result);
+}
+

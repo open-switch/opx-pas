@@ -185,7 +185,6 @@ static filename_enum_map_t media_files[] = {
     /** media transmission control 1..4 */
     {fuse_default_file_size, "media_tx_control"              , FUSE_MEDIA_FILETYPE_TX_CONTROL},
     {fuse_default_file_size, "media_speed"                   , FUSE_MEDIA_FILETYPE_SPEED},
-    {fuse_default_file_size, "media_dell_qualified"          , FUSE_MEDIA_FILETYPE_DELL_QUALIFIED},
 
     /** parameter */
     {fuse_default_file_size, "media_wavelength"              , FUSE_MEDIA_FILETYPE_WAVELENGTH},
@@ -214,13 +213,6 @@ static filename_enum_map_t media_files[] = {
     {fuse_default_file_size, "media_vendor_date"             , FUSE_MEDIA_FILETYPE_VENDOR_DATE},
     {fuse_default_file_size, "media_vendor_pn"               , FUSE_MEDIA_FILETYPE_VENDOR_PN},
     {fuse_default_file_size, "media_vendor_revision"         , FUSE_MEDIA_FILETYPE_VENDOR_REVISION},
-
-    /** dell product information */
-    {fuse_default_file_size, "dell_media_info_magic_key0"    , FUSE_MEDIA_FILETYPE_DELL_INFO_MAGIC_KEY0},
-    {fuse_default_file_size, "dell_media_info_magic_key1"    , FUSE_MEDIA_FILETYPE_DELL_INFO_MAGIC_KEY1},
-    {fuse_default_file_size, "dell_media_info_revision"      , FUSE_MEDIA_FILETYPE_DELL_INFO_REVISION},
-    {fuse_default_file_size, "dell_media_info_product_id"    , FUSE_MEDIA_FILETYPE_DELL_INFO_PRODUCT_ID},
-    {fuse_default_file_size, "dell_media_info_reserved"      , FUSE_MEDIA_FILETYPE_DELL_INFO_RESERVED},
 
     /** module threshold */
     {fuse_default_file_size, "media_threshold_temp_high_alarm"  , FUSE_MEDIA_FILETYPE_TEMP_HIGH_ALARM_THRESHOLD},
@@ -915,7 +907,7 @@ void dn_pas_fuse_realtime_parser (
         )
 {
     std_parsed_string_t tokens = NULL;
-    int     count  = 0;
+    size_t     count  = 0;
     memset(node, 0, sizeof(dev_node_t));
     node->valid = false;
 
@@ -990,7 +982,7 @@ void dn_pas_fuse_realtime_parser (
     }
 
     /** Tokenize the path */
-    tokens = delim_tokenize(temp_path, "/", (size_t *) &count);
+    tokens = delim_tokenize(temp_path, "/", &count);
     
     do {
         if (tokens == 0) break;

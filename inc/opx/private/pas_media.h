@@ -276,6 +276,10 @@ pas_media_phy_defaults * dn_pas_media_phy_config_entry_get(
 bool dn_pas_media_phy_supported_speed_set (uint_t port, uint_t channel);
 
 bool dn_pas_media_phy_interface_mode_set (uint_t port, uint_t channel);
+/*
+ * Enable/Disable Fiber/Serdes TX and RX, based on PHY link status.
+ */
+bool dn_pas_media_channel_serdes_control (uint_t port, uint_t channel);
 
 /*
  * dn_pas_media_wavelength_set is to write the target wavelength in eeprom.

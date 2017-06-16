@@ -54,6 +54,26 @@ cps_api_return_code_t dn_pas_rollback_function(
  
 
 /* cps get and set  handlers */
+
+/* CPS get handler for comm-dev CPS object */
+
+t_std_error dn_pas_comm_dev_get(cps_api_get_params_t *param, size_t key);
+
+/* CPS set handler for comm-dev CPS object */
+
+t_std_error dn_pas_comm_dev_set(cps_api_transaction_params_t *param,
+                                cps_api_object_t obj);
+
+/* CPS get handler for host-system CPS object */
+
+t_std_error dn_pas_host_system_get(cps_api_get_params_t * param,
+                                   size_t key_idx);
+
+/* CPS set handler for host-system CPS object */
+
+t_std_error dn_pas_host_system_set(cps_api_transaction_params_t* param,
+                                   cps_api_object_t obj);
+
 t_std_error dn_pas_status_get(cps_api_get_params_t *param, size_t key);
 
 t_std_error dn_pas_chassis_get(cps_api_get_params_t *param, size_t key);

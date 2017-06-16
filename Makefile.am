@@ -33,10 +33,12 @@ opx_pas_service_SOURCES+= src/fuse/pas_fuse_fan.c src/fuse/pas_fuse_common.c src
 			src/fuse/pas_fuse_parser.c src/fuse/pas_fuse_diag_mode.c src/remote_poller/pas_remote_poller.c \
 			src/fuse/pas_fuse_nvram.c
 
+opx_pas_service_SOURCES +=	src/pas_comm_dev.c src/pas_host_system.c src/pas/pas_comm_dev_handler.c src/pas/pas_host_system_handler.c
+
 opx_pas_service_CPPFLAGS= -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top_srcdir)/inc/opx/private -I$(includedir)/opx
 opx_pas_service_CXXFLAGS= -std=c++11
 opx_pas_service_LDFLAGS= -shared
-opx_pas_service_LDADD= libopx_pas.la -lfuse -lopx_common -lopx_sdi_sys -lopx_cps_api_common -lopx_cps_class_map -lrt -lopx_logging -lpthread
+opx_pas_service_LDADD= libopx_pas.la -lfuse -lopx_common -lopx_sdi_sys -lopx_cps_api_common -lopx_cps_class_map -lrt -lopx_logging -lpthread -lsystemd -ldl
 
 
 # Tool scripts

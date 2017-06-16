@@ -24,6 +24,7 @@
 #include "private/pas_data_store.h"
 #include "private/pas_entity.h"
 #include "private/pas_media.h"
+#include "private/pas_comm_dev.h"
 #include "private/pas_config.h"
 #include "private/pas_utils.h"
 
@@ -109,6 +110,23 @@ static void dn_poll_card(struct timer *tmr)
     if(!dn_pald_diag_mode_get()) {
 
         dn_entity_poll(rec, false);
+    }
+
+    dn_pas_unlock();
+}
+
+/*
+ * Poll a communication device (comm-dev) 
+ */
+
+static void dn_poll_comm_dev (struct timer *tmr)
+{
+    if (++tmr->cur > tmr->cnt)  tmr->cur = 1;
+
+    dn_pas_lock();
+
+    if(!dn_pald_diag_mode_get()) {
+        dn_comm_dev_poll();
     }
 
     dn_pas_unlock();
@@ -201,6 +219,22 @@ static t_std_error timerq_init(void)
         timers[num_timers].callback = dn_poll_media;
 
         ++num_timers;
+    }
+
+    /*
+     * Add communication device polling, if applicable 
+     */
+
+    n = sdi_entity_resource_count_get(
+            sdi_entity_lookup(SDI_ENTITY_SYSTEM_BOARD, 1),
+            SDI_RESOURCE_COMM_DEV);
+
+    if (n > 0) {
+        timers[num_timers].cnt = n;
+        timers[num_timers].period =
+            dn_pas_config_comm_dev_get()->poll_interval;
+        timers[num_timers].callback = dn_poll_comm_dev;
+        num_timers = num_timers +1 ;
     }
 
     /* Set initial deadlines */

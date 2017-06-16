@@ -14,23 +14,11 @@
  * permissions and limitations under the License.
  */
 
-#ifndef __PAS_EVENT_H
-#define __PAS_EVENT_H
+/*  Prototypes for functions to be supplied by vendor-specific media handling plug-in
+ */
 
-#include "cps_api_object.h"
-#include "cps_api_operation.h"
+/* Check if media is qualified */
+bool dn_pas_media_vendor_is_qualified(sdi_resource_hdl_t res_hdl, bool *qualified);
 
-
-/* Initialize the CPS event subsystem */
-
-bool dn_pas_cps_ev_init(void);
-
-/* Send a CPS event notification */
-
-bool dn_pas_cps_notify(cps_api_object_t obj);
-
-/* Send a CPS event notification with specified qualifier */
-
-bool dn_pas_cps_notify_qual(cps_api_object_t obj,cps_api_qualifier_t qual);
-
-#endif /* !defined(__PAS_EVENT_H) */
+/* Read vendor-specific information from media adapter */
+t_std_error dn_pas_media_vendor_product_info_get(sdi_resource_hdl_t res_hdl, uint8_t *buf);

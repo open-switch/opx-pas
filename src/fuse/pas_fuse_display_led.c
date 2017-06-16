@@ -72,6 +72,29 @@ int dn_pas_fuse_display_led_read(
                 break;
             }
 
+        /** If state is requested **/
+        case FUSE_DISPLAY_LED_FILETYPE_STATE:
+            {
+               bool on;
+               res = sdi_digital_display_led_get_state(
+                   node->fuse_resource_hdl, &on);
+               dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, &len, &res,
+                        "%-25s : %s", "Digit Display State: ", on ? "On" : "Off");
+               break;
+            }
+
+        /** If value (display string) is requested **/
+        case FUSE_DISPLAY_LED_FILETYPE_STRING:
+            {
+               char display_string[SDI_MAX_DIGIT_DISPLAY_LED_LEN] = {0};
+               res = sdi_digital_display_led_get(
+                   node->fuse_resource_hdl, display_string,sizeof(display_string));
+               dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, &len, &res,
+                        "%-25s : %s", "Digit Display Value: ", display_string);
+               break;
+            }
+
+
         default:
             {    
                 if(node->fuse_filetype >= FUSE_DISPLAY_LED_FILETYPE_MIN && 

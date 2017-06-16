@@ -31,16 +31,19 @@
 #include "private/pas_media.h"
 #include "private/pas_utils.h"
 #include "private/pas_data_store.h"
+#include "private/pas_comm_dev.h"
 
 #include "std_thread_tools.h"
 #include "private/dn_pas.h"
 #include "std_mutex_lock.h"
 #include "dell-base-platform-common.h"
 
-#include <signal.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <sys/time.h>
+#include <signal.h>             /* signal() */
+#include <systemd/sd-daemon.h>  /* sd_notify() */
+#include <stdlib.h>             /* exit(), EXIT_SUCCESS */
+#include <stdbool.h>            /* bool, true, false */
 
 enum {
     TERM_SIG = SIGTERM
@@ -77,7 +80,25 @@ static char *progname, *config_filename, *fuse_mount_dir;
 static bool pas_status, diag_mode;
 static char PAS_CONFIG_FILENAME_DFLT[] = "/etc/opx/pas/config.xml";
 static char PAS_FUSE_MOUNT_DIR_DFLT[]  = "/mnt/fuse";
+volatile static bool shutdwn = false;
 
+/************************************************************************
+ *
+ * Name: sigterm_hdlr
+ *
+ *      This function is to handle the SIGTERM signal
+ *
+ * Input: Integer signo
+ *
+ * Return Values: None
+ * -------------
+ *
+ ************************************************************************/
+static void sigterm_hdlr(int signo)
+{
+    /* Avoid system calls at all cost */
+    shutdwn = true;
+}
 
 /************************************************************************
  *
@@ -204,6 +225,7 @@ static t_std_error dn_pas_config_file_handle(void)
             && dn_cache_init_fan_tray()
             && dn_cache_init_card()
             && dn_pas_phy_media_init()
+            && dn_pas_comm_dev_init()
             && dn_pas_cps_handler_reg(config_filename, cps_hdl)
             ? STD_ERR_OK : STD_ERR(PAS, FAIL, 0)
             );
@@ -442,20 +464,27 @@ t_std_error main(int argc, char *argv[])
 {
     PAS_NOTICE("Starting");
 
+    // signal must install before service init
+    (void)signal(SIGTERM, sigterm_hdlr);
+
     if (dn_pald_init(argc, argv) != STD_ERR_OK) {
         return STD_ERR(PAS,FAIL,0);
     }
 
+    sd_notify(0,"READY=1");
     dn_pas_status_init(cps_hdl);
     pas_status = true;
     dn_pald_status(pas_status);
 
-    while(1)
+    while(!shutdwn)
     {
         pause();
     }
 
-    PAS_NOTICE("Exiting");
+    /* Let systemd know we got the shutdwn request
+     * and that we're in the process of shutting down */
+    sd_notify(0, "STOPPING=1");
 
-    return STD_ERR_OK;
+    PAS_NOTICE("Exiting");
+    exit(EXIT_SUCCESS);
 }

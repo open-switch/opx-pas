@@ -106,17 +106,6 @@ static void media_parameter_get(
         int        *res
         );
 
-/** Internal helper function to get the media product information */
-static void media_product_info_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
-        int        *res
-        );
- 
 /** Internal helper function to get the media vendor information */
 static void media_vendor_info_get(
         dev_node_t *node, 
@@ -150,19 +139,8 @@ static void media_monitor_threshold_get(
         int        *res
         );
 
-/** Internal helper function to get the media dell product ID */
-static void media_dell_product_id_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str,
-        char       *trans_buf,
-        size_t     *len, 
-        int        *res
-        );
-
-/** Internal helper function to get the dell media vendor OUI */
-static void media_dell_vendor_oui_get(
+/** Internal helper function to get the media vendor OUI */
+static void media_vendor_oui_get(
         dev_node_t *node, 
         int        array, 
         char       *format, 
@@ -172,7 +150,7 @@ static void media_dell_vendor_oui_get(
         int        *res
         );
 
-/** Internal helper function to get the dell media module monitor */
+/** Internal helper function to get the media module monitor */
 static void media_module_monitor_get(
         dev_node_t *node, 
         int        array, 
@@ -194,7 +172,7 @@ static void media_diag_mode_get(
         int        *res
         );
 
-/** Internal helper function to get the dell media speed */
+/** Internal helper function to get the media speed */
 static void media_speed_get(
         dev_node_t *node, 
         int        array, 
@@ -205,18 +183,7 @@ static void media_speed_get(
         int        *res
         );
 
-/** Internal helper function to get the dell qualified */
-static void media_dell_qualified_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
-        int        *res
-        );
-
-/** Internal helper function to get the dell media alias name */
+/** Internal helper function to get the media alias name */
 static void media_alias_name_get(
         dev_node_t *node, 
         int        array, 
@@ -406,16 +373,6 @@ struct {
                     0, 
                     "%-25s : %s", 
                     "Media Speed" 
-                  }
-    },
-
-    [FUSE_MEDIA_FILETYPE_DELL_QUALIFIED] = {
-        status  : SUPPORTED,
-        func    : media_dell_qualified_get, 
-        args    : { 
-                    0, 
-                    "%-25s : %s", 
-                    "Dell Qualified" 
                   }
     },
 
@@ -611,7 +568,7 @@ struct {
 
     [FUSE_MEDIA_FILETYPE_VENDOR_OUI] = {
         status  : SUPPORTED,
-        func    : media_dell_vendor_oui_get, 
+        func    : media_vendor_oui_get, 
         args    : { 
                     SDI_MEDIA_VENDOR_OUI, 
                     "%-25s : 0x%02x : 0x%02x",
@@ -659,56 +616,6 @@ struct {
                   }
     },
 
-    [FUSE_MEDIA_FILETYPE_DELL_INFO_MAGIC_KEY0] = {
-        status  : SUPPORTED,
-        func    : media_product_info_get, 
-        args    : { 
-                    (int) offsetof(sdi_media_dell_product_info_t, magic_key0), 
-                    "%-25s : 0x%02x",
-                    "Magic Key 0" 
-                  }
-    },
-
-    [FUSE_MEDIA_FILETYPE_DELL_INFO_MAGIC_KEY1] = {
-        status  : SUPPORTED,
-        func    : media_product_info_get, 
-        args    : { 
-                    (int) offsetof(sdi_media_dell_product_info_t, magic_key1), 
-                    "%-25s : 0x%02x",
-                    "Magic Key 1" 
-                  }
-    },
-
-    [FUSE_MEDIA_FILETYPE_DELL_INFO_REVISION] = {
-        status  : SUPPORTED,
-        func    : media_product_info_get, 
-        args    : { 
-                    (int) offsetof(sdi_media_dell_product_info_t, revision),
-                    "%-25s : 0x%02x",
-                    "Revision" 
-                  }
-    },
-
-    [FUSE_MEDIA_FILETYPE_DELL_INFO_PRODUCT_ID] = {
-        status  : SUPPORTED,
-        func    : media_dell_product_id_get, 
-        args    : { 
-                    offsetof(sdi_media_dell_product_info_t, product_id), 
-                    "%-25s : 0x%02x : 0x%02x",
-                    "Product id" 
-                  }
-    },
- 
-    [FUSE_MEDIA_FILETYPE_DELL_INFO_RESERVED] = {
-        status  : UNSUPPORTED,
-        func    : NULL, 
-        args    : { 
-                    0, 
-                    "%-25s : %s",
-                    "Error" 
-                  }
-    },
- 
     [FUSE_MEDIA_FILETYPE_VOLT_HIGH_ALARM_THRESHOLD] = {
         status  : SUPPORTED,
         func    : media_monitor_threshold_get, 
@@ -1118,29 +1025,6 @@ static void media_parameter_get(
     }
 }
 
-/** Internal helper function to get the media product information */
-static void media_product_info_get(
-        dev_node_t *node,     
-        int        offset, 
-        char       *format,   
-        char       *disp_str, 
-        char       *trans_buf,
-        size_t     *len, 
-        int        *res
-        )
-{
-
-    sdi_media_dell_product_info_t info;
-
-    if (STD_ERR_OK ==
-            sdi_media_dell_product_info_get(node->fuse_resource_hdl,
-                &info)) {
-
-        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res,
-                format, disp_str, *(uint8_t *)((uint8_t *) &info + offset));
-    }
-}
-
 /** Internal helper function to get the media control status */
 static void media_control_status_get(
         dev_node_t *node,     
@@ -1323,29 +1207,8 @@ static void media_monitor_threshold_get(
     }        
 }
 
-/** Internal helper function to get the dell media product ID */
-static void media_dell_product_id_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
-        int        *res
-        )
-{
-    sdi_media_dell_product_info_t info;
-    if (STD_ERR_OK ==
-            sdi_media_dell_product_info_get(node->fuse_resource_hdl,
-                &info)) {
-
-        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res,
-                format, disp_str, info.product_id[0], info.product_id[1]);
-    }
-}
-
-/** Internal helper function to get the dell media vendor OUI */
-static void media_dell_vendor_oui_get(
+/** Internal helper function to get the media vendor OUI */
+static void media_vendor_oui_get(
         dev_node_t *node, 
         int        array, 
         char       *format, 
@@ -1368,7 +1231,7 @@ static void media_dell_vendor_oui_get(
     }
 }
 
-/** Internal helper function to get the dell media voltage */
+/** Internal helper function to get the media voltage */
 static void media_module_monitor_get(
         dev_node_t *node, 
         int        array, 
@@ -1406,7 +1269,7 @@ static void media_diag_mode_get(
             (dn_pald_diag_mode_get() ? "up" : "down"));
 }
 
-/** Internal helper function to get the dell media speed */
+/** Internal helper function to get the media speed */
 static void media_speed_get(
         dev_node_t *node, 
         int        array, 
@@ -1427,29 +1290,7 @@ static void media_speed_get(
     }
 }
 
-/** Internal helper function to get the dell qualified */
-static void media_dell_qualified_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
-        int        *res
-        )
-{
-    bool dell_qualified = 0;
-
-    if (STD_ERR_OK ==
-            sdi_media_is_dell_qualified(node->fuse_resource_hdl,
-                &dell_qualified)) {
-
-        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res, 
-                format, disp_str, dell_qualified ? "True" : "False");
-    }
-}
-
-/** Internal helper function to get the dell media alias name */
+/** Internal helper function to get the media alias name */
 static void media_alias_name_get(
         dev_node_t *node, 
         int        array, 

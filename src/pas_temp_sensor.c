@@ -317,6 +317,7 @@ bool dn_temp_sensor_poll(
     pas_oper_fault_state_t oper_fault_state[1];
     int                    temp;
     bool                   notif = false;
+    bool                   fault_status = false;
     
     /* To avoid polling a temperature sensor not handled by SDI (NPU temp sensor)*/
     if(rec->sdi_resource_hdl == NULL)  return (true);
@@ -324,11 +325,27 @@ bool dn_temp_sensor_poll(
     dn_pas_oper_fault_state_init(oper_fault_state);
 
     do {
-        if (STD_IS_ERR(sdi_temperature_get(rec->sdi_resource_hdl, &temp))) {
+        if (STD_IS_ERR(sdi_temperature_status_get(rec->sdi_resource_hdl, &fault_status))) {
             dn_pas_oper_fault_state_update(oper_fault_state,
                                            PLATFORM_FAULT_TYPE_ECOMM
                                            );
             
+            break;
+        }
+
+        if (fault_status) {
+            dn_pas_oper_fault_state_update(oper_fault_state,
+                                           PLATFORM_FAULT_TYPE_EHW
+                                           );
+
+            break;
+        }
+
+        if (STD_IS_ERR(sdi_temperature_get(rec->sdi_resource_hdl, &temp))) {
+            dn_pas_oper_fault_state_update(oper_fault_state,
+                                           PLATFORM_FAULT_TYPE_ECOMM
+                                           );
+
             break;
         }
                 

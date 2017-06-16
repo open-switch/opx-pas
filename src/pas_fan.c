@@ -220,7 +220,7 @@ bool dn_fan_poll(
         /* Skip speed monitoring, if so configured */
         if (!rec->speed_control_en)  break;
 
-        if (((100 * abs((int) rec->obs_speed - (int) targ_speed)) / targ_speed)
+        if ( ((int) rec->obs_speed < (int) targ_speed) && ((100 * abs((int) rec->obs_speed - (int) targ_speed)) / targ_speed)
             >= rec->speed_err_margin
             ) {
             /* | Observed speed - target speed | exceeds margin */

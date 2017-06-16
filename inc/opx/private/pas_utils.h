@@ -70,7 +70,7 @@ static inline bool cps_api_object_attr_add_str(
     const char        *val
                                               )
 {
-    return (cps_api_object_attr_add(obj, attr, val, strlen(val)));
+    return (cps_api_object_attr_add(obj, attr, val, strlen(val) + 1));
 }
 
 static inline void dn_pas_oper_fault_state_init(pas_oper_fault_state_t *p)

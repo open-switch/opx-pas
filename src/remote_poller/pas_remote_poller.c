@@ -22,6 +22,7 @@
 #include "private/pas_temp_sensor.h"
 #include "private/pas_utils.h"
 #include "private/pas_data_store.h"
+#include "private/pas_comm_dev.h"
 
 #include "cps_api_key.h"
 #include "cps_api_object_key.h"
@@ -71,6 +72,8 @@ void dn_cache_init_remote_temp_sensor(void)
     rec->parent           = parent;
     rec->sensor_idx       = parent->num_temp_sensors;
     rec->sdi_resource_hdl = NULL; /* not handled by SDI, hence resource_hdl is NULL */
+    rec->last_thresh_crossed->temperature = -9999;
+    rec->last_thresh_crossed->dir         = 1;
 
     dn_pas_oper_fault_state_init(rec->oper_fault_state);
 
@@ -243,6 +246,7 @@ static bool dn_remote_temp_sensor_poll(void)
             break;
         }
 
+        dn_pas_comm_dev_temp_set(temp);
         rec->prev = rec->cur;
         rec->cur  = temp;
         if (rec->nsamples < 2)  ++rec->nsamples;

@@ -113,16 +113,6 @@ static inline t_std_error pas_sdi_media_speed_get (
 }
 
 
-static inline t_std_error pas_sdi_media_is_dell_qualified (
-        sdi_resource_hdl_t resource_hdl, bool *status)
-{
-    t_std_error    ret;
-
-    ret = sdi_media_is_dell_qualified(resource_hdl, status);
-
-    return ret;
-}
-
 static inline t_std_error pas_sdi_media_parameter_get (
         sdi_resource_hdl_t resource_hdl,
         sdi_media_param_type_t param_type, uint_t *value)
@@ -158,17 +148,6 @@ static inline t_std_error pas_sdi_media_transceiver_code_get (
 
 
     ret = sdi_media_transceiver_code_get(resource_hdl, transceiver_info);
-
-    return ret;
-}
-
-static inline t_std_error pas_sdi_media_dell_product_info_get (
-        sdi_resource_hdl_t resource_hdl,
-        sdi_media_dell_product_info_t *info)
-{
-    t_std_error    ret;
-
-    ret = sdi_media_dell_product_info_get(resource_hdl, info);
 
     return ret;
 }

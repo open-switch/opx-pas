@@ -101,7 +101,14 @@ static t_std_error dn_pas_fan_get1(
             cps_api_object_attr_add_u16(resp_obj,
                                         BASE_PAS_FAN_SPEED,
                                         rec->targ_speed
-                                        );            
+                                        );
+           
+            cps_api_object_attr_add_u16(resp_obj,
+                                        BASE_PAS_FAN_SPEED_PCT,
+                                        (rec->max_speed != 0)
+                                        ? (100 * rec->targ_speed / rec->max_speed)
+                                        : 0
+                                        ); 
         } else {
             cps_api_object_attr_add_u8(resp_obj,
                                        BASE_PAS_FAN_OPER_STATUS,
