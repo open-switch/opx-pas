@@ -1,0 +1,43 @@
+#!/usr/bin/python
+
+import sys
+import cps
+import cps_object
+
+HELP_STRING = """
+Set the state of the chassis beacon LED
+"""
+
+USAGE_STRING = """
+Usage: opx-chassis-beacon {on | off}
+"""
+
+def main():
+    state = None
+
+    if len(sys.argv) < 2:
+        print HELP_STRING
+        print USAGE_STRING
+        sys.exit(1)
+
+    if sys.argv[1].lower() == 'on':
+        state = 1
+    elif sys.argv[1].lower() == 'off':
+        state = 0
+    else:
+        print USAGE_STRING
+        sys.exit(1)
+
+    obj = cps_object.CPSObject(qual='target', module='base-pas/led')
+    obj.add_attr('entity-type', '3')
+    obj.add_attr('slot', '1')
+    obj.add_attr('name', 'Beacon')
+    obj.add_attr('on', str(state))
+
+    cps_change = {'operation': 'set', 'change': obj.get()}
+    if not cps.transaction([cps_change]):
+        print 'Error setting beacon LED to %s' % sys.argv[1]
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()

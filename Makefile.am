@@ -43,4 +43,4 @@ opx_pas_service_LDADD= libopx_pas.la -lfuse -lopx_common -lopx_sdi_sys -lopx_cps
 
 # Tool scripts
 
-bin_SCRIPTS =	scripts/opx-show-env
+bin_SCRIPTS =	scripts/opx-show-env scripts/opx-chassis-beacon
