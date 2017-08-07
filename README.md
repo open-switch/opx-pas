@@ -8,4 +8,4 @@ This repository contains the platform adaptation service (PAS) daemon implementa
 
 See [Architecture](https://github.com/open-switch/opx-docs/wiki/Architecture) for more information on the PAS module.
 
-(c) 2017 Dell
+© 2017 Dell EMC
