@@ -1,3 +1,10 @@
+opx-pas (3.0.0) unstable; urgency=medium
+
+  * Feature: Added port types
+  * Bugfix: Made opx-show-env insensitive to missing objects
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Mon, 16 Oct 2017 11:00:00 -0800
+
 opx-pas (2.3.0) unstable; urgency=medium
 
   * Feature: Support for PLD versions

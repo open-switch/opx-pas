@@ -86,7 +86,6 @@ bool dn_fan_tray_poll(pas_fan_tray_t *rec, bool update_allf)
 
     sdi_entity_info_t entity_info[1];
     pas_entity_t      *parent = rec->parent;
-    bool              fault_status;
 
     if (!rec->valid || update_allf) {
         if (STD_IS_ERR(sdi_entity_info_read(parent->sdi_entity_info_hdl,
@@ -114,25 +113,6 @@ bool dn_fan_tray_poll(pas_fan_tray_t *rec, bool update_allf)
         }
         
         rec->valid = true;
-    }
-
-    if (STD_IS_ERR(sdi_entity_fault_status_get(parent->sdi_entity_hdl,
-                                               &fault_status
-                                               )
-                   )
-        ) {
-        dn_pas_entity_fault_state_set(parent,
-                                      PLATFORM_FAULT_TYPE_ECOMM
-                                      );
-    } else if (fault_status) {
-        if (parent->fault_cnt < FAULT_LIMIT)  ++parent->fault_cnt;
-        if (parent->fault_cnt >= FAULT_LIMIT) {
-            dn_pas_entity_fault_state_set(parent,
-                                          PLATFORM_FAULT_TYPE_EHW
-                                          );
-        }
-    } else {
-        parent->fault_cnt = 0;
     }
 
     return (true);

@@ -56,6 +56,8 @@ def cps_data_get():
     cps.get([cps.key_from_name('observed','base-pas/temperature')], cps_temp_sensor_data)
 
 def chassis_print():
+    if cps_chassis_data == []:
+        return
     d = cps_chassis_data[0]['data']
     print 'Chassis'
     print '\tOperating status:\t\t', oper_status_to_string(cps_attr_get(d, 'base-pas/chassis/oper-status'))
@@ -63,15 +65,18 @@ def chassis_print():
     print '\tFault type:\t\t\t', fault_type_to_string(fault_type)
     if fault_type_down(fault_type):
         return
-    print '\tVendor name:\t\t', cps_attr_get(d, 'base-pas/chassis/vendor-name')
-    print '\tService tag:\t\t', cps_attr_get(d, 'base-pas/chassis/service-tag')
-    print '\tPPID:\t\t\t\t', cps_attr_get(d, 'base-pas/chassis/ppid')
-    print '\tPlatform name:\t\t\t', cps_attr_get(d, 'base-pas/chassis/platform-name')
-    print '\tProduct name:\t\t\t', cps_attr_get(d, 'base-pas/chassis/product-name')
-    print '\tHardware version:\t\t', cps_attr_get(d, 'base-pas/chassis/hw-version')
-    print '\tNumber of MAC addresses:\t', cps_attr_get(d, 'base-pas/chassis/num_mac_addresses' )
-    val = cps_attr_get(d, 'base-pas/chassis/base_mac_addresses')
-    print '\tBase MAC address:\t\t', val[0:2] + ':' + val[2:4] + ':' + val[4:6] + ':' + val[6:8] + ':' + val[8:10] + ':' + val[10:12]
+    try:
+        print '\tVendor name:\t\t', cps_attr_get(d, 'base-pas/chassis/vendor-name')
+        print '\tService tag:\t\t', cps_attr_get(d, 'base-pas/chassis/service-tag')
+        print '\tPPID:\t\t\t\t', cps_attr_get(d, 'base-pas/chassis/ppid')
+        print '\tPlatform name:\t\t\t', cps_attr_get(d, 'base-pas/chassis/platform-name')
+        print '\tProduct name:\t\t\t', cps_attr_get(d, 'base-pas/chassis/product-name')
+        print '\tHardware version:\t\t', cps_attr_get(d, 'base-pas/chassis/hw-version')
+        print '\tNumber of MAC addresses:\t', cps_attr_get(d, 'base-pas/chassis/num_mac_addresses' )
+        val = cps_attr_get(d, 'base-pas/chassis/base_mac_addresses')
+        print '\tBase MAC address:\t\t', val[0:2] + ':' + val[2:4] + ':' + val[4:6] + ':' + val[6:8] + ':' + val[8:10] + ':' + val[10:12]
+    except:
+        pass
 
 def entity_print(entity_data):
     entity_type = cps_attr_get(entity_data, 'base-pas/entity/entity-type')
@@ -87,21 +92,29 @@ def entity_print(entity_data):
     print '\t\tFault type:\t\t', fault_type_to_string(fault_type)
     if fault_type_down(fault_type):
         return False
-    print '\t\tVendor name:\t\t', cps_attr_get(entity_data, 'base-pas/entity/vendor-name')
-    print '\t\tService tag:\t\t', cps_attr_get(entity_data, 'base-pas/entity/service-tag')
-    print '\t\tPPID:\t\t\t', cps_attr_get(entity_data, 'base-pas/entity/ppid')
-    print '\t\tPlatform name:\t\t\t', cps_attr_get(entity_data, 'base-pas/entity/platform-name')
-    print '\t\tProduct name:\t\t', cps_attr_get(entity_data, 'base-pas/entity/product-name')
-    print '\t\tHardware version:\t\t', cps_attr_get(entity_data, 'base-pas/entity/hw-version')
+    try:
+        print '\t\tVendor name:\t\t', cps_attr_get(entity_data, 'base-pas/entity/vendor-name')
+        print '\t\tService tag:\t\t', cps_attr_get(entity_data, 'base-pas/entity/service-tag')
+        print '\t\tPPID:\t\t\t', cps_attr_get(entity_data, 'base-pas/entity/ppid')
+        print '\t\tPlatform name:\t\t\t', cps_attr_get(entity_data, 'base-pas/entity/platform-name')
+        print '\t\tProduct name:\t\t', cps_attr_get(entity_data, 'base-pas/entity/product-name')
+        print '\t\tHardware version:\t\t', cps_attr_get(entity_data, 'base-pas/entity/hw-version')
+    except:
+        pass
     return True
 
 def psu_print(entity_data, psu_data):
     if not entity_print(entity_data):
         return
-    print '\t\tInput:\t\t\t', attr_map(cps_attr_get(psu_data, 'base-pas/psu/input-type'), {1: 'Unknown', 2: 'AC', 3: 'DC'})
-    print '\t\tFan airflow:\t\t', fan_airflow_to_string(cps_attr_get(psu_data, 'base-pas/psu/fan-airflow-type'))
+    try:
+        print '\t\tInput:\t\t\t', attr_map(cps_attr_get(psu_data, 'base-pas/psu/input-type'), {1: 'Unknown', 2: 'AC', 3: 'DC'})
+        print '\t\tFan airflow:\t\t', fan_airflow_to_string(cps_attr_get(psu_data, 'base-pas/psu/fan-airflow-type'))
+    except:
+        pass
 
 def all_psus_print():
+    if cps_entity_data == [] or cps_psu_data == []:
+        return
     print 'Power supplies'
     for e in cps_entity_data:
         entity_data = e['data']
@@ -122,9 +135,14 @@ def all_psus_print():
 def fan_tray_print(entity_data, fan_tray_data):
     if not entity_print(entity_data):
         return
-    print '\t\tFan airflow:\t\t', fan_airflow_to_string(cps_attr_get(fan_tray_data, 'base-pas/fan-tray/fan-airflow-type'))
+    try:
+        print '\t\tFan airflow:\t\t', fan_airflow_to_string(cps_attr_get(fan_tray_data, 'base-pas/fan-tray/fan-airflow-type'))
+    except:
+        pass
 
 def all_fan_trays_print():
+    if cps_entity_data == [] or cps_fan_tray_data == []:
+        return
     print 'Fan trays'
     for e in cps_entity_data:
         entity_data = e['data']
@@ -157,6 +175,8 @@ def fan_print(fan_data):
     print '\t\tSpeed (%):\t\t', cps_attr_get(fan_data, 'base-pas/fan/speed_pct')
 
 def all_fans_print():
+    if cps_fan_data == []:
+        return
     print 'Fans'
     for f in cps_fan_data:
         fan_print(f['data'])
@@ -171,6 +191,8 @@ def temp_sensor_print(temp_sensor_data):
     print '\t\tTemperature (degrees C):\t', cps_attr_get(temp_sensor_data, 'base-pas/temperature/temperature')
         
 def all_temp_sensors_print():
+    if cps_temp_sensor_data == []:
+        return
     print 'Temperature sensors'
     for s in cps_temp_sensor_data:
         temp_sensor_print(s['data'])

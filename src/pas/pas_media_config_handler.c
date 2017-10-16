@@ -80,6 +80,13 @@ t_std_error dn_pas_media_config_get(cps_api_get_params_t * param,
         return STD_ERR(PAS, FAIL, 0);
     }
 
+    if (cps_api_object_attr_add(obj, BASE_PAS_MEDIA_CONFIG_IDENTIFICATION_LED_CONTROL,
+                &cfg->identification_led_control, sizeof(cfg->identification_led_control)) == false) {
+        cps_api_object_delete(obj);
+
+        return STD_ERR(PAS, FAIL, 0);
+    }
+
     if (!cps_api_object_list_append(param->list, obj)) {
 
         cps_api_object_delete(obj);

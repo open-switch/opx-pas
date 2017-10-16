@@ -58,8 +58,8 @@ t_std_error dn_pas_media_get(cps_api_get_params_t * param,
     }
 
     if (port_valid == false) {
-        start = dn_media_id_to_port(PAS_MEDIA_START_PORT);
-        end = dn_media_id_to_port(dn_phy_media_count_get());
+        start = (PAS_MEDIA_START_PORT);
+        end = (dn_phy_media_count_get());
     } else {
         start = end = port;
     }
@@ -171,8 +171,8 @@ t_std_error dn_pas_media_set(cps_api_transaction_params_t * param,
     }
 
     if (port_valid == false) {
-        start = dn_media_id_to_port(PAS_MEDIA_START_PORT);
-        end = dn_media_id_to_port(dn_phy_media_count_get());
+        start = (PAS_MEDIA_START_PORT);
+        end = (dn_phy_media_count_get());
     } else {
         start = end = port;
     }

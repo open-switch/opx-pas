@@ -29,7 +29,13 @@
 
 #define INTERFACE_MODE_STR_LEN   (17)
 #define MEDIA_TYPE_STR_LEN       (128)
-#define MAX_SUPPORTED_SPEEDS     (8)
+#define MAX_SUPPORTED_SPEEDS           (BASE_IF_SPEED_MAX)
+#define PAS_MEDIA_MAX_PORT_DENSITY     (10) /* Arbitrary upper limit for port density */
+#define PAS_MEDIA_PORT_DENSITY_DEFAULT (1)  /* Port density is normally 1, but can be higher. Example it is 2 for QSFP28-DD*/
+
+
+#define PRE_STRINGIZE(enm) #enm
+#define STRINGIZE_ENUM(enm) PRE_STRINGIZE(enm)
 
 /* Configuration information for an entity */
 
@@ -83,6 +89,17 @@ typedef struct pas_media_type_config_s {
     uint_t                unsup_speed_count; /* Unsupported speed count */
     BASE_IF_SPEED_t       unsup_speed[MAX_SUPPORTED_SPEEDS];/* Unsupported speed list */
 } pas_media_type_config;
+/* Configuration information for ports */
+
+typedef struct
+{
+    PLATFORM_PORT_TYPE_t      port_type;
+    PLATFORM_MEDIA_CATEGORY_t category;
+    PLATFORM_MEDIA_TYPE_t     media_type;
+    BASE_IF_SPEED_t           speed;
+    bool                      present;
+    uint_t                    port_density;
+}pas_port_info_t;
 
 /* Configuration information for media resources */
 
@@ -93,10 +110,13 @@ struct pas_config_media {
     bool   lockdown;            /* unsupported media above 10g capability
                                    disable if its true otherwise enable*/
     bool   led_control;         /* Handle LED set if led_control is true. */
-    uint_t fixed_media_count;   /* Non plugable media count. */
+    bool   identification_led_control; /* Port identification LED control flag, true incase PAS owns led control */
+    uint_t pluggable_media_count;   /* Plugable media count. */
     bool   lr_restriction;      /* LR media restriction enable */
     uint_t media_count;         /* Media type config count. */
     pas_media_type_config  *media_type_config; /* Media type config based on platform. */
+    pas_port_info_t  **port_info_tbl   ; /* An array of pointers to info of port*/
+    uint_t port_count;                      /* Number of ports. */
 };
 
 /* Default configuration information for media type */
@@ -161,5 +181,25 @@ bool dn_pas_cps_handler_reg (const char *config_filename,
                 cps_api_operation_handle_t _cps_hdl);
 /* Read the configuration file */
 bool dn_pas_config_init(const char *config_filename, cps_api_operation_handle_t _cps_hdl);
+/* Used to keep track of basic port type configurations derived from config file */
+typedef struct port_info_node
+{
+    pas_port_info_t node;
+    struct port_info_node* next;
+}port_info_node_t;
+
+/* Type to convert port type string in config file to usable port type */
+typedef struct
+{
+    const char*             port_type_str;
+    PLATFORM_PORT_TYPE_t    port_type;
+}port_type_str_to_enum_t;
+
+/* Type to convert media type string in config file to usable media type */
+typedef struct
+{
+    const char*             port_media_type_str;
+    PLATFORM_MEDIA_TYPE_t   media_type;
+}port_media_type_str_to_enum_t;
 
 #endif /* !defined(__PAS_CONFIG_H) */

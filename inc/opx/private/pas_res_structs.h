@@ -449,6 +449,7 @@ typedef struct _pas_media_t {
     PLATFORM_MEDIA_SUPPORT_STATUS_t
                                  support_status;
     PLATFORM_FAULT_TYPE_t        fault_type;
+    PLATFORM_PORT_TYPE_t         port_type;
     PLATFORM_MEDIA_CATEGORY_t    category;
     PLATFORM_MEDIA_TYPE_t        type;
     BASE_IF_SPEED_t              capability;

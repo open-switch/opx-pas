@@ -189,9 +189,15 @@ bool dn_fan_poll(
                 dn_pas_oper_fault_state_update(rec->oper_fault_state,
                                                PLATFORM_FAULT_TYPE_EHW
                                                );
+                break;
             }
 
-            break;
+            /*
+             * If we haven't hit the fault limit yet, restore the
+             * fault state and return early.
+             */
+            *rec->oper_fault_state = *prev_oper_fault_state;
+            return (true);
         }
         rec->fault_cnt = 0;
 

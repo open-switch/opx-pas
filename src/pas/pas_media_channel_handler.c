@@ -58,7 +58,7 @@ t_std_error dn_pas_media_channel_get(
         if (channel_valid == true) {
             if (dn_pas_channel_get(qualifier, slot, port, channel, param,
                         req_obj) == false) {
-                PAS_ERR("Failed to append response for channel, port %u, channel %u",
+                PAS_TRACE("Failed to append response for channel, port %u, channel %u",
                         port, channel
                         );
 
@@ -67,7 +67,7 @@ t_std_error dn_pas_media_channel_get(
         } else {
             if (dn_pas_port_channel_get(qualifier, slot, port, param, req_obj)
                     == false) {
-                PAS_ERR("Failed to append response for port, port %u",
+                PAS_TRACE("Failed to append response for port, port %u",
                         port
                         );
 
@@ -77,10 +77,10 @@ t_std_error dn_pas_media_channel_get(
     } else {
         for (media_id = PAS_MEDIA_START_PORT; media_id <= dn_phy_media_count_get();
                 media_id++) {
-            port = dn_media_id_to_port(media_id);
+            port = (media_id);
             if (dn_pas_port_channel_get(qualifier, slot, port, param, req_obj)
                     == false) {
-                PAS_ERR("Failed to append response for port, port %u",
+                PAS_TRACE("Failed to append response for port, port %u",
                         port
                         );
 
@@ -135,8 +135,8 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
     }
 
     if (port_valid == false) {
-        start = dn_media_id_to_port(PAS_MEDIA_START_PORT);
-        end = dn_media_id_to_port(dn_phy_media_count_get());
+        start = (PAS_MEDIA_START_PORT);
+        end =(dn_phy_media_count_get());
     } else {
         start = end = port;
     }
@@ -227,7 +227,7 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
 
                             if ((cfg->lockdown == true)
                                     && (mtbl->res_data->qualified == false)
-                                    && dn_pas_is_capability_10G_plus(mtbl->res_data->capability)
+                                    && dn_pas_is_media_unsupported(mtbl->res_data)
                                     &&(status == true)) {
                                 status = false;
                             }

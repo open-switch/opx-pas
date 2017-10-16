@@ -154,12 +154,12 @@ static const media_type_map_t media_qsfp_type_tbl [] = {
         PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_CR4_50M},
     {9, MEDIA_DIST_DONT_CARE, MEDIA_PROT_DONT_CARE,
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_CR4},
-    {10, 5, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
-        PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_SR4},
     {10, 4, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_CR4},
+    {10, 5, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP_40GBASE_AOC},
     {10, 8, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
-        PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_SR4},
+        PLATFORM_MEDIA_TYPE_QSFP_40GBASE_AOC},
     {10, MEDIA_DIST_DONT_CARE, 1, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_4X_10GBASE_SR_AOCXXM},
     {12, MEDIA_DIST_DONT_CARE, MEDIA_PROT_DONT_CARE,
@@ -256,6 +256,8 @@ static const media_type_map_t media_depop_qsfp28_type_tbl [] = {
 };
 
 static const media_type_map_t media_qsfp28_dd_type_tbl [] = {
+    {1, 1, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_SR4},
     {8, 1, 1, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_LPBK},
     {9, 0, 1, 1,
@@ -671,24 +673,18 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_product_id_to_optics_type (
  * based on MSA fields.
  */
 
-static uint8_t dn_pas_max_fc_supported_speed(uint8_t sfp_fc_speed)
+static BASE_IF_SPEED_t dn_pas_max_fc_supported_speed(uint8_t sfp_fc_speed)
 {
     if(sfp_fc_speed & 0x08) {
-        return 32;
+        return BASE_IF_SPEED_32GFC;
     } else if(sfp_fc_speed & 0x20) {
-        return 16;
-    } else if(sfp_fc_speed & 0x80) {
-        return 12;
+        return BASE_IF_SPEED_16GFC;
     } else if(sfp_fc_speed & 0x40) {
-        return 8;
+        return BASE_IF_SPEED_8GFC;
     } else if(sfp_fc_speed & 0x10) {
-        return 4;
-    } else if(sfp_fc_speed & 0x04) {
-        return 2;
-    } else if(sfp_fc_speed & 0x01) {
-        return 1;
+        return BASE_IF_SPEED_4GFC;
     }
-    return 0;
+    return BASE_IF_SPEED_0MBPS;
 }
 
 
@@ -836,18 +832,18 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_std_optics_type_get (pas_media_t *res_data)
             }
         } else if (trans_desc->sfp_descr.sdi_sfp_fc_media == 0x01) {
             switch(dn_pas_max_fc_supported_speed(trans_desc->sfp_descr.sdi_sfp_fc_speed)) {
-                case 8:
+                case BASE_IF_SPEED_8GFC:
                     return PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_LW;
-                case 16:
+                case BASE_IF_SPEED_16GFC:
                     return PLATFORM_MEDIA_TYPE_SFPPLUS_16GBASE_FC_LW;
                 default:
                     return PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
             }
-        } else if (trans_desc->sfp_descr.sdi_sfp_fc_media == 0x0C) {
+        } else if (trans_desc->sfp_descr.sdi_sfp_fc_media & 0x04) {
             switch(dn_pas_max_fc_supported_speed(trans_desc->sfp_descr.sdi_sfp_fc_speed)) {
-                case 8:
+                case BASE_IF_SPEED_8GFC:
                     return PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_SW;
-                case 16:
+                case BASE_IF_SPEED_16GFC:
                     return PLATFORM_MEDIA_TYPE_SFPPLUS_16GBASE_FC_SW;
                 default:
                     return PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
@@ -927,24 +923,36 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_std_optics_type_get (pas_media_t *res_data)
 PLATFORM_MEDIA_TYPE_t dn_pas_media_type_get (pas_media_t *res_data)
 {
     PLATFORM_MEDIA_TYPE_t     op_type = PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
-    uint16_t                  id = PAS_MEDIA_QSFP_INVALID_ID;
     sdi_media_transceiver_descr_t *ptr = NULL;
 
     /* read programmed product Id */
 
     ptr = (sdi_media_transceiver_descr_t *) &(res_data->transceiver);
 
-    if ((id == PAS_MEDIA_QSFP_INVALID_ID)
-            && (res_data->category == PLATFORM_MEDIA_CATEGORY_SFP_PLUS)
-            && (ptr->sfp_descr.sdi_sfp_eth_10g_code == PAS_SFP_INVALID_GIGE_CODE)
-            && (ptr->sfp_descr.sdi_sfp_plus_cable_technology == PAS_SFP_INVALID_GIGE_CODE)) {
-
-        res_data->category = PLATFORM_MEDIA_CATEGORY_SFP;
-        res_data->qualified = true;
-        return dn_pas_sfp_media_type_find(res_data);
+    if ((res_data->category == PLATFORM_MEDIA_CATEGORY_SFP_PLUS)
+        && (ptr->sfp_descr.sdi_sfp_eth_10g_code == PAS_SFP_INVALID_GIGE_CODE)
+        && (ptr->sfp_descr.sdi_sfp_eth_10g_code == PAS_SFP_INVALID_GIGE_CODE)
+        && (ptr->sfp_descr.sdi_sfp_eth_1g_code != PAS_SFP_INVALID_GIGE_CODE)
+        && (ptr->sfp_descr.sdi_sfp_plus_cable_technology == PAS_SFP_INVALID_GIGE_CODE)) {
+        
+        /* Must also not be 4,8,16,32GFC.
+           Anything higher will never get to this portion of code anyways so no need to check */
+        switch (dn_pas_max_fc_supported_speed(ptr->sfp_descr.sdi_sfp_fc_speed)){
+        case BASE_IF_SPEED_4GFC:
+        case BASE_IF_SPEED_8GFC:
+        case BASE_IF_SPEED_16GFC:
+        case BASE_IF_SPEED_32GFC:
+            break;
+            
+        default:
+            /* Has to be SFP at this point */
+            res_data->category = PLATFORM_MEDIA_CATEGORY_SFP;
+            res_data->qualified = true;
+            return dn_pas_sfp_media_type_find(res_data);
+        }
     }
 
-    op_type = dn_pas_product_id_to_optics_type(res_data->category, id, res_data->length_cable);
+    op_type = dn_pas_product_id_to_optics_type(res_data->category, PAS_MEDIA_QSFP_INVALID_ID, res_data->length_cable);
     
     if(op_type == PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_SW) {
         
@@ -1069,5 +1077,152 @@ bool dn_pas_is_capability_10G_plus (BASE_IF_SPEED_t capability)
         default:
             return true;
     }
+}
+
+/*
+ * dn_pas_media_capability_get is to get the media capability
+ */
+
+BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
+{
+    pas_media_t *res_data = mtbl->res_data;
+    BASE_IF_SPEED_t capability = res_data->capability;
+    uint8_t fc_speed = 0;
+    sdi_media_transceiver_descr_t *trans_desc =
+        (sdi_media_transceiver_descr_t *) res_data->transceiver;
+
+    switch (res_data->category) {
+        case PLATFORM_MEDIA_CATEGORY_SFP:
+            capability = BASE_IF_SPEED_1GIGE;
+            if ((trans_desc->sfp_descr.sdi_sfp_fc_technology
+                        != PAS_SFP_INVALID_GIGE_CODE)
+                    && (trans_desc->sfp_descr.sdi_sfp_fc_media
+                        != PAS_SFP_INVALID_GIGE_CODE)) {
+                if (res_data->connector == 0x21){
+                    PAS_ERR("Invalid FC capability on port %u. Will ignore.",
+                    mtbl->fp_port);
+                    break;
+                }
+                fc_speed = trans_desc->sfp_descr.sdi_sfp_fc_speed;
+            }
+            break;
+        case PLATFORM_MEDIA_CATEGORY_SFP_PLUS:
+            capability = BASE_IF_SPEED_10GIGE;
+            if ((trans_desc->sfp_descr.sdi_sfp_fc_technology
+                        != PAS_SFP_INVALID_GIGE_CODE)
+                    && (trans_desc->sfp_descr.sdi_sfp_fc_media
+                        != PAS_SFP_INVALID_GIGE_CODE)) {
+                if (res_data->connector == 0x21){
+                    PAS_ERR("Invalid FC capability on port %u. Will ignore.",
+                    mtbl->fp_port);
+                    break;
+                }
+                fc_speed = trans_desc->sfp_descr.sdi_sfp_fc_speed;
+            }
+            break;
+        case PLATFORM_MEDIA_CATEGORY_SFP28:
+            capability = BASE_IF_SPEED_25GIGE;
+            if ((trans_desc->sfp_descr.sdi_sfp_fc_technology
+                        != PAS_SFP_INVALID_GIGE_CODE)
+                    && (trans_desc->sfp_descr.sdi_sfp_fc_media
+                        != PAS_SFP_INVALID_GIGE_CODE)) {
+                fc_speed = trans_desc->sfp_descr.sdi_sfp_fc_speed;
+            }
+            break;
+        case PLATFORM_MEDIA_CATEGORY_QSFP:
+        case PLATFORM_MEDIA_CATEGORY_QSFP_PLUS:
+            capability = BASE_IF_SPEED_40GIGE;
+            if ((trans_desc->qsfp_descr.sdi_qsfp_fc_technology
+                        == PAS_SFP_INVALID_GIGE_CODE)
+                    && (trans_desc->qsfp_descr.sdi_qsfp_fc_media
+                        == PAS_SFP_INVALID_GIGE_CODE)) {
+                fc_speed = trans_desc->qsfp_descr.sdi_qsfp_fc_speed;
+            }
+            break;
+        case PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28:
+            capability = BASE_IF_SPEED_50GIGE;
+            if ((trans_desc->qsfp_descr.sdi_qsfp_fc_technology
+                        == PAS_SFP_INVALID_GIGE_CODE)
+                    && (trans_desc->qsfp_descr.sdi_qsfp_fc_media
+                        == PAS_SFP_INVALID_GIGE_CODE)) {
+                fc_speed = trans_desc->qsfp_descr.sdi_qsfp_fc_speed;
+            }
+            break;
+        case PLATFORM_MEDIA_CATEGORY_QSFP28:
+            capability = BASE_IF_SPEED_100GIGE;
+            if ((trans_desc->qsfp_descr.sdi_qsfp_fc_technology
+                        == PAS_SFP_INVALID_GIGE_CODE)
+                    && (trans_desc->qsfp_descr.sdi_qsfp_fc_media
+                        == PAS_SFP_INVALID_GIGE_CODE)) {
+                fc_speed = trans_desc->qsfp_descr.sdi_qsfp_fc_speed;
+            }
+            break;
+        case PLATFORM_MEDIA_CATEGORY_QSFP_DD:
+            capability = BASE_IF_SPEED_200GIGE;
+            if ((trans_desc->qsfp_descr.sdi_qsfp_fc_technology
+                        == PAS_SFP_INVALID_GIGE_CODE)
+                    && (trans_desc->qsfp_descr.sdi_qsfp_fc_media
+                        == PAS_SFP_INVALID_GIGE_CODE)) {
+                fc_speed = trans_desc->qsfp_descr.sdi_qsfp_fc_speed;
+            }
+            break;
+        default:
+            break;
+    }
+
+    if (fc_speed) {
+        capability = dn_pas_max_fc_supported_speed(fc_speed);
+    }
+    return capability;
+}
+
+/*
+ * dn_pas_is_media_unsupported is to identify media needs to be supported or not
+ */
+
+bool dn_pas_is_media_unsupported (pas_media_t *res_data)
+{
+    bool  ret = true;
+    sdi_media_transceiver_descr_t *trans_desc =
+        (sdi_media_transceiver_descr_t *) res_data->transceiver;
+
+    switch (res_data->category) {
+        case PLATFORM_MEDIA_CATEGORY_SFP:
+        case PLATFORM_MEDIA_CATEGORY_SFP_PLUS:
+            if ((res_data->connector == 0x21)
+                    || ((trans_desc->sfp_descr.sdi_sfp_fc_technology
+                        == PAS_SFP_INVALID_GIGE_CODE)
+                    && (trans_desc->sfp_descr.sdi_sfp_fc_media
+                        == PAS_SFP_INVALID_GIGE_CODE)
+                    && (trans_desc->sfp_descr.sdi_sfp_fc_speed
+                        == PAS_SFP_INVALID_GIGE_CODE))) {
+                ret = false;
+            }
+            break;
+        case PLATFORM_MEDIA_CATEGORY_SFP28:
+            if ((res_data->connector == 0x23)
+                    || (res_data->ext_transceiver == 0x1)) {
+               ret = false;
+            } 
+            break;
+        case PLATFORM_MEDIA_CATEGORY_QSFP:
+        case PLATFORM_MEDIA_CATEGORY_QSFP_PLUS:
+        case PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28:
+            if ((res_data->connector == 0x23)
+                        || (trans_desc->qsfp_descr.sdi_qsfp_eth_1040g_code == 0x1)) {
+                ret = false;
+            }
+            break;
+        case PLATFORM_MEDIA_CATEGORY_QSFP28:
+        case PLATFORM_MEDIA_CATEGORY_QSFP_DD:
+            if (((res_data->options >> QSFP28_OPTION1_BIT_SHIFT) &
+                        (QSFP28_OPTION1_BIT_MASK)) == QSFP_100GBASE_AOC) {
+                ret = false;
+            }
+            break;
+        default:
+            break;
+    }
+    return ret;
 }
 

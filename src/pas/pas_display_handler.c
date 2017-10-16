@@ -91,7 +91,7 @@ static t_std_error dn_pas_disp_get1(
     cps_api_object_attr_add(resp_obj,
                             BASE_PAS_DISPLAY_MESSAGE,
                             rec->mesg,
-                            rec->mesg != 0 ? strlen(rec->mesg) : 0
+                            rec->mesg != NULL ? strlen(rec->mesg) : 0
                             );
 
     /* Send power state */

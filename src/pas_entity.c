@@ -367,9 +367,11 @@ bool dn_pas_entity_fault_state_set(pas_entity_t *rec, uint_t fault_state)
 bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
 {
     enum { ENTITY_INIT_MAX_TRIES = 3 };
+    enum { FAULT_LIMIT = 3 };
 
-    bool              present, notif = false, power_status;
+    bool              present, notif = false, power_status, fault_status;
     sdi_entity_info_t entity_info[1];
+    pas_entity_t     *parent = NULL;
 
     pas_oper_fault_state_t prev_oper_fault_state[1];
     *prev_oper_fault_state = *rec->oper_fault_state;
@@ -542,6 +544,7 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
                                         );
                     if (psu_rec != 0) {
                         dn_psu_poll(psu_rec, update_allf);
+                        parent = psu_rec->parent;
                     }
                 }
                 break;
@@ -559,12 +562,36 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
                                         );
                     if (fan_tray_rec != 0) {
                         dn_fan_tray_poll(fan_tray_rec, update_allf);
+                        parent = fan_tray_rec->parent;
                     }
                 }
                 break;
                 
             default:
                 ;
+            }
+
+            if (parent != NULL) {
+                if (STD_IS_ERR(sdi_entity_fault_status_get(parent->sdi_entity_hdl,
+                                                           &fault_status
+                                                           )
+                               )
+                    ) {
+                    dn_pas_entity_fault_state_set(parent,
+                                                  PLATFORM_FAULT_TYPE_ECOMM
+                                                  );
+                } else if (fault_status) {
+                    if (parent->fault_cnt < FAULT_LIMIT)  ++parent->fault_cnt;
+                    if (parent->fault_cnt >= FAULT_LIMIT) {
+                        dn_pas_entity_fault_state_set(parent,
+                                                      PLATFORM_FAULT_TYPE_EHW
+                                                      );
+                    } else {
+                        *rec->oper_fault_state = *prev_oper_fault_state;
+                    }
+                } else {
+                    parent->fault_cnt = 0;
+                }
             }
 
             dn_entity_res_poll(rec, update_allf, &notif);

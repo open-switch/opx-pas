@@ -18,6 +18,7 @@
 #include "private/pas_main.h"
 #include "private/pas_utils.h"
 #include "private/dn_pas.h"
+#include "private/pas_log.h"
 
 #include "std_config_node.h"
 #include "dell-base-platform-common.h"
@@ -38,7 +39,10 @@ typedef struct config_entry_s {
     void (*func)(std_config_node_t);
 } config_entry_t;
 
-static char pas_media_app_cfg_filename[] = "/etc/opx/pas/media-config.xml";
+static port_info_node_t* port_info_node_head;
+
+
+static char pas_media_app_cfg_filename[] = "/etc/opt/dell/os10/pas/media-config.xml";
 
 static void dn_pas_media_read_app_config (std_config_node_t nd);
 static bool dn_pas_config_parse (const char *config_filename,
@@ -48,6 +52,23 @@ static bool dn_pas_config_parse (const char *config_filename,
 static cps_api_operation_handle_t cps_hdl;
 
 static sdi_entity_info_t chassis_cfg[1];
+static bool dn_pas_media_parse_speed (char *val_str,
+                                      BASE_IF_SPEED_t *speed_list, uint_t size,
+                                      uint_t *speed_count);
+
+/* Array of of port type strings to corresponding port type */
+static const port_type_str_to_enum_t port_type_str_to_enum[] = {
+    {STRINGIZE_ENUM(PLATFORM_PORT_TYPE_PLUGGABLE), PLATFORM_PORT_TYPE_PLUGGABLE},
+    {STRINGIZE_ENUM(PLATFORM_PORT_TYPE_FIXED), PLATFORM_PORT_TYPE_FIXED},
+    {STRINGIZE_ENUM(PLATFORM_PORT_TYPE_BACKPLANE), PLATFORM_PORT_TYPE_BACKPLANE}
+};
+
+/* Array of of media type strings to corresponding media type */
+static const port_media_type_str_to_enum_t port_media_type_str_to_enum[] = {
+    {STRINGIZE_ENUM(PLATFORM_MEDIA_TYPE_1GBASE_COPPER), PLATFORM_MEDIA_TYPE_1GBASE_COPPER},
+    {STRINGIZE_ENUM(PLATFORM_MEDIA_TYPE_10GBASE_COPPER), PLATFORM_MEDIA_TYPE_10GBASE_COPPER},
+    {STRINGIZE_ENUM(PLATFORM_MEDIA_TYPE_25GBASE_BACKPLANE), PLATFORM_MEDIA_TYPE_25GBASE_BACKPLANE}
+};
 
 static void dn_pas_config_chassis(std_config_node_t nd)
 {
@@ -448,9 +469,245 @@ static config_entry_t media_app_cfg_tbl [] = {{"media", dn_pas_media_read_app_co
 
 static struct pas_config_media cfg_media[1] = {
     { poll_interval: 1000, rtd_interval: 5, lockdown: false, led_control: false,
-        fixed_media_count: 0, lr_restriction: false, media_count: 0,
-        media_type_config: NULL}
+        identification_led_control: false, pluggable_media_count: 0, lr_restriction: false, media_count: 0,
+        media_type_config: NULL, port_info_tbl: NULL, port_count: 0}
 };
+/* Searches for the appropriate string to enum map*/
+bool convert_str_to_enum(char* label, char* value, uint_t* result) 
+{
+    *result = 0;
+    int count = 0;
+    bool ret = false;
+
+    if (strcmp(label, "speed")==0){
+        ret = dn_pas_media_parse_speed(value, (BASE_IF_SPEED_t*)result, 1, NULL);
+    }
+    else if (strcmp(label, "media-type")==0){
+        count = ARRAY_SIZE(port_media_type_str_to_enum)-1;
+        for (; count>=0 ; count--){
+            if (strcmp(value, port_media_type_str_to_enum[count].port_media_type_str)==0){
+                    *result = port_media_type_str_to_enum[count].media_type;
+                    ret = true;
+                    break;
+                }
+        }
+    }
+    else if (strcmp(label, "category")==0){
+        if (strcmp(value, STRINGIZE_ENUM(PLATFORM_MEDIA_CATEGORY_FIXED))==0){
+            *result = PLATFORM_MEDIA_CATEGORY_FIXED;
+            return true;
+        }
+    }
+    else if (strcmp(label, "port-type")==0){
+        count = ARRAY_SIZE(port_type_str_to_enum)-1;
+        for (; count>=0 ; count--){
+            if (strcmp(value, port_type_str_to_enum[count].port_type_str )==0){
+                    *result = port_type_str_to_enum[count].port_type;
+                    ret = true;
+                    break;
+                }
+        }
+    }
+    if (ret == false){
+        PAS_ERR("Error finding config attribute match. Label: %s, Value: %s", label, value);
+    }
+    return ret;
+}
+
+ /* Argument range is of the form:"a,b" or "a-b,c-d,...". Whitespace not handled */
+
+static void populate_cfg_array(pas_port_info_t** arr,
+                port_info_node_t* info_node, char* range)
+{
+    char* start = 0, *end = 0, *counter = 0;
+    uint_t start_n = 0, end_n = 0;
+    bool start_set = false;
+    char* range_end = range + strlen(range);
+
+    for (counter = start = range; counter < range_end+1; counter++) {
+        end_n = start_n;
+        switch (*counter) {
+            case '-':
+                *counter = '\0';
+                sscanf(start, "%u", &start_n);
+                end = counter + 1;
+                start_set = true;
+
+                break;
+
+            case ',':
+            case '\0':
+                *counter = '\0';
+
+                if (start_set == true) {
+                    sscanf(end, "%u", &end_n);
+                }
+                else {
+                    sscanf(start, "%u", &start_n);
+                    end_n = start_n;
+                }
+                start = counter + 1;
+                start_set = false;
+
+                if ((end_n == 0) || (end_n <start_n)){
+                    PAS_ERR("Invalid port range info");
+                }
+
+                /* Fill in array */
+                while (start_n <= end_n) {
+                    arr[start_n++] = &(info_node->node);
+                }
+
+                break;
+         }
+    }
+}
+
+
+static void dn_pas_config_ports_get_count(std_config_node_t nd, void *var)
+{
+    char* a;
+
+    if ( strcmp(std_config_name_get(nd), "port-summary") == 0){
+        a =  std_config_attr_get(nd, "count");
+        if (a != 0) {
+            sscanf(a, "%u", &cfg_media->port_count);
+
+            if (cfg_media->port_count == 0){
+            PAS_ERR("Port count from config file is 0. Aborting");
+            assert(cfg_media->port_count != 0);
+            }
+        }
+        else {
+            PAS_ERR("Invalid port count in config file. Aborting");
+            assert(a!=0);
+        }
+    }
+    return;
+}
+
+/* Read configuration for port types*/
+
+static void dn_pas_config_ports_handler(std_config_node_t nd, void *var)
+{
+    char* a;
+
+    /* Memory has been allocated and the fields can be populated*/
+    if (strcmp(std_config_name_get(nd), "port-config-info") == 0){
+        port_info_node_t* current_node = (port_info_node_t*)malloc(sizeof(port_info_node_t));
+        uint_t result = 0;
+
+        /* This is an essential field. Code will not proceed if not present*/
+        a = std_config_attr_get(nd, "port-type");
+        if (a!=0){
+            current_node->node.port_type = (convert_str_to_enum("port-type", a, &result)
+                ? (PLATFORM_PORT_TYPE_t)result
+                : PLATFORM_PORT_TYPE_PLUGGABLE );
+        }
+        else {
+            PAS_ERR("Unable to read port-type from config file");
+            free((void*)current_node);
+            assert(a!=0);
+        }
+
+        a = std_config_attr_get(nd, "media-type");
+        if (a!=0){
+            current_node->node.media_type = (convert_str_to_enum("media-type", a, &result)
+                ? (PLATFORM_MEDIA_TYPE_t)result
+                : PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN );
+        }
+
+        a = std_config_attr_get(nd, "category");
+        if (a!=0){
+            current_node->node.category = (convert_str_to_enum("category", a, &result)
+                ? (PLATFORM_MEDIA_CATEGORY_t)result
+                : 0);
+        }
+
+        a = std_config_attr_get(nd, "speed");
+        if (a!=0){
+            current_node->node.speed = (convert_str_to_enum("speed", a, &result)
+                ? (BASE_IF_SPEED_t)result
+                : BASE_IF_SPEED_0MBPS );
+        }
+
+        a = std_config_attr_get(nd, "port-density");
+        if (a!=0) {
+            sscanf(a, "%u", &(current_node->node.port_density));
+        } else {
+            current_node->node.port_density = 1;
+        }
+
+        STD_ASSERT(current_node->node.port_density > 0);
+        STD_ASSERT(current_node->node.port_density <= PAS_MEDIA_MAX_PORT_DENSITY);
+
+        /* This is an essential field. Code will not proceed if not present*/
+        /* This section needs to run last */
+        a = std_config_attr_get(nd, "port-range");
+        if (a!=0){
+            populate_cfg_array(cfg_media->port_info_tbl, current_node, a);
+        }
+        else {
+            PAS_ERR("Unable to read port-range from config file");
+            free((void*)current_node);
+            assert(a!=0);
+        }
+
+        current_node->node.present = (current_node->node.port_type != PLATFORM_PORT_TYPE_PLUGGABLE);
+        current_node->next = NULL;
+        /* Append node, for record-keeping*/
+        port_info_node_t *tmp_node = port_info_node_head;
+        while (tmp_node->next != NULL)
+            {
+                tmp_node = tmp_node->next;
+            }
+        tmp_node->next = current_node;
+    }
+
+}
+
+void dn_pas_port_config(std_config_node_t nd)
+{
+    uint_t count = 1; // Offset is 1 because ports start at 1. Index 0 should never be accessed
+    port_info_node_head = (port_info_node_t*)malloc(sizeof(port_info_node_t));
+    port_info_node_t tmp = {
+        node: {
+            port_type:     PLATFORM_PORT_TYPE_PLUGGABLE,
+            category:      0,
+            media_type:    PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN,
+            speed:         BASE_IF_SPEED_0MBPS,
+            present:       false,
+            port_density:  PAS_MEDIA_PORT_DENSITY_DEFAULT
+        },
+        next: NULL
+     };
+     *port_info_node_head = tmp;
+
+    /* Fetch count by traversing nodes*/
+    std_config_for_each_node(nd, dn_pas_config_ports_get_count, NULL);
+
+    /* Allocate the required number of ports. Add 1 so that index starts at 1
+     +1 offset allows ports to be accessed using their port IDs 
+      Using array of pointers to info structs */
+    cfg_media->port_info_tbl = 
+        (pas_port_info_t**)calloc((cfg_media->port_count) + 1, sizeof(pas_port_info_t*));
+
+    /* Last element is included because +1 was allocated. Init all to default pluggable*/
+    while (count <= cfg_media->port_count){
+        cfg_media->port_info_tbl[count++] = &(port_info_node_head->node);
+    }
+    /* Now obtain specifics to populate cfg arrray */
+    std_config_for_each_node(nd, dn_pas_config_ports_handler, NULL);
+
+    /* Then count how many pluggable ports are left, for poller use */
+    count = 1;
+    while (count <= cfg_media->port_count){
+        if (cfg_media->port_info_tbl[count++]->port_type
+                == PLATFORM_PORT_TYPE_PLUGGABLE ){
+            cfg_media->pluggable_media_count++;
+        }
+    }
+}
 
 /* Read configuration for optical media modules */
 
@@ -475,9 +732,11 @@ static void dn_pas_config_media(std_config_node_t nd)
         }
     }
 
-    a = std_config_attr_get(nd, "fixed-media-count");
+    a = std_config_attr_get(nd, "fp-beacon-led-control");
     if (a != NULL) {
-        sscanf(a, "%u", &cfg_media->fixed_media_count);
+        if (strcmp(a, "software") == 0) {
+            cfg_media->identification_led_control = true;
+        }
     }
 
     a = std_config_attr_get(nd, "lr-restriction");
@@ -559,6 +818,14 @@ static bool dn_pas_media_parse_speed (char *val_str,
                     speed_list[indx++] = BASE_IF_SPEED_100MBPS;
                 } else if (speed == 1000) {
                     speed_list[indx++] = BASE_IF_SPEED_1GIGE;
+                } else if (speed == 10000) {
+                    speed_list[indx++] = BASE_IF_SPEED_10GIGE;
+                } else if (speed == 25000) {
+                    speed_list[indx++] = BASE_IF_SPEED_25GIGE;
+                } else if (speed == 40000) {
+                    speed_list[indx++] = BASE_IF_SPEED_40GIGE;
+                } else if (speed == 100000) {
+                    speed_list[indx++] = BASE_IF_SPEED_100GIGE;
                 } else continue;
                 break;
             case 'G':
@@ -930,7 +1197,8 @@ static config_entry_t element_tbl[] = {
     { "temperature", dn_pas_config_temp },
     { "media",       dn_pas_config_media },
     { "phy-config",  dn_pas_media_read_phy_default_config },
-    { "comm-dev", dn_pas_config_comm_dev}
+    { "comm-dev", dn_pas_config_comm_dev},
+    { "port-config",        dn_pas_port_config}
 };
 
 

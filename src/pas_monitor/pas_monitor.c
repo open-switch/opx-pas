@@ -49,6 +49,38 @@ struct timer {
     uint64_t deadline;          /* Deadline for timer expiration */
 };
 
+static uint_t* pluggable_ports;
+
+void populate_pollable_port_list(void)
+{
+    uint_t res = 0;
+    uint_t index = dn_pas_config_media_get()->port_count;
+    if(index < PAS_MEDIA_START_PORT) {
+        PAS_ERR("Invalid port count: %d from config. Aborting.", index);
+        assert(!(index < PAS_MEDIA_START_PORT));
+    }
+    pluggable_ports = (uint_t*)malloc(
+        (dn_pas_config_media_get()->pluggable_media_count) * sizeof(uint_t));
+    if(pluggable_ports == NULL) {
+        PAS_ERR("Unable to allocate memory for computing pluggable port list. Aborting.");
+        assert(pluggable_ports != NULL);
+    }
+
+    for (; index > 0; index--){
+        if (dn_pas_is_port_pluggable(index)) {
+            pluggable_ports[res++] = index;
+        }
+    }
+    if ( (res) != dn_pas_config_media_get()->pluggable_media_count){
+        PAS_ERR("Disparity in pluggable media counts. Check config file");
+    }
+}
+
+uint_t get_pollable_port(uint_t index)
+{
+     // Used with timer->cur, which goes from 1 to n
+     return pluggable_ports[index-1];
+}
 
 /* \todo This needs to be driven from config file -- fixed config for now */
 
@@ -142,9 +174,9 @@ static void dn_poll_media(struct timer *tmr)
 
     if(!dn_pald_diag_mode_get()) {
 
-        dn_pas_phy_media_poll(dn_media_id_to_port(tmr->cur), true);
+        dn_pas_phy_media_poll(get_pollable_port(tmr->cur), true);
 
-        mtbl = dn_phy_media_entry_get(dn_media_id_to_port(tmr->cur));
+        mtbl = dn_phy_media_entry_get((tmr->cur));
 
         if ((mtbl != NULL) && (mtbl->res_data != NULL)
                 && !mtbl->res_data->valid) {
@@ -206,12 +238,10 @@ static t_std_error timerq_init(void)
         ++num_timers;
     }
 
-    /* Add media polling, if applicable */
-
-    n = sdi_entity_resource_count_get(
-          sdi_entity_lookup(SDI_ENTITY_SYSTEM_BOARD, 1),
-          SDI_RESOURCE_MEDIA
-                                      );
+    /* Add media polling, if applicable 
+       Poll only  pluggable media, so use pluggable count for timer period */
+    n = dn_pas_config_media_get()->pluggable_media_count;
+    populate_pollable_port_list();
     if (n > 0) {
         timers[num_timers].cnt = n;
         timers[num_timers].period =

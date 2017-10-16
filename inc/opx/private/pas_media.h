@@ -31,6 +31,7 @@
 #include "sdi_entity.h"
 #include "sdi_media.h"
 #include "cps_api_events.h"
+#include "private/pas_config.h"
 
 enum {
     /* Will removed once get my slot function is ready */
@@ -101,6 +102,8 @@ typedef enum {
 typedef struct _phy_media_tbl_t {
     sdi_resource_hdl_t     res_hdl;
     uint_t                 fp_port;
+    uint_t                 sub_port_ids[PAS_MEDIA_MAX_PORT_DENSITY]; /* actual list size is port_density*/
+    uint_t                 port_density;
     pas_media_t            *res_data;
     uint_t                 channel_cnt;
     pas_media_channel_t    *channel_data;
@@ -166,6 +169,9 @@ typedef struct _sfp_gigetype_to_type_map_t {
 
 bool dn_pas_phy_media_init (void);
 
+bool dn_pas_is_port_pluggable(uint_t port);
+
+bool dn_pas_is_media_present(uint_t port);
 
 uint_t dn_pas_media_channel_count_get (PLATFORM_MEDIA_CATEGORY_t category);
 
@@ -179,24 +185,6 @@ void dn_pas_phy_media_poll_all (void *arg);
 
 uint_t dn_phy_media_count_get (void);
 
-/*
- * dn_fixed_media_count_get returns fixed media count (non plugable port count).
- */
-uint_t dn_fixed_media_count_get(void);
-/*
- * dn_fixed_media_count_set updates fixed media count (non plugable port count).
- */
-void dn_fixed_media_count_set (uint_t count);
-/*
- * Convert front panel port to media index. Returns media index if its
- * a valid port else returns Zero.
- */
-uint_t dn_port_to_media_id (uint_t port);
-/*
- * Convert media index to front panel port. Return fornt panel port number
- * if media index is valid else returns Zero.
- */
-uint_t dn_media_id_to_port (uint_t media_id);
 
 phy_media_tbl_t * dn_phy_media_entry_get(uint_t port);
 
@@ -212,6 +200,9 @@ sdi_media_type_t dn_pas_to_sdi_type_conv (PLATFORM_MEDIA_TYPE_t type);
 
 bool dn_pas_is_capability_10G_plus (BASE_IF_SPEED_t capability);
 
+bool dn_pas_is_media_unsupported (pas_media_t *res_data);
+
+BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl);
 bool dn_pas_is_media_type_supported_in_fp (uint_t port,
         PLATFORM_MEDIA_TYPE_t type, bool *disable, bool *lr_mode,
         bool *supported);

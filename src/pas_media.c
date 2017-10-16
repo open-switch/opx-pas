@@ -28,30 +28,26 @@
 #include "private/dn_pas.h"
 #include "private/pas_event.h"
 #include "private/pas_utils.h"
-#include "private/pas_config.h"
 #include "dn_pas_media_vendor.h"
 #include "cps_api_operation.h"
 #include "cps_api_service.h"
 #include "cps_api_events.h"
 #include <stdlib.h>
-#include <dlfcn.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #define ARRAY_SIZE(a)         (sizeof(a)/sizeof(a[0]))
 
 #define MEMEBER_SIZEOF(type, member)  (sizeof(((type *)NULL)->member))
 
 #define CPS_API_ATTR_KEY_ID CPS_API_ATTR_RESERVE_RANGE_END
+#define SYSTEM_BOARD_SLOT_NUMBER 1
 
 /* Table to hold the sdi handle and media resource pointer and channel data
  * for all the ports*/
 
 static phy_media_tbl_t *phy_media_tbl = NULL;
 static uint_t phy_media_count = 0;
-/*
- * Non plugable media count.
- */
-static uint_t fixed_media_count = 0;
 
 /* Mapping of media Attribute and corresponding member of _pas_media_t struct
  * and struct member info
@@ -61,6 +57,11 @@ static const phy_media_member_info_t  media_mem_info[] = {
 
     {BASE_PAS_MEDIA_PRESENT, offsetof(pas_media_t, present),
         MEMEBER_SIZEOF(pas_media_t, present), cps_api_object_ATTR_T_BIN},
+    {BASE_PAS_MEDIA_PORT_TYPE, offsetof(pas_media_t, port_type),
+        MEMEBER_SIZEOF(pas_media_t, port_type), cps_api_object_ATTR_T_U32},
+
+    {BASE_PAS_MEDIA_PORT_DENSITY, offsetof(phy_media_tbl_t, port_density),
+        MEMEBER_SIZEOF(phy_media_tbl_t, port_density), cps_api_object_ATTR_T_U32},
 
     {BASE_PAS_MEDIA_INSERTION_CNT, offsetof(pas_media_t, insertion_cnt),
         MEMEBER_SIZEOF(pas_media_t, insertion_cnt), cps_api_object_ATTR_T_U64},
@@ -385,6 +386,7 @@ static const phy_media_member_info_t media_ch_mem_info [] = {
 
 /* Presence publish attribute list */
 static const cps_api_attr_id_t pp_list[] = { BASE_PAS_MEDIA_PRESENT,
+                                      BASE_PAS_MEDIA_PORT_TYPE,
                                       BASE_PAS_MEDIA_OPER_STATUS,
                                       BASE_PAS_MEDIA_SUPPORT_STATUS,
                                       BASE_PAS_MEDIA_CATEGORY,
@@ -427,46 +429,25 @@ static bool dn_pas_media_transceiver_state_set(uint_t port, bool lockdown);
 
 static bool dn_pas_media_capability_poll (uint_t port, cps_api_object_t obj);
 
-/*
- * dn_fixed_media_count_get returns fixed media count(non plugable port count).
- */
-uint_t dn_fixed_media_count_get(void)
-{
-    return fixed_media_count;
-}
+static bool dn_pas_media_obj_attr_add (phy_media_member_info_t const *memp,
+        cps_api_object_t obj, void * res_data);
 
-/*
- * dn_fixed_media_count_set updates fixed media count(non plugable port count).
- */
-void dn_fixed_media_count_set (uint_t count)
-{
-    fixed_media_count = count;
-}
+static bool dn_pas_media_obj_attr_list_add (phy_media_member_info_t *memp,
+        cps_api_object_t obj, void * res_data, size_t member_size, int count);
 
-/*
- * Convert front panel port to media index. Returns media index if its
- * a valid port else returns Zero.
- */
-
-uint_t dn_port_to_media_id (uint_t port)
+/* Returns whether a port is fixed(false) or pluggable (true)*/
+bool dn_pas_is_port_pluggable(uint_t port)
 {
 
-    return (((port - fixed_media_count) > phy_media_count)
-            || ((port - fixed_media_count) < PAS_MEDIA_START_PORT))
-        ? (PAS_MEDIA_START_PORT - 1): (port - fixed_media_count);
+    return (dn_pas_config_media_get()->port_info_tbl[port]->port_type
+            == PLATFORM_PORT_TYPE_PLUGGABLE);
 
 }
 
-/*
- * Convert media index to front panel port. Return fornt panel port number
- * if media index is valid else returns Zero.
- */
-
-uint_t dn_media_id_to_port (uint_t media_id)
+bool dn_pas_is_media_present(uint_t port)
 {
-    return ((media_id > phy_media_count)
-            || (media_id < PAS_MEDIA_START_PORT))
-        ? (PAS_MEDIA_START_PORT - 1): (media_id + fixed_media_count);
+    return (phy_media_tbl[port].res_data == NULL) 
+           ? false : phy_media_tbl[port].res_data->present;
 }
 
 /*
@@ -479,29 +460,19 @@ uint_t dn_media_id_to_port (uint_t media_id)
 
 phy_media_tbl_t * dn_phy_media_entry_get(uint_t port)
 {
-    uint_t media_id = dn_port_to_media_id(port);
-
-    if (media_id < PAS_MEDIA_START_PORT || media_id > phy_media_count) {
+    if (port < PAS_MEDIA_START_PORT || port > phy_media_count) {
         PAS_ERR("Invalid port number (%u)", port);
 
         return NULL;
     }
 
-    if ((phy_media_tbl[media_id].res_hdl == NULL)
-            || (phy_media_tbl[media_id].res_data == NULL)) {
+    if (phy_media_tbl[port].res_data == NULL) {
         PAS_ERR("Not initialized");
 
         return NULL;
     }
 
-    if (port != phy_media_tbl[media_id].fp_port) {
-        PAS_ERR("Error in Port(%u) to media_id(%u) mapping, fp_port is(%u).",
-                port, media_id, phy_media_tbl[media_id].fp_port);
-        return NULL;
-    }
-
-
-    return (&phy_media_tbl[media_id]);
+    return (&phy_media_tbl[port]);
 }
 
 /* dn_phy_is_media_channel_valid validates is the channel is valied for the
@@ -556,25 +527,33 @@ static bool dn_media_obj_publish (cps_api_object_t obj)
 
 static void dn_pas_media_resource_cb (sdi_resource_hdl_t hdl, void *user_data)
 {
-    uint_t          count;
-    uint_t          *pcount = (uint_t *) user_data;
+    static uint_t count_pluggable_from_sdi = 0;
+    uint_t count_pluggable_from_config =
+        dn_pas_config_media_get()->pluggable_media_count;
+    uint_t counter = PAS_MEDIA_START_PORT;
 
     STD_ASSERT(hdl != NULL);
-    STD_ASSERT(user_data != NULL);
 
 
 
     if (sdi_resource_type_get(hdl) == SDI_RESOURCE_MEDIA) {
 
-        count = *pcount;
 
         STD_ASSERT(phy_media_tbl != NULL);
-        STD_ASSERT((count + 1) <= phy_media_count);
 
-        phy_media_tbl[++count].res_hdl = hdl;
-        phy_media_tbl[count].fp_port = count + dn_fixed_media_count_get();
+        for (; counter <= phy_media_count; counter++)
+            if (dn_pas_is_port_pluggable(counter)
+                && (phy_media_tbl[counter].res_hdl == NULL)) {
+                    phy_media_tbl[counter].res_hdl = hdl;
+                count_pluggable_from_sdi++;
+                    break;
+            }
+    }
 
-        *pcount = count;
+    if ((count_pluggable_from_sdi != count_pluggable_from_config)
+       && (counter == phy_media_count) ) {
+        PAS_ERR("Disparity between pluggable media count from SDI: %u and config: %u",
+            count_pluggable_from_sdi, count_pluggable_from_config);
     }
 
     return;
@@ -587,83 +566,46 @@ static void dn_pas_media_resource_cb (sdi_resource_hdl_t hdl, void *user_data)
 bool dn_pas_phy_media_init (void)
 {
 
-    uint_t                  ent_count = 0, res_count;
-    uint_t                  cnt;
-    sdi_entity_hdl_t        entity_hdl;
     bool                    ret = true;
     struct pas_config_media *cfg = dn_pas_config_media_get();
+    sdi_entity_hdl_t        entity_hdl;
 
-    dn_fixed_media_count_set(cfg->fixed_media_count);
+    phy_media_count = cfg->port_count;
 
-    ent_count = sdi_entity_count_get(SDI_ENTITY_SYSTEM_BOARD);
-    if (ent_count == 0) {
-        PAS_NOTICE("No entities");
+    /* Alloc +1 for easier indexing*/
+    phy_media_tbl = calloc(phy_media_count + 1, sizeof(phy_media_tbl_t));
 
-        return (true);
-    }
+    /* SYSTEM_BOARD_SLOT_NUMBER is hardcoded for now*/
+    entity_hdl = sdi_entity_lookup(SDI_ENTITY_SYSTEM_BOARD, SYSTEM_BOARD_SLOT_NUMBER );
 
-    res_count = 0;
+    STD_ASSERT(entity_hdl != NULL);
 
-    /*
-     * TODO once SDI provides entity lookup API based on my slot
-     * for system board, need to remove the loop and
-     * add the code to get local system board entity handle
-     */
-
-    for (cnt = PAS_MIN_ID; cnt <= ent_count; cnt++) {
-        entity_hdl = sdi_entity_lookup(SDI_ENTITY_SYSTEM_BOARD, cnt);
-
-        if (entity_hdl == NULL) continue;
-
-        res_count += sdi_entity_resource_count_get (entity_hdl,
-                SDI_RESOURCE_MEDIA);
-    }
-
-    phy_media_count = res_count;
-    if (phy_media_count == 0) {
-        PAS_NOTICE("No media resources");
-
-        return (true);
-    }
-
-    phy_media_tbl = calloc(res_count + 1, sizeof(phy_media_tbl_t));
-
-    if (phy_media_tbl == NULL) {
-        PAS_ERR("Failed to allocate storage");
-
-        return false;
-    }
-
-    res_count = 0;
-
-    for (cnt = PAS_MIN_ID; cnt <= ent_count; cnt++) {
-
-        entity_hdl = sdi_entity_lookup(SDI_ENTITY_SYSTEM_BOARD, cnt);
-
-        if (entity_hdl == NULL) continue;
-
-        sdi_entity_for_each_resource(entity_hdl, dn_pas_media_resource_cb,
-                &res_count);
-    }
-
-
-    if (res_count != phy_media_count) {
-
-        ret = false;
-
-        phy_media_count = 0;
-        free(phy_media_tbl);
-
-        phy_media_tbl = NULL;
-
-        PAS_ERR("Failed to initialize all resources");
-
-        return ret;
-    }
+    /* Get the media resource handles*/
+    sdi_entity_for_each_resource(entity_hdl, dn_pas_media_resource_cb,
+                (void*)cfg);
 
     ret = dn_media_data_store_init(phy_media_count);
 
     return ret;
+    }
+
+static void dn_pas_media_generate_sub_ports(struct pas_config_media* cfg_media)
+{
+    uint_t next_logical_port = PAS_MEDIA_START_PORT;
+    uint_t count             = PAS_MEDIA_START_PORT;
+
+    while (count <= cfg_media->port_count){
+
+        uint_t density = 0;
+        while (density < cfg_media->port_info_tbl[count]->port_density) {
+
+            phy_media_tbl[count].sub_port_ids[density++] = next_logical_port++;
+    }
+
+        count++;
+    }
+
+
 }
 
 /*
@@ -679,6 +621,7 @@ static bool dn_media_data_store_init (uint_t count)
     pas_media_t          *ptr = NULL;
 
     if (count < PAS_MEDIA_START_PORT) {
+        PAS_ERR("Attempt to access invalid port: %u", count);
         return false;
     }
 
@@ -694,6 +637,8 @@ static bool dn_media_data_store_init (uint_t count)
     for (cnt = PAS_MEDIA_START_PORT; cnt <= count; cnt++) {
 
         phy_media_tbl[cnt].res_data = ptr++;
+        phy_media_tbl[cnt].fp_port = cnt;
+        phy_media_tbl[cnt].port_density = cfg->port_info_tbl[cnt]->port_density;
 
         char res_key[PAS_RES_KEY_SIZE];
 
@@ -710,17 +655,59 @@ static bool dn_media_data_store_init (uint_t count)
             continue;
         }
 
+        dn_pas_media_generate_sub_ports(cfg);
+        // Set dafault parameters if not pollable/pluggable
+        if (dn_pas_is_port_pluggable(cnt) == false) {
+            phy_media_tbl[cnt].res_data->port_type    = cfg->port_info_tbl[cnt]->port_type;
+            phy_media_tbl[cnt].res_data->category     = cfg->port_info_tbl[cnt]->category;
+            phy_media_tbl[cnt].res_data->type         = cfg->port_info_tbl[cnt]->media_type;
+            phy_media_tbl[cnt].res_data->capability   = cfg->port_info_tbl[cnt]->speed;
+            phy_media_tbl[cnt].res_data->present      = cfg->port_info_tbl[cnt]->present;
+            phy_media_tbl[cnt].res_data->qualified = true;
+            }
+
+        else {
+            phy_media_tbl[cnt].res_data->port_type     = PLATFORM_PORT_TYPE_PLUGGABLE;
         phy_media_tbl[cnt].res_data->type =
             PLATFORM_MEDIA_TYPE_AR_POPTICS_NOTPRESENT;
-        dn_pas_media_capability_poll(dn_media_id_to_port(cnt), NULL);
+            dn_pas_media_capability_poll((cnt), NULL);
 
         phy_media_tbl[cnt].res_data->polling_count =
             (cnt % cfg->rtd_interval) + 1;
+        }
     }
 
     return ret;
 }
 
+bool dn_pas_media_add_port_info_to_cps_obj(cps_api_object_t obj,
+            phy_media_tbl_t* mtbl, uint_t port) {
+
+    phy_media_member_info_t temp =
+        {ident: BASE_PAS_MEDIA_PORT_DENSITY,
+         offset: offsetof(phy_media_tbl_t, port_density),
+         size:   MEMEBER_SIZEOF(phy_media_tbl_t, port_density),
+         type:   cps_api_object_ATTR_T_U32};
+
+    if (dn_pas_media_obj_attr_add(&temp, obj, mtbl) == false) {
+        PAS_ERR("Failed to add attribute to object: port density");
+        return false;
+    }
+
+    /* This is for a list. Be sure to use list adding function */
+     temp.ident  = BASE_PAS_MEDIA_SUB_PORT_ID;
+     temp.offset = offsetof(phy_media_tbl_t, sub_port_ids[0]);
+     temp.size   = MEMEBER_SIZEOF(phy_media_tbl_t, sub_port_ids[0]);
+     temp.type   = cps_api_object_ATTR_T_U32;
+
+     if (dn_pas_media_obj_attr_list_add (&temp, obj, mtbl,
+                sizeof (mtbl->sub_port_ids[0]), (int)(mtbl->port_density)) == false) {
+         PAS_ERR("Failed to add attribute list, sub_port ids, port %u", port);
+         return false;
+     }
+
+    return true;
+}
 /*dn_pas_media_data_publish creates and populates an object which need to be
  * published as based on presence state and list of attributes. This function
  * can be called by get handler or poller or media init. If handler is true
@@ -756,12 +743,26 @@ cps_api_object_t  dn_pas_media_data_publish (uint_t port,
 
                 break;
             }
+            if (dn_pas_media_add_port_info_to_cps_obj(obj, mtbl, port)==false) {
+                break;
+            }
         } else {
             cps_api_attr_id_t attr = BASE_PAS_MEDIA_PRESENT;
             if (dn_pas_media_obj_all_attr_add(media_mem_info,
                         ARRAY_SIZE(media_mem_info), &attr, 1, obj,
                         mtbl->res_data) == false) {
                 PAS_ERR("Failed to add attribute list, media absent, port %u",
+                        port
+                        );
+
+                break;
+            }
+            attr = BASE_PAS_MEDIA_PORT_TYPE;
+
+            if (dn_pas_media_obj_all_attr_add(media_mem_info,
+                        ARRAY_SIZE(media_mem_info), &attr, 1, obj,
+                        mtbl->res_data) == false) {
+                PAS_ERR("Failed to add attribute list, port type , port %u",
                         port
                         );
 
@@ -787,6 +788,9 @@ cps_api_object_t  dn_pas_media_data_publish (uint_t port,
                          mtbl->res_data) == false) {
                 PAS_ERR("Failed to add attribute list, media absent, port %u",
                         port);
+                break;
+            }
+            if (dn_pas_media_add_port_info_to_cps_obj(obj, mtbl, port)==false) {
                 break;
             }
         }
@@ -823,13 +827,12 @@ static bool dn_pas_media_channel_res_alloc (uint_t slot, uint_t port,
     uint_t                count, channel;
     pas_media_channel_t   *ch_data;
     bool                  ret = true;
-    uint_t                media_id;
 
     count = dn_pas_media_channel_count_get(pcategory);
 
-    if ((media_id = dn_port_to_media_id(port)) < PAS_MEDIA_START_PORT) {
-        PAS_ERR("Invalid media id, port(%u) to media_id(%u) conversion failed.",
-                port, media_id);
+    if (port < PAS_MEDIA_START_PORT) {
+        PAS_ERR("Invalid port id, port(%u).",
+                port);
         return false;
     }
 
@@ -860,8 +863,8 @@ static bool dn_pas_media_channel_res_alloc (uint_t slot, uint_t port,
             }
         }
 
-        phy_media_tbl[media_id].channel_cnt = count;
-        phy_media_tbl[media_id].channel_data = ch_data;
+        phy_media_tbl[port].channel_cnt = count;
+        phy_media_tbl[port].channel_data = ch_data;
     }
 
     return ret;
@@ -874,14 +877,14 @@ static bool dn_pas_media_channel_res_alloc (uint_t slot, uint_t port,
 static void dn_pas_media_channel_res_free (uint_t slot, uint_t port)
 {
 
-    uint_t         count, channel, media_id;
+    uint_t         count, channel;
 
-    if ((media_id = dn_port_to_media_id(port)) < PAS_MEDIA_START_PORT) {
-        PAS_ERR("Invalid media id, port(%u) to media_id(%u) conversion failed.",
-                port, media_id);
+    if (port < PAS_MEDIA_START_PORT) {
+        PAS_ERR("Invalid port id, port(%u).",
+                port);
         return;
     }
-    count = phy_media_tbl[media_id].channel_cnt;
+    count = phy_media_tbl[port].channel_cnt;
 
     for (channel = PAS_MEDIA_CH_START; channel < count; channel++) {
         char res_key[PAS_RES_KEY_SIZE];
@@ -889,10 +892,10 @@ static void dn_pas_media_channel_res_free (uint_t slot, uint_t port)
         dn_pas_res_removec(dn_pas_res_key_media_chan(res_key, sizeof(res_key), slot, port, channel));
     }
 
-    phy_media_tbl[media_id].channel_cnt = 0;
-    if(phy_media_tbl[media_id].channel_data)
-        free(phy_media_tbl[media_id].channel_data);
-    phy_media_tbl[media_id].channel_data = NULL;
+    phy_media_tbl[port].channel_cnt = 0;
+    if(phy_media_tbl[port].channel_data)
+        free(phy_media_tbl[port].channel_data);
+    phy_media_tbl[port].channel_data = NULL;
 }
 
 /* To poll the media presence flag, If there is any change in presence state
@@ -925,6 +928,7 @@ static bool dn_pas_media_presence_poll (uint_t port, cps_api_object_t obj)
             memset(mtbl->res_data, 0, sizeof(*(mtbl->res_data)));
             mtbl->res_data->type = PLATFORM_MEDIA_TYPE_AR_POPTICS_NOTPRESENT;
             dn_pas_media_capability_poll(port, NULL);
+            mtbl->res_data->port_type = PLATFORM_PORT_TYPE_PLUGGABLE;
         }
 
         sdi_media_module_init(mtbl->res_hdl, presence);
@@ -979,6 +983,7 @@ static bool dn_pas_media_category_poll (uint_t port, cps_api_object_t obj)
     pas_sdi_media_parameter_get(mtbl->res_hdl, SDI_FREE_SIDE_DEV_PROP,
             &mtbl->res_data->free_side_dev_prop);
 
+    mtbl->res_data->sdi_resource_hdl = mtbl->res_hdl;
     pcategory = dn_pas_category_get(mtbl->res_data);
 
     if (mtbl->res_data->category != pcategory) {
@@ -1166,6 +1171,7 @@ static bool dn_pas_media_capability_poll (uint_t port, cps_api_object_t obj)
     mtbl = dn_phy_media_entry_get(port);
     STD_ASSERT(mtbl != NULL);
 
+    if (mtbl->res_data->present == false) {
     if (pas_sdi_media_speed_get(mtbl->res_hdl, &speed) != STD_ERR_OK) {
         PAS_ERR("Failed to get media speed, port %u", port);
 
@@ -1173,13 +1179,15 @@ static bool dn_pas_media_capability_poll (uint_t port, cps_api_object_t obj)
     }
 
     capability = dn_pas_capability_conv(speed);
+    } else {
+        capability = dn_pas_media_capability_get(mtbl);
 
     struct pas_config_media *cfg = dn_pas_config_media_get();
 
-    if (cfg->lockdown && (mtbl->res_data->qualified == false)) {
-
-        if (dn_pas_is_capability_10G_plus(capability)) {
+        if (cfg->lockdown && (mtbl->res_data->qualified == false)) {
+            if (dn_pas_is_media_unsupported(mtbl->res_data)) {
             dn_pas_media_transceiver_state_set(port, cfg->lockdown);
+            }
         }
     }
 
@@ -2805,6 +2813,10 @@ void dn_pas_phy_media_poll (uint_t port, bool publish)
         return;
     }
 
+    /* Start by checking if media is pollable (pluggable)*/
+    if (!dn_pas_is_port_pluggable(port)){
+        return;
+    }
     presence = mtbl->res_data->present;
 
     obj = publish ? cps_api_object_create() : CPS_API_OBJECT_NULL;
@@ -2889,6 +2901,7 @@ void dn_pas_phy_media_poll (uint_t port, bool publish)
                         ARRAY_SIZE(media_mem_info), &attr, 1, obj,
                         mtbl->res_data);
             }
+            dn_pas_media_add_port_info_to_cps_obj(obj, mtbl, port);
 
             dn_pas_obj_key_media_set(obj, cps_api_qualifier_REALTIME, true, slot,
                     false, PAS_MEDIA_INVALID_PORT_MODULE, true, port);
@@ -2917,7 +2930,7 @@ void dn_pas_phy_media_poll_all (void *arg)
 
     for (cnt = PAS_MEDIA_START_PORT; cnt <= phy_media_count; cnt++) {
 
-        dn_pas_phy_media_poll(dn_media_id_to_port(cnt), true);
+        dn_pas_phy_media_poll(cnt, true);
 
     }
 }
@@ -2976,6 +2989,28 @@ static bool dn_pas_media_obj_attr_add (phy_media_member_info_t const *memp,
     }
 
     return ret;
+}
+
+/*
+ * dn_pas_media_obj_attr_list_add: used when one needs to add from a list (array)
+ * Example: say some struct S has an array A with N elements each of size B in bytes;
+ * memp->offset = offsetof(S, A[0]), res_data = &S, member_size = B, count = n (where n=[1,N])
+ */
+
+static bool dn_pas_media_obj_attr_list_add (phy_media_member_info_t *memp,
+        cps_api_object_t obj, void * res_data, size_t member_size, int count) {
+
+    phy_media_member_info_t* tmp = (phy_media_member_info_t*)
+                       malloc(sizeof(phy_media_member_info_t));
+    *tmp = *memp;
+    STD_ASSERT(count > 0);
+
+    while (( count-- > 0) && (dn_pas_media_obj_attr_add (tmp, obj, res_data))) {
+        tmp->offset += member_size;
+    }
+
+    free (tmp);
+    return (count == -1);
 }
 
 
@@ -3656,7 +3691,7 @@ bool dn_pas_media_module_control (uint_t port,
 
 bool dn_pas_media_lockdown_handle (bool lockdown)
 {
-    uint_t                  index, max_count, port;
+    uint_t                  max_count, port;
     phy_media_tbl_t         *mtbl;
     struct pas_config_media *cfg = dn_pas_config_media_get();
     bool                    ret = true;
@@ -3667,9 +3702,7 @@ bool dn_pas_media_lockdown_handle (bool lockdown)
 
     max_count = dn_phy_media_count_get();
 
-    for (index = PAS_MEDIA_START_PORT; index <= max_count; index++) {
-
-        port = dn_media_id_to_port(index);
+    for (port = PAS_MEDIA_START_PORT; port <= max_count; port++) {
 
         if (((mtbl = dn_phy_media_entry_get(port)) == NULL)
                 || (mtbl->res_data->present == false)){
@@ -3677,7 +3710,7 @@ bool dn_pas_media_lockdown_handle (bool lockdown)
         }
 
         if ((mtbl->res_data->qualified == false)
-                && (dn_pas_is_capability_10G_plus(mtbl->res_data->capability))){
+                && (dn_pas_is_media_unsupported(mtbl->res_data))){
             if (dn_pas_media_transceiver_state_set(port, lockdown) == false) {
                 ret = false;
             }
@@ -3803,17 +3836,15 @@ bool dn_pas_media_populate_current_data (BASE_PAS_OBJECTS_t objid,
 /** Free code */
 void dn_pas_phy_media_res_free(void)
 {
-    uint_t port, cnt, media_id;
+    uint_t port, cnt;
     uint_t slot = PAS_MEDIA_MY_SLOT;
     char   res_key[PAS_RES_KEY_SIZE];
 
-    for (media_id = PAS_MEDIA_START_PORT; media_id <= dn_phy_media_count_get();
-            media_id++) {
+    for (port = PAS_MEDIA_START_PORT; port <= dn_phy_media_count_get();
+            port++) {
 
-        port = dn_media_id_to_port(media_id);
-
-        if (phy_media_tbl[media_id].channel_data != NULL) {
-            for (cnt = PAS_MEDIA_CH_START; cnt < phy_media_tbl[media_id].channel_cnt;
+        if (phy_media_tbl[port].channel_data != NULL) {
+            for (cnt = PAS_MEDIA_CH_START; cnt < phy_media_tbl[port].channel_cnt;
                     cnt++) {
                 dn_pas_res_removec(dn_pas_res_key_media_chan(res_key,
                                                              sizeof(res_key),
@@ -3824,9 +3855,9 @@ void dn_pas_phy_media_res_free(void)
                                    );
             }
 
-            free(phy_media_tbl[media_id].channel_data);
-            phy_media_tbl[media_id].channel_data = NULL;
-            phy_media_tbl[media_id].channel_cnt = 0;
+            free(phy_media_tbl[port].channel_data);
+            phy_media_tbl[port].channel_data = NULL;
+            phy_media_tbl[port].channel_cnt = 0;
         }
 
         dn_pas_res_removec(dn_pas_res_key_media(res_key,
