@@ -227,7 +227,7 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
 
                             if ((cfg->lockdown == true)
                                     && (mtbl->res_data->qualified == false)
-                                    && dn_pas_is_media_unsupported(mtbl->res_data)
+                                    && dn_pas_is_media_unsupported(mtbl, false)  /*Do not log if unsupported */
                                     &&(status == true)) {
                                 status = false;
                             }
@@ -296,7 +296,7 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
                                         }
                                     }
 
-                                    if (dn_pas_media_channel_cdr_enable(start, ch_start, cdr_enable)
+                                    if (dn_pas_media_channel_ext_rate_select(start, ch_start, cdr_enable)
                                             == false) {
                                         ret = STD_ERR(PAS, FAIL, 0);
                                     } else {
@@ -311,8 +311,8 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
                                             speed) == false) {
                                     ret = STD_ERR(PAS, FAIL, 0);
                                 }
-                                mtbl->channel_data[ch_start].speed = speed;
                             }
+                            mtbl->channel_data[ch_start].speed = speed;
                             break;
                         }
                     case BASE_PAS_MEDIA_CHANNEL_CDR_ENABLE:
@@ -321,7 +321,7 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
                             memcpy(&cdr_enable, cps_api_object_attr_data_bin(it.attr),
                                     sizeof(cdr_enable));
 
-                            if (dn_pas_media_channel_cdr_enable(start, ch_start, cdr_enable)
+                            if (dn_pas_media_channel_ext_rate_select(start, ch_start, cdr_enable)
                                     == false) {
                                 ret = STD_ERR(PAS, FAIL, 0);
                             } else {

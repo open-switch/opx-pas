@@ -51,7 +51,8 @@ enum {
     PAS_MAC_ADDRESS_LEN       = SDI_MAC_ADDR_LEN,
     PAS_MEDIA_TRANSCEIVER_LEN = (sizeof(sdi_media_transceiver_descr_t)),
     PAS_MEDIA_VENDOR_SPFC_LEN = 32,
-    PAS_RES_KEY_SIZE          = 128
+    PAS_RES_KEY_SIZE          = 128,
+    PAS_MEDIA_MAX_CAPABILITIES= 10
 };
 
 
@@ -430,6 +431,18 @@ typedef struct _pas_port_module_t {
     pas_oper_fault_state_t       oper_fault_state[1];
 } pas_port_module_t;
 
+/*
+ * media_capability_t structure is to hold speed/mode related info
+ * to be published to other services
+ * NOTE: some info in this struct might be duplicated elsewhere
+ */
+
+typedef struct _media_capability_t {
+    BASE_IF_SPEED_t              media_speed;
+    BASE_CMN_BREAKOUT_TYPE_t     breakout_mode;
+    BASE_IF_SPEED_t              breakout_speed;
+    BASE_IF_PHY_MODE_TYPE_t      phy_mode;
+} media_capability_t;
 
 /*
  * pas_media_t structure is to hold physical media resource
@@ -448,11 +461,15 @@ typedef struct _pas_media_t {
     BASE_CMN_OPER_STATUS_TYPE_t  oper_status;
     PLATFORM_MEDIA_SUPPORT_STATUS_t
                                  support_status;
+    bool                         lockdown_state;
     PLATFORM_FAULT_TYPE_t        fault_type;
     PLATFORM_PORT_TYPE_t         port_type;
     PLATFORM_MEDIA_CATEGORY_t    category;
     PLATFORM_MEDIA_TYPE_t        type;
     BASE_IF_SPEED_t              capability;
+    media_capability_t           media_capabilities[PAS_MEDIA_MAX_CAPABILITIES];
+    uint_t                       default_media_capability_index;
+    uint_t                       media_capability_count;
     char                         vendor_id [SDI_MEDIA_MAX_VENDOR_OUI_LEN];
     char                         serial_number [SDI_MEDIA_MAX_VENDOR_SERIAL_NUMBER_LEN];
     bool                         qualified;

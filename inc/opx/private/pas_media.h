@@ -41,6 +41,7 @@ enum {
     PAS_MIN_ID                      =  1,
     PAS_MEDIA_INVALID_PORT_MODULE   =  0,
     PAS_MEDIA_INVALID_PORT          =  0,
+    PAS_MEDIA_DEFAULT_BREAKOUT_MODE =  BASE_CMN_BREAKOUT_TYPE_BREAKOUT_UNKNOWN,
     PAS_MEDIA_START_PORT            =  1, /* port starts with 1 */
     PAS_MEDIA_CH_START              =  0, /* Channel numbering starts with 1 */
     PAS_MEDIA_INST_KEY_LEN          =  2, /* Key Length, instance part of media obj */
@@ -93,7 +94,6 @@ typedef enum {
     QSFP_TRANS_TECH_UNKNOWN
 } pas_qsfp_tx_tech_t;
 
-
 /*
  * phy_media_tbl_t is to hold sdi handle, resource data address
  * and chaneel info per port and will used for faster access.
@@ -102,6 +102,8 @@ typedef enum {
 typedef struct _phy_media_tbl_t {
     sdi_resource_hdl_t     res_hdl;
     uint_t                 fp_port;
+    BASE_IF_SPEED_t        max_port_speed;
+    char                   port_str[PAS_MEDIA_PORT_STR_BUF_LEN];
     uint_t                 sub_port_ids[PAS_MEDIA_MAX_PORT_DENSITY]; /* actual list size is port_density*/
     uint_t                 port_density;
     pas_media_t            *res_data;
@@ -164,12 +166,30 @@ typedef struct _sfp_gigetype_to_type_map_t {
 
 
 /*
+ * Get breakout info from media type
+ */
+typedef struct _media_type_to_breakout_map_t {
+    PLATFORM_MEDIA_TYPE_t    type;
+    BASE_CMN_BREAKOUT_TYPE_t breakout_mode;
+    BASE_IF_SPEED_t          media_speed;
+    BASE_IF_SPEED_t          breakout_speed;
+} media_type_to_breakout_map_t;
+
+/*
  * Function declarations of phy media.
  */
 
 bool dn_pas_phy_media_init (void);
 
 bool dn_pas_is_port_pluggable(uint_t port);
+
+char* dn_pas_media_generate_port_str(phy_media_tbl_t *mtbl);
+
+bool dn_pas_media_set_capability_values(media_capability_t* cap,
+                                        BASE_IF_SPEED_t          media_speed,
+                                        BASE_CMN_BREAKOUT_TYPE_t breakout_mode,
+                                        BASE_IF_SPEED_t          breakout_speed,
+                                        BASE_IF_PHY_MODE_TYPE_t  phy_mode);
 
 bool dn_pas_is_media_present(uint_t port);
 
@@ -185,6 +205,16 @@ void dn_pas_phy_media_poll_all (void *arg);
 
 uint_t dn_phy_media_count_get (void);
 
+uint_t dn_pas_media_construct_media_capabilities(phy_media_tbl_t *mtbl);
+
+bool dn_pas_media_is_connector_separable(phy_media_tbl_t *mtbl);
+
+BASE_IF_PHY_MODE_TYPE_t dn_pas_media_get_phy_mode_from_speed (BASE_IF_SPEED_t speed);
+
+BASE_IF_SPEED_t dn_pas_media_convert_num_to_speed (
+                    uint_t num, BASE_IF_PHY_MODE_TYPE_t phy_mode);
+
+uint_t dn_pas_media_convert_speed_to_num (BASE_IF_SPEED_t speed);
 
 phy_media_tbl_t * dn_phy_media_entry_get(uint_t port);
 
@@ -198,9 +228,7 @@ sdi_media_speed_t dn_pas_to_sdi_capability_conv (BASE_IF_SPEED_t speed);
 
 sdi_media_type_t dn_pas_to_sdi_type_conv (PLATFORM_MEDIA_TYPE_t type);
 
-bool dn_pas_is_capability_10G_plus (BASE_IF_SPEED_t capability);
-
-bool dn_pas_is_media_unsupported (pas_media_t *res_data);
+bool dn_pas_is_media_unsupported (phy_media_tbl_t *mtbl, bool log_msg);
 
 BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl);
 bool dn_pas_is_media_type_supported_in_fp (uint_t port,
@@ -218,6 +246,13 @@ bool dn_pas_channel_get (cps_api_qualifier_t qualifier,
 
 bool dn_pas_port_channel_get (cps_api_qualifier_t qualifier, uint_t slot,
         uint_t port, cps_api_get_params_t *param, cps_api_object_t req_obj);
+
+/*
+ * dn_pas_media_channel_ext_rate_select to set extended rate select bits per channel.
+ */
+
+bool dn_pas_media_channel_ext_rate_select (uint_t port, uint_t channel, bool enable);
+
 /*
  * _pas_media_channel_cdr_enable is to handle CDR enable/disable per channel.
  */
@@ -283,5 +318,9 @@ bool dn_pas_media_wavelength_set (uint_t port);
  */
 bool dn_pas_media_wavelength_config_set (uint_t port, float value,
         cps_api_operation_types_t operation);
+/*
+ * pas_media_fw_rev_get function to get firmware revision of the media.
+ */
+sdi_media_fw_rev_t pas_media_fw_rev_get (pas_media_t *res_data);
 
 #endif  //__PAS_DATA_STORE_H

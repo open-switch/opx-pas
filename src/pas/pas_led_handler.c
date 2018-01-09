@@ -16,8 +16,8 @@
 
 /*
  * filename: pas_led_handler.c
- */ 
-     
+ */
+
 #include "private/pas_main.h"
 #include "private/pald.h"
 #include "private/pas_log.h"
@@ -28,6 +28,15 @@
 #include "private/pas_utils.h"
 #include "private/pas_config.h"
 #include "private/dn_pas.h"
+
+#include "cps_api_errors.h"
+#include "cps_api_events.h"
+#include "cps_api_object.h"
+#include "cps_api_object_key.h"
+#include "cps_api_object_tools.h"
+#include "cps_api_operation.h"
+#include "cps_api_operation_tools.h"
+#include "cps_class_map.h"
 
 #include "std_error_codes.h"
 #include "sdi_led.h"
@@ -47,7 +56,7 @@ static t_std_error dn_pas_led_get1(
                                    )
 {
     cps_api_object_t resp_obj;
-        
+
     /* Compose respose object */
 
     resp_obj = cps_api_object_create();
@@ -68,17 +77,17 @@ static t_std_error dn_pas_led_get1(
                                BASE_PAS_LED_OPER_STATUS,
                                rec->oper_fault_state->oper_status
                                );
-    
+
     cps_api_object_attr_add_u8(resp_obj,
                                BASE_PAS_LED_FAULT_TYPE,
                                rec->oper_fault_state->fault_type
                                );
-    
+
     cps_api_object_attr_add_u8(resp_obj,
                                BASE_PAS_LED_ON,
                                rec->req_on != 0
                                );
-    
+
     /* Add response object to get response */
 
     if (!cps_api_object_list_append(param->list, resp_obj)) {
@@ -111,10 +120,10 @@ t_std_error dn_pas_led_get(cps_api_get_params_t * param, size_t key_idx)
                            &led_name_valid,
                            led_name, sizeof(led_name)
                            );
-    
+
     for (i = 0; (e = dn_pas_config_entity_get_idx(i)) != 0; ++i) {
         if (entity_type_valid && e->entity_type != entity_type)  continue;
-        
+
         if (slot_valid) {
             slot_start = slot_limit = slot;
         } else {
@@ -128,7 +137,7 @@ t_std_error dn_pas_led_get(cps_api_get_params_t * param, size_t key_idx)
                 if (led_rec == 0)  continue;
 
                 dn_pas_led_get1(param, qual, led_rec);
-                
+
                 continue;
             }
 
@@ -202,7 +211,7 @@ static t_std_error dn_pas_led_set1(
         pas_led_t *grec;
         char      *gname;
         bool      sdi_on;
-        
+
         gname = dn_pas_config_led_group_iter_name(iter);
 
         grec = dn_pas_led_rec_get_name(rec->parent->entity_type,
@@ -216,10 +225,10 @@ static t_std_error dn_pas_led_set1(
         sdi_on = on_foundf ? false : grec->req_on;
 
         if (!grec->sdi_on_valid || grec->sdi_on != sdi_on) {
-            
+
             /* New SDI state != current SDI state */
             dn_pas_lock();
-    
+
             if(!dn_pald_diag_mode_get()) {
 
                 grec->sdi_on       = sdi_on; /* Update SDI state */
@@ -227,11 +236,11 @@ static t_std_error dn_pas_led_set1(
 
                 if (!on_foundf) {
                 /* Haven't higher pri LED on => Set state in SDI */
-        
+
                     (*(grec->sdi_on ? sdi_led_on : sdi_led_off))(grec->sdi_resource_hdl);
                 }
             }
-            
+
             dn_pas_unlock();
         }
 
@@ -294,7 +303,7 @@ t_std_error dn_pas_led_set(cps_api_transaction_params_t *param, cps_api_object_t
                 if (led_rec == 0)  continue;
 
                 dn_pas_led_set1(param, qual, led_rec, on_valid, on);
-                
+
                 continue;
             }
 
@@ -311,4 +320,60 @@ t_std_error dn_pas_led_set(cps_api_transaction_params_t *param, cps_api_object_t
     }
 
     return (STD_ERR_OK);
+}
+
+t_std_error dn_pas_generic_led_set(uint_t entity_type,
+        uint_t slot,
+        char   *led_name,
+        bool  led_state
+        )
+{
+    t_std_error                ret = STD_ERR_OK;
+    cps_api_object_t                obj;
+    cps_api_transaction_params_t    trans;
+
+    // Transaction initialize....
+
+    if (cps_api_transaction_init(&trans) != cps_api_ret_code_OK) {
+        return (STD_ERR(PAS, FAIL, 0));
+    }
+
+    obj = cps_api_object_create();
+    if (obj == CPS_API_OBJECT_NULL) {
+        PAS_ERR("cps_api_object_create() failed");
+        return (STD_ERR(PAS, NOMEM, 0));
+    }
+
+    dn_pas_obj_key_led_set(obj,
+            cps_api_qualifier_TARGET,
+            true, entity_type,
+            true, slot,
+            true, led_name
+            );
+
+    do {
+        if( !cps_api_object_attr_add_u8(obj, BASE_PAS_LED_ON, led_state )) {
+            PAS_ERR (" Attribute Add Failure ");
+            ret = STD_ERR(PAS, FAIL, 0);
+        }
+
+        if (cps_api_set(&trans, obj) != cps_api_ret_code_OK) {
+            PAS_ERR("cps_api_object_set() failed");
+            ret = STD_ERR(PAS, FAIL, 0);
+        }
+
+        if (cps_api_commit(&trans) != cps_api_ret_code_OK) {
+            PAS_ERR("cps_api_commit(() failed");
+            ret = STD_ERR(PAS, FAIL, 0);
+        }
+
+    } while (false);
+
+    cps_api_transaction_close (&trans);
+
+    if(obj !=NULL) {
+        cps_api_object_delete(obj);
+    }
+
+    return ret;
 }

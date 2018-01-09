@@ -46,6 +46,8 @@ static const sdi_to_pas_map_t id_to_category [] = {
     {0x18, PLATFORM_MEDIA_CATEGORY_QSFP_DD}
 };
 
+uint_t dn_pas_media_convert_speed_to_num (BASE_IF_SPEED_t speed);
+
 /*
  * SDI speed types to BASE interface speed types map table.
  */
@@ -82,7 +84,7 @@ static const sdi_to_pas_map_t channel_count [] = {
     {PLATFORM_MEDIA_CATEGORY_QSFP28, 4},
     {PLATFORM_MEDIA_CATEGORY_CXP28, 4},
     {PLATFORM_MEDIA_CATEGORY_QSFP_DD, 8},
-    {PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28, 1}
+    {PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28, 2}
 };
 
 /*
@@ -258,6 +260,10 @@ static const media_type_map_t media_depop_qsfp28_type_tbl [] = {
 static const media_type_map_t media_qsfp28_dd_type_tbl [] = {
     {1, 1, 1, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_SR4},
+    {4, 0, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CWDM4},
+    {5, 0, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_PSM4_IR},
     {8, 1, 1, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_LPBK},
     {9, 0, 1, 1,
@@ -276,6 +282,10 @@ static const media_type_map_t media_qsfp28_dd_type_tbl [] = {
         PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4_2M},
     {9, 0, 2, 3,
         PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4_3M},
+    {9, 0, 2, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4},
+    {9, 0, 3, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_CR1},
     {9, 0, 3, 1,
         PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_CR4_1M},
     {9, 0, 3, 2,
@@ -286,8 +296,18 @@ static const media_type_map_t media_qsfp28_dd_type_tbl [] = {
         PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_HALFM},
     {9, 8, 1, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_1_HALFM},
+    {9, 8, 2, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4_1_HALFM},
+    {9, 8, 3, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_CR4_1_HALFM},
     {9, 9, 1, MEDIA_LENGTH_DONT_CARE,
-        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_2_HALFM}
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_2_HALFM},
+    {10, 0, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_2SR4_AOC},
+    {10, 0, 2, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_SR4_AOC},
+    {10, 0, 3, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_2SR4_AOC}
 };
 
 static const media_type_map_t media_sfp28_type_tbl [] = {
@@ -396,6 +416,134 @@ static const sdi_to_pas_map_t  media_sfp_gige_type_tbl [] = {
     {0x40, PLATFORM_MEDIA_TYPE_SFP_BX10},
     {0x80, PLATFORM_MEDIA_TYPE_SFP_PX}
 };
+
+static const media_type_to_breakout_map_t media_type_to_breakout_tbl[] = {
+    {PLATFORM_MEDIA_TYPE_QSFPPLUS_4X16_16GBASE_FC_SW,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_64GFC,
+            BASE_IF_SPEED_16GFC},
+    {PLATFORM_MEDIA_TYPE_QSFPPLUS_4X16_16GBASE_FC_LW,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_64GFC,
+            BASE_IF_SPEED_16GFC},
+    {PLATFORM_MEDIA_TYPE_QSFP28_4X32_32GBASE_FC_SW,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_128GFC,
+            BASE_IF_SPEED_32GFC},
+    {PLATFORM_MEDIA_TYPE_QSFP28_4X32_32GBASE_FC_LW,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_128GFC,
+            BASE_IF_SPEED_32GFC},
+
+
+    {PLATFORM_MEDIA_TYPE_AR_4X1_1000BASE_T,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_4GIGE,
+            BASE_IF_SPEED_4GIGE},
+
+
+    {PLATFORM_MEDIA_TYPE_AR_4X10_10GBASE_CR1_HALFM,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_40GIGE,
+            BASE_IF_SPEED_10GIGE},
+    {PLATFORM_MEDIA_TYPE_AR_4X10_10GBASE_CR1_1M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_40GIGE,
+            BASE_IF_SPEED_10GIGE},
+    {PLATFORM_MEDIA_TYPE_AR_4X10_10GBASE_CR1_3M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_40GIGE,
+            BASE_IF_SPEED_10GIGE},
+    {PLATFORM_MEDIA_TYPE_AR_4X10_10GBASE_CR1_5M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_40GIGE,
+            BASE_IF_SPEED_10GIGE},
+    {PLATFORM_MEDIA_TYPE_AR_4X10_10GBASE_CR1_7M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_40GIGE,
+            BASE_IF_SPEED_10GIGE},
+    {PLATFORM_MEDIA_TYPE_4X_10GBASE_SR_AOCXXM,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_40GIGE,
+            BASE_IF_SPEED_10GIGE},
+
+
+    {PLATFORM_MEDIA_TYPE_4X25_25GBASE_CR1,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_25GIGE},
+    {PLATFORM_MEDIA_TYPE_4X25_25GBASE_CR1_HALFM,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_25GIGE},
+    {PLATFORM_MEDIA_TYPE_4X25_25GBASE_CR1_1M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_25GIGE},
+    {PLATFORM_MEDIA_TYPE_4X25_25GBASE_CR1_2M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_25GIGE},
+    {PLATFORM_MEDIA_TYPE_4X25_25GBASE_CR1_3M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_25GIGE},
+    {PLATFORM_MEDIA_TYPE_4X25_25GBASE_CR1_4M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_25GIGE},
+
+
+    /* Is this 2x1 or 2x2 ?*/
+    /* Free side value is 0x50 which is 2x2 by MSA spec */
+    {PLATFORM_MEDIA_TYPE_2X50_50GBASE_CR2,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X2, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_50GIGE},
+    {PLATFORM_MEDIA_TYPE_2X50_50GBASE_CR2_HALFM,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X2, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_50GIGE},
+    {PLATFORM_MEDIA_TYPE_2X50_50GBASE_CR2_1M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X2, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_50GIGE},
+    {PLATFORM_MEDIA_TYPE_2X50_50GBASE_CR2_2M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X2, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_50GIGE},
+    {PLATFORM_MEDIA_TYPE_2X50_50GBASE_CR2_3M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X2, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_50GIGE},
+    {PLATFORM_MEDIA_TYPE_2X50_50GBASE_CR2_4M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X2, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_50GIGE},
+
+
+    /* Is this 2x1 or 2x2 ?*/
+    /* Is octopus 8x2 or two 4x1 ? */
+    /* Is media speed 200 or 100 ? */
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4_1M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X1, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_100GIGE},
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4_2M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X1, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_100GIGE},
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4_3M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X1, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_100GIGE},
+
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X1, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_100GIGE},
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_CR4_1_HALFM,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X1, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_100GIGE},
+
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_CR4_1M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X2, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_25GIGE},
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_CR4_2M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X2, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_25GIGE},
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_CR4_3M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X2, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_25GIGE},
+
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_CR4_1_HALFM,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X2, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_25GIGE},
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_CR4_1M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X2, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_25GIGE},
+
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_2X100GBASE_SR4_AOC,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X1, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_100GIGE},
+    {PLATFORM_MEDIA_TYPE_QSFP28_DD_8X25GBASE_2SR4_AOC,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X2, BASE_IF_SPEED_200GIGE,
+            BASE_IF_SPEED_25GIGE}
+};
+
 
 /*
  * dn_pas_media_type_config_get function return's config entry
@@ -833,8 +981,10 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_std_optics_type_get (pas_media_t *res_data)
         } else if (trans_desc->sfp_descr.sdi_sfp_fc_media == 0x01) {
             switch(dn_pas_max_fc_supported_speed(trans_desc->sfp_descr.sdi_sfp_fc_speed)) {
                 case BASE_IF_SPEED_8GFC:
+                    res_data->capability = BASE_IF_SPEED_8GFC;
                     return PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_LW;
                 case BASE_IF_SPEED_16GFC:
+                    res_data->capability = BASE_IF_SPEED_16GFC;
                     return PLATFORM_MEDIA_TYPE_SFPPLUS_16GBASE_FC_LW;
                 default:
                     return PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
@@ -842,8 +992,10 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_std_optics_type_get (pas_media_t *res_data)
         } else if (trans_desc->sfp_descr.sdi_sfp_fc_media & 0x04) {
             switch(dn_pas_max_fc_supported_speed(trans_desc->sfp_descr.sdi_sfp_fc_speed)) {
                 case BASE_IF_SPEED_8GFC:
+                    res_data->capability = BASE_IF_SPEED_8GFC;
                     return PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_SW;
                 case BASE_IF_SPEED_16GFC:
+                    res_data->capability = BASE_IF_SPEED_16GFC;
                     return PLATFORM_MEDIA_TYPE_SFPPLUS_16GBASE_FC_SW;
                 default:
                     return PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
@@ -852,7 +1004,7 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_std_optics_type_get (pas_media_t *res_data)
     } else if (res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD) {
         /* \todo add extra support for handling QSFP-DD media types. */
         uint_t length = res_data->length_cable;
-        /* This used the information in the "options' field when the Dell string fails*/
+        /* This uses the information in the "options' field when the qualifier string fails*/
         /* Relevant data is upper byte of 32 bits */
         switch((char)( (res_data->options >> 24) & 0xFF) ){
             /* 2xCR4 */
@@ -866,6 +1018,8 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_std_optics_type_get (pas_media_t *res_data)
                         return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_3M;
                     case 0x05:
                         return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4_5M;
+                    default:
+                        return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CR4;
                 }
             break;
             /* 2xSR4 */
@@ -873,17 +1027,19 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_std_optics_type_get (pas_media_t *res_data)
                     return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_SR4;
             break;
 
-            /* The following have yet to be added */
             /* 2xLR4 */
             case 0x03:
+                return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_2SR4_AOC;
             break;
 
             /* 2xCWDM4 */
             case 0x06:
+                return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_CWDM4;
             break;
 
             /* 2xPSM4 */
             case 0x07:
+                return PLATFORM_MEDIA_TYPE_QSFP28_DD_200GBASE_PSM4_IR;
             break;
 
             /* Unkown or not yet supported*/
@@ -1059,28 +1215,10 @@ sdi_media_type_t dn_pas_to_sdi_type_conv (PLATFORM_MEDIA_TYPE_t type)
 }
 
 /*
- * dn_pas_is_capability_10G_plus function return true if the
- * capability is more than 10G.
- */
-
-bool dn_pas_is_capability_10G_plus (BASE_IF_SPEED_t capability)
-{
-    switch (capability) {
-        case BASE_IF_SPEED_10MBPS:
-        case BASE_IF_SPEED_100MBPS:
-        case BASE_IF_SPEED_1GIGE:
-        case BASE_IF_SPEED_10GIGE:
-            return false;
-        case BASE_IF_SPEED_25GIGE:
-        case BASE_IF_SPEED_40GIGE:
-        case BASE_IF_SPEED_100GIGE:
-        default:
-            return true;
-    }
-}
-
-/*
  * dn_pas_media_capability_get is to get the media capability
+ *
+ * When non separable media with fc features is detected, eth speed is chosen
+ * This will be changed when multi-mode support us enabled 
  */
 
 BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
@@ -1098,8 +1236,8 @@ BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
                         != PAS_SFP_INVALID_GIGE_CODE)
                     && (trans_desc->sfp_descr.sdi_sfp_fc_media
                         != PAS_SFP_INVALID_GIGE_CODE)) {
-                if (res_data->connector == 0x21){
-                    PAS_ERR("Invalid FC capability on port %u. Will ignore.",
+                if (!dn_pas_media_is_connector_separable(mtbl)){
+                    PAS_TRACE("Dual mode media on port %u. Will use ethernet",
                     mtbl->fp_port);
                     break;
                 }
@@ -1112,8 +1250,8 @@ BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
                         != PAS_SFP_INVALID_GIGE_CODE)
                     && (trans_desc->sfp_descr.sdi_sfp_fc_media
                         != PAS_SFP_INVALID_GIGE_CODE)) {
-                if (res_data->connector == 0x21){
-                    PAS_ERR("Invalid FC capability on port %u. Will ignore.",
+                if (!dn_pas_media_is_connector_separable(mtbl)){
+                    PAS_TRACE("Dual mode media on port %u. Will use ethernet",
                     mtbl->fp_port);
                     break;
                 }
@@ -1126,6 +1264,11 @@ BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
                         != PAS_SFP_INVALID_GIGE_CODE)
                     && (trans_desc->sfp_descr.sdi_sfp_fc_media
                         != PAS_SFP_INVALID_GIGE_CODE)) {
+                if (!dn_pas_media_is_connector_separable(mtbl)){
+                    PAS_TRACE("Dual mode media on port %u. Will use ethernet",
+                    mtbl->fp_port);
+                    break;
+                }
                 fc_speed = trans_desc->sfp_descr.sdi_sfp_fc_speed;
             }
             break;
@@ -1136,6 +1279,11 @@ BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
                         == PAS_SFP_INVALID_GIGE_CODE)
                     && (trans_desc->qsfp_descr.sdi_qsfp_fc_media
                         == PAS_SFP_INVALID_GIGE_CODE)) {
+                if (!dn_pas_media_is_connector_separable(mtbl)){
+                    PAS_TRACE("Dual mode media on port %u. Will use ethernet",
+                    mtbl->fp_port);
+                    break;
+                }
                 fc_speed = trans_desc->qsfp_descr.sdi_qsfp_fc_speed;
             }
             break;
@@ -1145,6 +1293,11 @@ BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
                         == PAS_SFP_INVALID_GIGE_CODE)
                     && (trans_desc->qsfp_descr.sdi_qsfp_fc_media
                         == PAS_SFP_INVALID_GIGE_CODE)) {
+                if (!dn_pas_media_is_connector_separable(mtbl)){
+                    PAS_TRACE("Dual mode media on port %u. Will use ethernet",
+                    mtbl->fp_port);
+                    break;
+                }
                 fc_speed = trans_desc->qsfp_descr.sdi_qsfp_fc_speed;
             }
             break;
@@ -1154,6 +1307,11 @@ BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
                         == PAS_SFP_INVALID_GIGE_CODE)
                     && (trans_desc->qsfp_descr.sdi_qsfp_fc_media
                         == PAS_SFP_INVALID_GIGE_CODE)) {
+                if (!dn_pas_media_is_connector_separable(mtbl)){
+                    PAS_TRACE("Dual mode media on port %u. Will use ethernet",
+                    mtbl->fp_port);
+                    break;
+                }
                 fc_speed = trans_desc->qsfp_descr.sdi_qsfp_fc_speed;
             }
             break;
@@ -1163,6 +1321,11 @@ BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
                         == PAS_SFP_INVALID_GIGE_CODE)
                     && (trans_desc->qsfp_descr.sdi_qsfp_fc_media
                         == PAS_SFP_INVALID_GIGE_CODE)) {
+                if (!dn_pas_media_is_connector_separable(mtbl)){
+                    PAS_TRACE("Dual mode media on port %u. Will use ethernet",
+                    mtbl->fp_port);
+                    break;
+                }
                 fc_speed = trans_desc->qsfp_descr.sdi_qsfp_fc_speed;
             }
             break;
@@ -1178,51 +1341,403 @@ BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
 
 /*
  * dn_pas_is_media_unsupported is to identify media needs to be supported or not
+ * with the option of logging why the media is not supported
  */
 
-bool dn_pas_is_media_unsupported (pas_media_t *res_data)
+bool dn_pas_is_media_unsupported (phy_media_tbl_t *mtbl, bool log_msg)
 {
-    bool  ret = true;
-    sdi_media_transceiver_descr_t *trans_desc =
-        (sdi_media_transceiver_descr_t *) res_data->transceiver;
+    /* If the media is separable (optics) and speed > 10G *
+       Need to convert speeds to numbers so as to perform math/comparison operations */
+    bool result = false;
+    bool separable = false;
+    uint speed_in_num = 0;
+    uint reference_speed_in_num
+               = dn_pas_media_convert_speed_to_num(BASE_IF_SPEED_10GIGE);
 
-    switch (res_data->category) {
-        case PLATFORM_MEDIA_CATEGORY_SFP:
-        case PLATFORM_MEDIA_CATEGORY_SFP_PLUS:
-            if ((res_data->connector == 0x21)
-                    || ((trans_desc->sfp_descr.sdi_sfp_fc_technology
-                        == PAS_SFP_INVALID_GIGE_CODE)
-                    && (trans_desc->sfp_descr.sdi_sfp_fc_media
-                        == PAS_SFP_INVALID_GIGE_CODE)
-                    && (trans_desc->sfp_descr.sdi_sfp_fc_speed
-                        == PAS_SFP_INVALID_GIGE_CODE))) {
-                ret = false;
-            }
-            break;
-        case PLATFORM_MEDIA_CATEGORY_SFP28:
-            if ((res_data->connector == 0x23)
-                    || (res_data->ext_transceiver == 0x1)) {
-               ret = false;
-            } 
-            break;
-        case PLATFORM_MEDIA_CATEGORY_QSFP:
-        case PLATFORM_MEDIA_CATEGORY_QSFP_PLUS:
-        case PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28:
-            if ((res_data->connector == 0x23)
-                        || (trans_desc->qsfp_descr.sdi_qsfp_eth_1040g_code == 0x1)) {
-                ret = false;
-            }
-            break;
-        case PLATFORM_MEDIA_CATEGORY_QSFP28:
-        case PLATFORM_MEDIA_CATEGORY_QSFP_DD:
-            if (((res_data->options >> QSFP28_OPTION1_BIT_SHIFT) &
-                        (QSFP28_OPTION1_BIT_MASK)) == QSFP_100GBASE_AOC) {
-                ret = false;
-            }
-            break;
+    separable = dn_pas_media_is_connector_separable(mtbl);
+    speed_in_num = dn_pas_media_convert_speed_to_num(mtbl->res_data->capability);
+
+    result = (separable) && (speed_in_num > reference_speed_in_num);
+    
+    return result;
+}
+
+BASE_IF_PHY_MODE_TYPE_t dn_pas_media_get_phy_mode_from_speed (BASE_IF_SPEED_t speed)
+{
+    switch (speed) {
+        case BASE_IF_SPEED_1GFC:
+        case BASE_IF_SPEED_2GFC:
+        case BASE_IF_SPEED_4GFC:
+        case BASE_IF_SPEED_8GFC:
+        case BASE_IF_SPEED_16GFC:
+        case BASE_IF_SPEED_32GFC:
+        case BASE_IF_SPEED_64GFC:
+        case BASE_IF_SPEED_128GFC:
+           return BASE_IF_PHY_MODE_TYPE_FC;
         default:
-            break;
+           return BASE_IF_PHY_MODE_TYPE_ETHERNET;
     }
-    return ret;
+}
+
+BASE_IF_SPEED_t dn_pas_media_convert_num_to_speed (
+                    uint_t num, BASE_IF_PHY_MODE_TYPE_t phy_mode)
+{
+    switch (num) {
+        case 0:
+           return BASE_IF_SPEED_0MBPS;
+        case 1:
+           return (phy_mode == BASE_IF_PHY_MODE_TYPE_ETHERNET)
+                   ? BASE_IF_SPEED_1GIGE
+                   : BASE_IF_SPEED_1GFC;
+        case 2:
+           return BASE_IF_SPEED_2GFC;
+        case 4:
+           return (phy_mode == BASE_IF_PHY_MODE_TYPE_ETHERNET)
+                   ? BASE_IF_SPEED_4GIGE
+                   : BASE_IF_SPEED_4GFC;
+        case 8:
+           return BASE_IF_SPEED_8GFC;
+        case 10:
+           return BASE_IF_SPEED_10GIGE;
+        case 16:
+           return BASE_IF_SPEED_16GFC;
+        case 20:
+           return BASE_IF_SPEED_20GIGE;
+        case 25:
+           return BASE_IF_SPEED_25GIGE;
+        case 32:
+           return BASE_IF_SPEED_32GFC;
+        case 40:
+           return BASE_IF_SPEED_40GIGE;
+        case 50:
+           return BASE_IF_SPEED_50GIGE;
+        case 64:
+           return BASE_IF_SPEED_64GFC;
+        case 100:
+           return BASE_IF_SPEED_100GIGE;
+        case 128:
+           return BASE_IF_SPEED_128GFC;
+        case 200:
+           return BASE_IF_SPEED_200GIGE;
+        case 400:
+           return BASE_IF_SPEED_400GIGE;
+        default:
+           PAS_ERR("Invalid number to speed conversion. Willl abort");
+           return BASE_IF_SPEED_0MBPS;
+    }
+}
+
+
+uint_t dn_pas_media_convert_speed_to_num (BASE_IF_SPEED_t speed)
+{
+    switch (speed) {
+        case BASE_IF_SPEED_0MBPS:
+           return 0;
+        case BASE_IF_SPEED_1GIGE:
+        case BASE_IF_SPEED_1GFC:
+           return 1;
+        case BASE_IF_SPEED_2GFC:
+           return 2;
+        case BASE_IF_SPEED_4GFC:
+        case BASE_IF_SPEED_4GIGE:
+           return 4;
+        case BASE_IF_SPEED_8GFC:
+           return 8;
+        case BASE_IF_SPEED_10GIGE:
+           return 10;
+        case BASE_IF_SPEED_16GFC:
+           return 16;
+        case BASE_IF_SPEED_20GIGE:
+           return 20;
+        case BASE_IF_SPEED_25GIGE:
+           return 25;
+        case BASE_IF_SPEED_32GFC:
+           return 32;
+        case BASE_IF_SPEED_40GIGE:
+           return 40;
+        case BASE_IF_SPEED_50GIGE:
+           return 50;
+        case BASE_IF_SPEED_64GFC:
+           return 64;
+        case BASE_IF_SPEED_100GIGE:
+           return 100;
+        case BASE_IF_SPEED_128GFC:
+           return 100;
+        case BASE_IF_SPEED_200GIGE:
+           return 200;
+        case BASE_IF_SPEED_400GIGE:
+           return 400;
+        default:
+           PAS_ERR("Invalid speed to number conversion. Willl abort");
+           return 0;
+    }
+}
+
+bool dn_pas_media_is_physical_breakout_valid (pas_media_t* res_data)
+{ 
+    if ((res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_PLUS)
+       || (res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28)
+     /*|| (res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD) //Not yet supported  */
+       || (res_data->category == PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28)) {
+        return true;
+    }
+    return false;
+}
+
+BASE_IF_SPEED_t dn_pas_media_resolve_breakout_speed(BASE_IF_SPEED_t media_speed, 
+                    BASE_CMN_BREAKOUT_TYPE_t brk)
+{
+    uint_t divisor = 1;
+    BASE_IF_PHY_MODE_TYPE_t phy_mode = dn_pas_media_get_phy_mode_from_speed(
+                                           media_speed);
+
+    switch (brk) {
+        case BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X2:
+            divisor = 8;
+            break;
+        case BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X2:
+        case BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1:
+            divisor = 4;
+            break;
+        case BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X2:
+        case BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X1:
+            divisor = 2;
+            break;
+        case BASE_CMN_BREAKOUT_TYPE_BREAKOUT_1X1:
+        default:
+            divisor = 1;
+    }
+    return dn_pas_media_convert_num_to_speed(
+               dn_pas_media_convert_speed_to_num(media_speed) / divisor, phy_mode);
+}
+
+media_type_to_breakout_map_t* dn_pas_media_find_breakout_info(
+                                   PLATFORM_MEDIA_TYPE_t type,
+                                   const media_type_to_breakout_map_t* tbl,
+                                   size_t len)
+{
+    size_t count = 0;
+    while (count < len) {
+        if (tbl[count].type == type){
+            return (media_type_to_breakout_map_t*) &tbl[count];
+        }
+        count++;
+    }
+    return NULL;
+}
+
+/* This uses a media_speed and media table to assign other breakout info*/
+
+BASE_CMN_BREAKOUT_TYPE_t dn_pas_media_get_default_breakout_info(
+                                       media_capability_t* cap,
+                                       phy_media_tbl_t *mtbl)
+{
+    BASE_CMN_BREAKOUT_TYPE_t brk = BASE_CMN_BREAKOUT_TYPE_BREAKOUT_UNKNOWN;
+    BASE_IF_SPEED_t media_speed = BASE_IF_SPEED_0MBPS;
+    BASE_IF_SPEED_t brk_speed = BASE_IF_SPEED_0MBPS;
+    media_type_to_breakout_map_t* brk_map = NULL;
+
+    char * port_str = mtbl->port_str;
+
+    if (mtbl == NULL) {
+        PAS_ERR("Null value for media table entry, ports: %s", port_str);
+        STD_ASSERT(mtbl != NULL);
+    }
+
+    /* Non pluggable ports currently do not have physical breakout*/
+    if (!dn_pas_is_port_pluggable(mtbl->fp_port)) {
+        return BASE_CMN_BREAKOUT_TYPE_NO_BREAKOUT;
+    }
+
+    if (mtbl->res_data == NULL) {
+        PAS_ERR("Null value for media table eeprom data, ports: %s", port_str);
+        STD_ASSERT(mtbl->res_data != NULL);
+    }
+
+    brk_speed = media_speed = mtbl->res_data->capability;
+
+    if (!mtbl->res_data->present){
+        return BASE_CMN_BREAKOUT_TYPE_NO_BREAKOUT;
+    }
+
+    if (!dn_pas_media_is_physical_breakout_valid(mtbl->res_data)) {
+        /* For cases where a breakout is not physically possible */
+        /* Hence channel count = 1 */
+
+        if (false == dn_pas_media_set_capability_values(
+                          cap,
+                          media_speed,
+                          BASE_CMN_BREAKOUT_TYPE_NO_BREAKOUT,
+                          brk_speed,
+             dn_pas_media_get_phy_mode_from_speed(media_speed)))
+        {
+            PAS_ERR("Could not set capability, port(s): %s" , mtbl->port_str); 
+        }
+        return cap->breakout_mode;
+    }
+
+    if (media_speed == BASE_IF_SPEED_0MBPS) {
+        PAS_ERR("Cannot obtain media speed on ports: %s", port_str);
+        return brk;
+    }
+
+    /* try to find info by look up table first */
+    brk_map = dn_pas_media_find_breakout_info(mtbl->res_data->type,
+                  media_type_to_breakout_tbl,
+                  ARRAY_SIZE(media_type_to_breakout_tbl));
+    if (brk_map != NULL){
+        if (false == dn_pas_media_set_capability_values(cap,
+                                           brk_map->media_speed,
+                                           brk_map->breakout_mode,
+                                           brk_map->breakout_speed,
+                  dn_pas_media_get_phy_mode_from_speed(brk_map->media_speed))
+        ){
+            PAS_ERR("Capability set failed, ports(s): %s", mtbl->port_str);
+        }
+        return brk_map->breakout_mode;
+    } 
+
+    switch (mtbl->res_data->free_side_dev_prop) {
+        case 0x10:
+            brk = BASE_CMN_BREAKOUT_TYPE_BREAKOUT_1X1;
+            break;
+        case 0x40:
+            brk = BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1;
+            break;
+        case 0x50:
+            brk = BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X2;
+            break;
+        case 0x60:
+            brk = BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X1;
+            break;
+
+        /* Yet to be properly understood. Need to revisit */
+        case 0x20:
+        case 0x30:
+        /* States which we currently do not support; or if the EEPROM is not programmed*/
+        default:
+            brk = BASE_CMN_BREAKOUT_TYPE_BREAKOUT_UNKNOWN;
+    }
+    /* Divides media_speed by breakout to get the breakout speed */
+
+    brk_speed = dn_pas_media_resolve_breakout_speed(media_speed, brk);
+
+    if (brk_speed == BASE_IF_SPEED_0MBPS) {
+        PAS_ERR("Cannot obtain breakout accurate speed on ports: %s", port_str);
+    }
+
+
+    dn_pas_media_set_capability_values(cap,
+                                       media_speed,
+                                       brk,
+                                       brk_speed,
+              dn_pas_media_get_phy_mode_from_speed(media_speed));
+
+   return brk;
+}
+
+bool dn_pas_media_set_capability_values(media_capability_t* cap,
+                                        BASE_IF_SPEED_t          media_speed,
+                                        BASE_CMN_BREAKOUT_TYPE_t breakout_mode,
+                                        BASE_IF_SPEED_t          breakout_speed,
+                                        BASE_IF_PHY_MODE_TYPE_t  phy_mode)
+{
+    if (cap == NULL) {
+        PAS_ERR("Attempt to set null capability struct");
+        return false;
+    }
+    cap->media_speed = media_speed;
+    cap->breakout_mode = breakout_mode;
+    cap->breakout_speed = breakout_speed;
+    cap->phy_mode = phy_mode;
+    return true;
+}
+
+bool dn_pas_media_validate_capability(media_capability_t cap)
+{
+    return (cap.media_speed != BASE_IF_SPEED_0MBPS) &
+           (cap.phy_mode != 0);
+}
+
+/* Populates the capability struct array and returns number of capabilities*/
+
+uint_t dn_pas_media_construct_media_capabilities(phy_media_tbl_t *mtbl)
+{
+    media_capability_t default_capability = {0};
+    STD_ASSERT(mtbl != NULL);
+
+    /* Function must have been visited earlier. Reset values */
+    if (mtbl->res_data->media_capability_count != 0) {
+        mtbl->res_data->media_capability_count = 0;
+        mtbl->res_data->default_media_capability_index = 0;
+    }
+
+    /* For default: set known values  */
+    if (dn_pas_media_set_capability_values(
+             &default_capability,
+             mtbl->res_data->capability,
+             PAS_MEDIA_DEFAULT_BREAKOUT_MODE,
+             BASE_IF_SPEED_0MBPS,
+             dn_pas_media_get_phy_mode_from_speed(mtbl->res_data->capability))
+       ){
+        /* Resolve breakout */
+        dn_pas_media_get_default_breakout_info(&default_capability, mtbl);
+        /* Set default index and increment count */
+        mtbl->res_data->default_media_capability_index =
+             mtbl->res_data->media_capability_count++;
+        mtbl->res_data->media_capabilities[
+             mtbl->res_data->default_media_capability_index]
+                  = default_capability;
+    }else{
+        PAS_ERR("Could not set capability, port(s): %s" , mtbl->port_str);
+    }
+
+    if (dn_pas_media_validate_capability(default_capability) == false){
+        PAS_ERR("Capability construction error");
+    }
+
+    /* To do other capabilities  in future */
+
+    return mtbl->res_data->media_capability_count;
+}
+
+bool dn_pas_media_is_connector_separable(phy_media_tbl_t *mtbl)
+{
+    sdi_media_transceiver_descr_t *trans_desc =
+        (sdi_media_transceiver_descr_t *) mtbl->res_data->transceiver;
+
+    /* Pluggable ports are not considered separable 
+       Check for 200/100G AOC may be programmed as using optical connector, which is usually considered separable
+       Check for 40G AOC for same reason
+       Check for non separable connector
+       Check for DAC connector */
+    return (dn_pas_is_port_pluggable(mtbl->fp_port)
+        && (((mtbl->res_data->options >> QSFP28_OPTION1_BIT_SHIFT)
+           &(QSFP28_OPTION1_BIT_MASK)) != QSFP_100GBASE_AOC)
+        && (trans_desc->qsfp_descr.sdi_qsfp_eth_1040g_code
+           != QSFP_40G_ACTIVE_CABLE )
+        && (mtbl->res_data->connector != SDI_MEDIA_CONNECTOR_NON_SEPARABLE)
+        && (mtbl->res_data->connector != SDI_MEDIA_CONNECTOR_COPPER_PIGTAIL));
+}
+
+sdi_media_fw_rev_t pas_media_fw_rev_get (pas_media_t *res_data)
+{
+    sdi_media_fw_rev_t rev = SDI_MEDIA_FW_REV0;
+
+    if (res_data) {
+        uint8_t val = res_data->vendor_specific[5] & 0x0f;
+        switch(val) {
+            case 0:
+                rev = SDI_MEDIA_FW_REV0;
+                break;
+            case 1:
+                rev = SDI_MEDIA_FW_REV1;
+                break;
+            default:
+                rev = SDI_MEDIA_FW_REV1;
+                break;
+        }
+    }
+    return rev;
 }
 

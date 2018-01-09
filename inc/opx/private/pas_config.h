@@ -32,7 +32,7 @@
 #define MAX_SUPPORTED_SPEEDS           (BASE_IF_SPEED_MAX)
 #define PAS_MEDIA_MAX_PORT_DENSITY     (10) /* Arbitrary upper limit for port density */
 #define PAS_MEDIA_PORT_DENSITY_DEFAULT (1)  /* Port density is normally 1, but can be higher. Example it is 2 for QSFP28-DD*/
-
+#define PAS_MEDIA_PORT_STR_BUF_LEN     (20)
 
 #define PRE_STRINGIZE(enm) #enm
 #define STRINGIZE_ENUM(enm) PRE_STRINGIZE(enm)

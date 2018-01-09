@@ -1,3 +1,16 @@
+opx-pas (3.0.1) unstable; urgency=medium
+  
+  * Update: Removed lockdown from AOC and improved separable connector checking
+  * Update: Improve media locking code
+  * Update: added dd qsfp media
+  * Update: Update channel data structure with configured speed.
+  * Bugfix: Fixed alloc and flow issues.
+  * Bugfix: Address multi mode issue
+  * Bugfix: Addressed channel issue
+  * Bugfix: corrected fixed port issue
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Wed, 13 Dec 2017 11:00:00 -0800
+
 opx-pas (3.0.0) unstable; urgency=medium
 
   * Feature: Added port types

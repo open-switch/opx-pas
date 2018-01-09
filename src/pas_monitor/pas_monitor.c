@@ -131,6 +131,7 @@ static void dn_poll_fan_tray(struct timer *tmr)
 static void dn_poll_card(struct timer *tmr)
 {
     pas_entity_t *rec;
+    bool pas_led_set = false;
 
     if (++tmr->cur > tmr->cnt)  tmr->cur = 1;
 
@@ -142,13 +143,23 @@ static void dn_poll_card(struct timer *tmr)
     if(!dn_pald_diag_mode_get()) {
 
         dn_entity_poll(rec, false);
+
+        dn_entity_lpc_bus_poll(rec,&pas_led_set);
+
     }
 
     dn_pas_unlock();
+
+    if (pas_led_set) {
+        // entity_type=PLATFORM_ENTITY_TYPE_CARD, slot=1,led_name= "Alarm Major",led_state =on
+        if ( STD_IS_ERR(dn_pas_generic_led_set(PLATFORM_ENTITY_TYPE_CARD,1,"Alarm Major",1))) {
+            PAS_ERR("Major Alarm not able to set");
+        }
+    }
 }
 
 /*
- * Poll a communication device (comm-dev) 
+ * Poll a communication device (comm-dev)
  */
 
 static void dn_poll_comm_dev (struct timer *tmr)
@@ -238,7 +249,7 @@ static t_std_error timerq_init(void)
         ++num_timers;
     }
 
-    /* Add media polling, if applicable 
+    /* Add media polling, if applicable
        Poll only  pluggable media, so use pluggable count for timer period */
     n = dn_pas_config_media_get()->pluggable_media_count;
     populate_pollable_port_list();
@@ -252,7 +263,7 @@ static t_std_error timerq_init(void)
     }
 
     /*
-     * Add communication device polling, if applicable 
+     * Add communication device polling, if applicable
      */
 
     n = sdi_entity_resource_count_get(

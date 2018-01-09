@@ -17,7 +17,7 @@
 #ifndef __PAS_ENTITY_H
 #define __PAS_ENTITY_H
 
-#include "std_type_defs.h"     
+#include "std_type_defs.h"
 #include "cps_api_key.h"
 #include "pas_res_structs.h"
 
@@ -37,5 +37,13 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf);
 /* Set the fault status of an entity */
 
 bool dn_pas_entity_fault_state_set(pas_entity_t *rec, uint_t fault_state);
+
+/* Poll an CPU lpc bus access*/
+
+bool dn_entity_lpc_bus_poll(pas_entity_t *rec,bool *lpc_test_status);
+
+/* generic api to set led in pas */
+t_std_error dn_pas_generic_led_set(uint_t entity_type,uint_t slot,
+                                            char  *led_name,bool  led_state);
 
 #endif /* !defined(__PAS_ENTITY_H) */

@@ -51,7 +51,7 @@ static bool dn_entity_notify(pas_entity_t *rec)
     dn_pas_obj_key_entity_set(obj,
                               cps_api_qualifier_OBSERVED,
                               true,
-                              rec->entity_type, 
+                              rec->entity_type,
                               true,
                               rec->slot
                               );
@@ -97,7 +97,7 @@ static bool dn_entity_notify(pas_entity_t *rec)
         cps_api_object_attr_add_str(obj,
                                     BASE_PAS_ENTITY_SERVICE_TAG,
                                     rec->eeprom->service_tag
-                                    ); 
+                                    );
         char buf[15];
         dn_pas_service_tag_to_express_service_code(buf, sizeof(buf), rec->eeprom->service_tag);
         cps_api_object_attr_add_str(obj,
@@ -147,12 +147,12 @@ bool dn_cache_init_entity(void)
             if (sdi_entity_hdl == 0) {
                 return (false);
             }
-            
+
             rec = CALLOC_T(pas_entity_t, 1);
             if (rec == 0) {
                 return (false);
             }
-            
+
             rec->entity_type         = entity_type_tbl[i].entity_type;
             rec->slot                = slot;
             rec->sdi_entity_hdl      = sdi_entity_hdl;
@@ -162,7 +162,7 @@ bool dn_cache_init_entity(void)
             dn_pas_oper_fault_state_init(rec->oper_fault_state);
 
             rec->power_on = true; /** \todo Do not assume entity power is on */
-            
+
             char res_key[PAS_RES_KEY_SIZE];
 
             if (!dn_pas_res_insertc(dn_pas_res_key_entity(res_key,
@@ -246,7 +246,7 @@ static void dn_cache_init_entity_res(pas_entity_t *rec)
     /* Initialize NPU temperature sensor in the cache DB */
     if(rec->entity_type == PLATFORM_ENTITY_TYPE_CARD){
 
-    	dn_cache_init_remote_temp_sensor();
+        dn_cache_init_remote_temp_sensor();
     }
 }
 
@@ -276,7 +276,7 @@ static void dn_cache_del_entity_res(pas_entity_t *rec)
                 break;
 
         default: ;
-                
+
     }
 }
 
@@ -301,7 +301,7 @@ static void dn_entity_fans_poll(
 {
     uint_t        fan_idx;
     pas_fan_t     *rec;
-    
+
     for (fan_idx = 1; fan_idx <= parent->num_fans; ++fan_idx) {
         char res_key[PAS_RES_KEY_SIZE];
 
@@ -313,7 +313,7 @@ static void dn_entity_fans_poll(
                                                                )
                                             );
         if (rec == 0)  break;
-        
+
         dn_fan_poll(rec, update_allf, notif);
     }
 }
@@ -326,10 +326,10 @@ static void dn_entity_temp_sensors_poll(
 {
     uint_t                   sensor_idx;
     pas_temperature_sensor_t *rec;
-    
+
     for (sensor_idx = 1; sensor_idx <= parent->num_temp_sensors; ++sensor_idx) {
         char res_key[PAS_RES_KEY_SIZE];
-        
+
         rec = (pas_temperature_sensor_t *)
             dn_pas_res_getc(dn_pas_res_key_temp_sensor_idx(res_key,
                                                            sizeof(res_key),
@@ -339,7 +339,7 @@ static void dn_entity_temp_sensors_poll(
                                                            )
                             );
         if (rec == 0)  break;
-        
+
         dn_temp_sensor_poll(rec, update_allf, notif);
     }
 }
@@ -376,7 +376,7 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
     pas_oper_fault_state_t prev_oper_fault_state[1];
     *prev_oper_fault_state = *rec->oper_fault_state;
     dn_pas_oper_fault_state_init(rec->oper_fault_state);
-        
+
     /* Check entity presence */
 
     if (STD_IS_ERR(sdi_entity_presence_get(rec->sdi_entity_hdl, &present))) {
@@ -385,24 +385,24 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
 
     if (!rec->valid || present != rec->present) {
         /* First poll, or presence changed => Generate a notification */
-        
+
         notif = true;
 
-        /* generate syslog for present status */  
-        PAS_NOTICE("%s %d %s\n", 
-                   rec->entity_type == PLATFORM_ENTITY_TYPE_PSU ? "PSU" : 
+        /* generate syslog for present status */
+        PAS_NOTICE("%s %d %s\n",
+                   rec->entity_type == PLATFORM_ENTITY_TYPE_PSU ? "PSU" :
                    rec->entity_type == PLATFORM_ENTITY_TYPE_FAN_TRAY ? "Fan Tray" :
-                   rec->entity_type == PLATFORM_ENTITY_TYPE_CARD ? "Card":"Unknown Type", 
+                   rec->entity_type == PLATFORM_ENTITY_TYPE_CARD ? "Card":"Unknown Type",
                    rec->slot, present ? "is present" : "is removed"
-                   ); 
+                   );
     }
     if ((!rec->valid || !rec->present) && present) {
         /* Transitioned to present */
-        
+
         update_allf = true;     /* Update whole cache record */
 
         /* Record insertion */
-        
+
         ++rec->insertion_cnt;
         time(&rec->insertion_timestamp);
 
@@ -421,23 +421,23 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
 
         dn_cache_del_entity_res(rec);
     }
-    
+
     rec->present = present;
     rec->valid   = true;
 
     if (rec->present) {
-        /* check PSU power status handling 
-           two cases:  
+        /* check PSU power status handling
+           two cases:
            1) When system boots up, PSU is inserted but without power cable
            2) PSU is inserted and power on and than remove the power cable
 
-           Send the notification and syslog if PSU power status is changed 
+           Send the notification and syslog if PSU power status is changed
            from power failure to normal
         */
 
         if (rec->entity_type == PLATFORM_ENTITY_TYPE_PSU) {
             if (STD_IS_ERR(sdi_entity_psu_output_power_status_get(
-                               rec->sdi_entity_hdl, 
+                               rec->sdi_entity_hdl,
                                &power_status
                                                                   )
                            )
@@ -451,10 +451,10 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
                                               PLATFORM_FAULT_TYPE_EPOWER
                                               );
             }
-                
+
             /* Power was off, now on => Trigger complete update */
             if (power_status && !rec->power_status)  update_allf = true;
-            
+
             if (!(rec->power_status = power_status)) {
                 rec->init_ok       = false;
                 rec->init_fail_cnt = 0;
@@ -474,32 +474,32 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
                 }
             } else {
                 rec->init_ok = true;
-                
+
                 rec->sdi_entity_info_hdl = dn_pas_entity_info_hdl(rec->sdi_entity_hdl);
                 if (rec->sdi_entity_info_hdl == 0) {
                     return (false);
                 }
-                
+
                 /* Initialize cache records for resources */
-                
+
                 dn_cache_init_entity_res(rec);
             }
         }
-        
+
         if (rec->init_ok) {
             if (update_allf) {
                 /* Update constant fields */
-                
+
                 STRLCPY(rec->name,
                         sdi_entity_name_get(rec->sdi_entity_hdl)
                         );
-                
+
                 if (STD_IS_ERR(sdi_entity_info_read(rec->sdi_entity_info_hdl,
                                                     entity_info
                                                     )
                                )
                     ) {
-                    
+
                     dn_pas_entity_fault_state_set(rec,
                                                   PLATFORM_FAULT_TYPE_ECOMM
                                                   );
@@ -514,28 +514,28 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
 
                     rec->eeprom_valid = true;
                 }
-                
-                if (rec->oper_fault_state->oper_status 
+
+                if (rec->oper_fault_state->oper_status
                     != prev_oper_fault_state->oper_status
                     ) {
                     /* Operational status changed => Generate notification */
-                    
+
                     notif = true;
 
                     *prev_oper_fault_state = *rec->oper_fault_state;
                 }
             }
-            
+
             if (notif)  dn_entity_notify(rec);
-            
+
             notif = false;
-            
+
             switch (rec->entity_type) {
             case PLATFORM_ENTITY_TYPE_PSU:
                 {
                     char      res_key[PAS_RES_KEY_SIZE];
                     pas_psu_t *psu_rec;
-                                        
+
                     psu_rec = (pas_psu_t *)
                         dn_pas_res_getc(dn_pas_res_key_psu(res_key,
                                                            sizeof(res_key),
@@ -548,12 +548,12 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
                     }
                 }
                 break;
-                
+
             case PLATFORM_ENTITY_TYPE_FAN_TRAY:
                 {
                     char           res_key[PAS_RES_KEY_SIZE];
                     pas_fan_tray_t *fan_tray_rec;
-                    
+
                     fan_tray_rec = (pas_fan_tray_t *)
                         dn_pas_res_getc(dn_pas_res_key_fan_tray(res_key,
                                                                 sizeof(res_key),
@@ -566,7 +566,7 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
                     }
                 }
                 break;
-                
+
             default:
                 ;
             }
@@ -598,11 +598,11 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
         }
     }
 
-    if (rec->oper_fault_state->oper_status 
+    if (rec->oper_fault_state->oper_status
         != prev_oper_fault_state->oper_status
         ) {
         /* Operational status changed => Generate notification */
-        
+
         notif = true;
     }
 
@@ -610,3 +610,16 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
 
     return (true);
 }
+
+/* Function to poll lpc bus on system board entity */
+
+bool dn_entity_lpc_bus_poll(pas_entity_t *rec, bool *lpc_test_status)
+{
+
+    if (STD_IS_ERR(sdi_entity_lpc_bus_check(rec->sdi_entity_hdl,lpc_test_status))){
+        return (false);
+    }
+
+    return true;
+}
+

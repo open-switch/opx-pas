@@ -517,12 +517,16 @@ bool convert_str_to_enum(char* label, char* value, uint_t* result)
  /* Argument range is of the form:"a,b" or "a-b,c-d,...". Whitespace not handled */
 
 static void populate_cfg_array(pas_port_info_t** arr,
-                port_info_node_t* info_node, char* range)
+                port_info_node_t* info_node, char* range_in)
 {
-    char* start = 0, *end = 0, *counter = 0;
-    uint_t start_n = 0, end_n = 0;
+    char* start=NULL, *end=NULL, *counter=NULL, *range=NULL, *range_end=NULL;
+    uint_t start_n = 0, end_n = 0, len = 0;
     bool start_set = false;
-    char* range_end = range + strlen(range);
+
+    len =  strlen(range_in);
+    range = (char*)alloca(len+1);
+    memcpy(range, range_in, len+1);
+    range_end = (char*)(range + len);
 
     for (counter = start = range; counter < range_end+1; counter++) {
         end_n = start_n;
@@ -550,7 +554,7 @@ static void populate_cfg_array(pas_port_info_t** arr,
                 start_set = false;
 
                 if ((end_n == 0) || (end_n <start_n)){
-                    PAS_ERR("Invalid port range info");
+                    PAS_ERR("Invalid port range info: %s ", start_n);
                 }
 
                 /* Fill in array */
@@ -635,11 +639,15 @@ static void dn_pas_config_ports_handler(std_config_node_t nd, void *var)
         if (a!=0) {
             sscanf(a, "%u", &(current_node->node.port_density));
         } else {
-            current_node->node.port_density = 1;
+            current_node->node.port_density = PAS_MEDIA_PORT_DENSITY_DEFAULT;
         }
 
-        STD_ASSERT(current_node->node.port_density > 0);
-        STD_ASSERT(current_node->node.port_density <= PAS_MEDIA_MAX_PORT_DENSITY);
+        if ((current_node->node.port_density < 0) ||
+            (current_node->node.port_density > PAS_MEDIA_MAX_PORT_DENSITY)) {
+            PAS_ERR("Invalid port density from config file: %d",
+                current_node->node.port_density);
+            current_node->node.port_density = PAS_MEDIA_PORT_DENSITY_DEFAULT;
+        }
 
         /* This is an essential field. Code will not proceed if not present*/
         /* This section needs to run last */
@@ -655,12 +663,13 @@ static void dn_pas_config_ports_handler(std_config_node_t nd, void *var)
 
         current_node->node.present = (current_node->node.port_type != PLATFORM_PORT_TYPE_PLUGGABLE);
         current_node->next = NULL;
+
         /* Append node, for record-keeping*/
         port_info_node_t *tmp_node = port_info_node_head;
-        while (tmp_node->next != NULL)
-            {
+
+        while (tmp_node->next != NULL){
                 tmp_node = tmp_node->next;
-            }
+        }
         tmp_node->next = current_node;
     }
 
@@ -831,14 +840,38 @@ static bool dn_pas_media_parse_speed (char *val_str,
             case 'G':
                 if (speed == 1) {
                     speed_list[indx++] = BASE_IF_SPEED_1GIGE;
+                    speed_list[indx++] = BASE_IF_SPEED_1GFC;
+                } else if (speed == 2) {
+                    speed_list[indx++] = BASE_IF_SPEED_2GFC;
+                } else if (speed == 4) {
+                    speed_list[indx++] = BASE_IF_SPEED_4GFC;
+                    speed_list[indx++] = BASE_IF_SPEED_4GIGE;
+                } else if ( speed == 8) {
+                    speed_list[indx++] = BASE_IF_SPEED_8GFC;
                 } else if (speed == 10) {
                     speed_list[indx++] = BASE_IF_SPEED_10GIGE;
+                } else if (speed == 16) {
+                    speed_list[indx++] = BASE_IF_SPEED_16GFC;
+                } else if (speed == 20) {
+                    speed_list[indx++] = BASE_IF_SPEED_20GIGE;
                 } else if (speed == 25) {
                     speed_list[indx++] = BASE_IF_SPEED_25GIGE;
+                } else if (speed == 32) {
+                    speed_list[indx++] = BASE_IF_SPEED_32GFC;
                 } else if (speed == 40) {
                     speed_list[indx++] = BASE_IF_SPEED_40GIGE;
+                } else if (speed == 50) {
+                    speed_list[indx++] = BASE_IF_SPEED_50GIGE;
+                } else if (speed == 64) {
+                    speed_list[indx++] = BASE_IF_SPEED_64GFC;
                 } else if (speed == 100) {
                     speed_list[indx++] = BASE_IF_SPEED_100GIGE;
+                } else if (speed == 128) {
+                    speed_list[indx++] = BASE_IF_SPEED_128GFC;
+                } else if (speed == 200) {
+                    speed_list[indx++] = BASE_IF_SPEED_200GIGE;
+                } else if (speed == 400) {
+                    speed_list[indx++] = BASE_IF_SPEED_400GIGE;
                 } else continue;
 
                 break;
