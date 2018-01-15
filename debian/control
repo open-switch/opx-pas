@@ -3,8 +3,8 @@ Section: net
 Priority: optional
 Maintainer: Dell EMC <ops-dev@lists.openswitch.net>
 Build-Depends: debhelper (>= 9), dh-autoreconf, libfuse-dev,
- libopx-common-dev, libopx-logging-dev, libopx-base-model-dev (>= 3.55.0),
- libopx-sdi-sys-dev, libopx-cps-dev, libsystemd-dev,
+ libopx-common-dev (>= 1.4.0), libopx-logging-dev (>= 2.1.0), libopx-base-model-dev (>= 3.109.0),
+ libopx-sdi-sys-dev (>= 1.5.1), libopx-cps-dev (>= 3.6.2), libsystemd-dev,
  dh-systemd
 Standards-Version: 3.9.3
 
