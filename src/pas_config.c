@@ -840,11 +840,9 @@ static bool dn_pas_media_parse_speed (char *val_str,
             case 'G':
                 if (speed == 1) {
                     speed_list[indx++] = BASE_IF_SPEED_1GIGE;
-                    speed_list[indx++] = BASE_IF_SPEED_1GFC;
                 } else if (speed == 2) {
                     speed_list[indx++] = BASE_IF_SPEED_2GFC;
                 } else if (speed == 4) {
-                    speed_list[indx++] = BASE_IF_SPEED_4GFC;
                     speed_list[indx++] = BASE_IF_SPEED_4GIGE;
                 } else if ( speed == 8) {
                     speed_list[indx++] = BASE_IF_SPEED_8GFC;
