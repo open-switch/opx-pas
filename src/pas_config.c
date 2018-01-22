@@ -480,7 +480,10 @@ bool convert_str_to_enum(char* label, char* value, uint_t* result)
     bool ret = false;
 
     if (strcmp(label, "speed")==0){
-        ret = dn_pas_media_parse_speed(value, (BASE_IF_SPEED_t*)result, 1, NULL);
+        BASE_IF_SPEED_t speed_list[MAX_SUPPORTED_SPEEDS];
+        memset(speed_list, 0, sizeof(speed_list));
+        ret = dn_pas_media_parse_speed(value, speed_list, ARRAY_SIZE(speed_list), NULL);
+        *result = speed_list[0];
     }
     else if (strcmp(label, "media-type")==0){
         count = ARRAY_SIZE(port_media_type_str_to_enum)-1;
@@ -840,10 +843,16 @@ static bool dn_pas_media_parse_speed (char *val_str,
             case 'G':
                 if (speed == 1) {
                     speed_list[indx++] = BASE_IF_SPEED_1GIGE;
+                    if (indx < size) {
+                        speed_list[indx++] = BASE_IF_SPEED_1GFC;
+                    }
                 } else if (speed == 2) {
                     speed_list[indx++] = BASE_IF_SPEED_2GFC;
                 } else if (speed == 4) {
                     speed_list[indx++] = BASE_IF_SPEED_4GIGE;
+                    if (indx < size) {
+                        speed_list[indx++] = BASE_IF_SPEED_4GIGE;
+                    }
                 } else if ( speed == 8) {
                     speed_list[indx++] = BASE_IF_SPEED_8GFC;
                 } else if (speed == 10) {
