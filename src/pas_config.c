@@ -581,13 +581,12 @@ static void dn_pas_config_ports_get_count(std_config_node_t nd, void *var)
             sscanf(a, "%u", &cfg_media->port_count);
 
             if (cfg_media->port_count == 0){
-            PAS_ERR("Port count from config file is 0. Aborting");
-            assert(cfg_media->port_count != 0);
+            PAS_ERR("Port count from config file is 0.");
             }
         }
         else {
-            PAS_ERR("Invalid port count in config file. Aborting");
-            assert(a!=0);
+            PAS_ERR("Invalid port count in config file.");
+            cfg_media->port_count = 0;
         }
     }
     return;
@@ -703,6 +702,11 @@ void dn_pas_port_config(std_config_node_t nd)
       Using array of pointers to info structs */
     cfg_media->port_info_tbl = 
         (pas_port_info_t**)calloc((cfg_media->port_count) + 1, sizeof(pas_port_info_t*));
+
+    /* If there are no ports */
+    if (cfg_media->port_count == 0) {
+        return;
+    }
 
     /* Last element is included because +1 was allocated. Init all to default pluggable*/
     while (count <= cfg_media->port_count){
@@ -849,7 +853,7 @@ static bool dn_pas_media_parse_speed (char *val_str,
                 } else if (speed == 2) {
                     speed_list[indx++] = BASE_IF_SPEED_2GFC;
                 } else if (speed == 4) {
-                    speed_list[indx++] = BASE_IF_SPEED_4GIGE;
+                    speed_list[indx++] = BASE_IF_SPEED_4GFC;
                     if (indx < size) {
                         speed_list[indx++] = BASE_IF_SPEED_4GIGE;
                     }
@@ -1097,6 +1101,10 @@ static struct pas_config_subcat {
     },
     { subcat:        BASE_PAS_FAN_OBJ,
       name:          "fan",
+      inst_scheme:   SUBCAT_INST_SCHEME_NONE
+    },
+    { subcat:        BASE_PAS_POWER_MONITOR_OBJ,
+      name:          "power-monitor",
       inst_scheme:   SUBCAT_INST_SCHEME_NONE
     },
     { subcat:        BASE_PAS_LED_OBJ,

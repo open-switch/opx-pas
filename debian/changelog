@@ -1,3 +1,13 @@
+opx-pas (3.0.1+opx3) unstable; urgency=medium
+
+  * Update: Add check while updating the output param (speed_list) and calling dn_pas_media_parse_speed function with
+            speed_list output param of size MAX_SUPPORTED_SPEEDS
+  * Bugfix: Fixed issue where PAS aborts with zero port count
+  * Update: Changes to support fabid via yang to apps
+  * Update: PAS changes to support Power Monitoring
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Tue, 13 Feb 2018 11:00:00 -0800
+
 opx-pas (3.0.1+opx2) unstable; urgency=medium
 
   * Update: Add virtual package dependency to fix apt-get upgrade hang.

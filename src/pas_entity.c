@@ -22,6 +22,7 @@
 #include "private/pas_fan.h"
 #include "private/pas_temp_sensor.h"
 #include "private/pas_led.h"
+#include "private/pas_power_monitor.h"
 #include "private/pas_display.h"
 #include "private/pas_res_structs.h"
 #include "private/pas_data_store.h"
@@ -208,6 +209,10 @@ static void _dn_cache_init_entity_res(
         func = dn_cache_init_disp;
         break;
 
+    case SDI_RESOURCE_POWER_MONITOR:
+        func = dn_cache_init_power_monitor;
+        break;
+
     default:
         return;
     }
@@ -224,6 +229,7 @@ static void dn_cache_init_entity_res(pas_entity_t *rec)
                     = rec->num_displays
                     = rec->num_temp_sensors
                     = rec->num_plds
+                    = rec->num_power_monitors
                     = 0;
                 break;
 
@@ -258,11 +264,13 @@ static void dn_cache_del_entity_res(pas_entity_t *rec)
                 dn_cache_del_temp_sensor(rec);
                 dn_cache_del_led(rec);
                 dn_cache_del_disp(rec);
+                dn_cache_del_power_monitor(rec);
 
                 rec->num_leds
                     = rec->num_displays
                     = rec->num_temp_sensors
                     = rec->num_plds
+                    = rec->num_power_monitors
                     = 0;
                 break;
 
@@ -344,6 +352,25 @@ static void dn_entity_temp_sensors_poll(
     }
 }
 
+static void dn_entity_power_monitors_poll(pas_entity_t *parent)
+{
+    uint_t                   pm_idx;
+    pas_power_monitor_t     *res_rec;
+
+    for (pm_idx = 1; pm_idx <= parent->num_power_monitors; ++pm_idx) {
+        char res_key[PAS_RES_KEY_SIZE];
+
+        res_rec = (pas_power_monitor_t *) dn_pas_res_getc(dn_pas_res_key_pm(res_key,
+                                                         sizeof(res_key),
+                                                         parent->entity_type,
+                                                         parent->slot,
+                                                         pm_idx));
+        if (res_rec == 0)  break;
+
+        dn_power_monitor_poll(res_rec);
+    }
+}
+
 static void dn_entity_res_poll(
     pas_entity_t *rec,
     bool         update_allf,
@@ -352,6 +379,7 @@ static void dn_entity_res_poll(
 {
     dn_entity_fans_poll(rec, update_allf, notif);
     dn_entity_temp_sensors_poll(rec, update_allf, notif);
+    dn_entity_power_monitors_poll(rec);
 }
 
 /* Set the operational status of an entity */
@@ -458,6 +486,7 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
             if (!(rec->power_status = power_status)) {
                 rec->init_ok       = false;
                 rec->init_fail_cnt = 0;
+                rec->eeprom_valid = false;
             }
         }
 

@@ -39,35 +39,35 @@
 bool dn_pas_comm_dev_init (void);
 
 /*
- * dn_comm_dev_mb_poll is used to poll communication device for 
+ * dn_comm_dev_mb_poll is used to poll communication device for
  * mail-box messages
  */
 
 void dn_comm_dev_poll (void);
 
-/* 
- * dn_pas_comm_dev_notify is used by comm dev module to send 
+/*
+ * dn_pas_comm_dev_notify is used by comm dev module to send
  * event when a msg is read from communication device mail-box
  */
 
 bool dn_pas_comm_dev_notify(cps_api_object_t obj);
 
-/* 
+/*
  * dn_comm_dev_rec_get is used to get comm-dev object pointer
- * for further access. 
+ * for further access.
  */
 
 pas_comm_dev_t * dn_comm_dev_rec_get(void);
 
-/* 
- * dn_pas_comm_dev_temp_set is used for setting/updating temperature 
+/*
+ * dn_pas_comm_dev_temp_set is used for setting/updating temperature
  * sensor dat in comm dev register
  */
 
 void dn_pas_comm_dev_temp_set (int temp);
 
 /*
- * dn_pas_comm_dev_comm_msg_write is to write mail-box message to 
+ * dn_pas_comm_dev_comm_msg_write is to write mail-box message to
  * communication device.
  */
 
@@ -81,7 +81,7 @@ bool dn_pas_comm_dev_comm_msg_write (uint8_t * data, uint_t size);
 bool dn_pas_comm_dev_attr_add (cps_api_object_t obj);
 
 /*
- * dn_pas_comm_dev_host_sw_version_set is to set host-system 
+ * dn_pas_comm_dev_host_sw_version_set is to set host-system
  * software version info in comm-dev registers.
  */
 
@@ -93,5 +93,12 @@ bool dn_pas_comm_dev_host_sw_version_set (char *sw_ver);
  */
 
 bool dn_pas_comm_dev_platform_info_get(void);
+
+/*
+ * dn_pas_comm_dev_messaging_enable is used to enable/disable messaging
+ * from communication device.
+ */
+
+bool dn_pas_comm_dev_messaging_enable(bool enable);
 
 #endif

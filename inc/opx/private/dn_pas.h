@@ -24,7 +24,7 @@
 #ifndef __DN_PAS_H
 #define __DN_PAS_H
 
-#include "std_type_defs.h"     
+#include "std_type_defs.h"
 #include "cps_api_key.h"
 #include "dell-base-pas.h"
 
@@ -268,6 +268,45 @@ void dn_pas_obj_key_fan_set(
     uint_t              slot,
     bool                fan_idx_valid,
     uint_t              fan_idx
+                            );
+/** ************************************************************************
+ *
+ * Get object qualifier and instance fields for a power monitor object
+ *
+ * Function to extract instance information from the given PAS power monitor 
+ * object.  Entity type, slot and power monitor index are extracted, with flags 
+ * indicating whether or not each was specified in the given object.
+ */
+
+void dn_pas_obj_key_pm_get(
+    cps_api_object_t    obj,
+    cps_api_qualifier_t *qual,
+    bool                *entity_type_valid,
+    uint_t              *entity_type,
+    bool                *slot_valid,
+    uint_t              *slot,
+    bool                *pm_idx_valid,
+    uint_t              *pm_idx
+                            );
+
+
+/** ************************************************************************
+ *
+ * Set object qualifier and instance fields for a power monitor object
+ *
+ * Function to set instance information in the given PAS power monitor object.
+ * Entity type, slot and pm index may be given.
+ */
+
+void dn_pas_obj_key_pm_set(
+    cps_api_object_t    obj,
+    cps_api_qualifier_t qual,
+    bool                entity_type_valid,
+    uint_t              entity_type,
+    bool                slot_valid,
+    uint_t              slot,
+    bool                pm_idx_valid,
+    uint_t              pm_idx
                             );
 
 /** ************************************************************************

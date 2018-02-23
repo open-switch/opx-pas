@@ -16,8 +16,8 @@
 
 /*
  * filename: pas_main.c
- */ 
-     
+ */
+
 #include <unistd.h>
 
 #include "dell-base-common.h"
@@ -43,7 +43,7 @@
  *
  ************************************************************************/
 cps_api_return_code_t dn_pas_read_function (void *context, 
-                                            cps_api_get_params_t *param, 
+                                            cps_api_get_params_t *param,
                                             size_t key_ix) 
 {
     cps_api_object_t obj      = cps_api_object_list_get(param->filters, key_ix);
@@ -93,6 +93,10 @@ cps_api_return_code_t dn_pas_read_function (void *context,
               dn_pas_temp_threshold_get(param, key_ix);
               break;
 
+        case BASE_PAS_POWER_MONITOR_OBJ:
+              dn_pas_power_monitor_get(param, key_ix);
+              break;
+                              
         case BASE_PAS_PLD_OBJ:
               dn_pas_pld_get(param, key_ix);
               break;
@@ -120,7 +124,7 @@ cps_api_return_code_t dn_pas_read_function (void *context,
         case BASE_PAS_READY_OBJ:
               dn_pas_status_get(param, key_ix);
               break;
-     
+
         case BASE_PAS_COMM_DEV_OBJ:
               dn_pas_comm_dev_get(param, key_ix);
               break;
@@ -200,7 +204,7 @@ cps_api_return_code_t dn_pas_write_function(void *context,
             case BASE_PAS_CARD_OBJ:
                   dn_pas_card_set(the_key, obj);
                   break;
-        
+
             case BASE_PAS_FAN_OBJ:
                   dn_pas_fan_set(param, obj);
                   break;
@@ -279,9 +283,9 @@ cps_api_return_code_t dn_pas_write_function(void *context,
  * -------------
  *
  ************************************************************************/
-cps_api_return_code_t dn_pas_rollback_function(void *context, 
-                                               cps_api_transaction_params_t *param, 
-                                               size_t index_of_element_being_updated) 
+cps_api_return_code_t dn_pas_rollback_function(void *context,
+                                               cps_api_transaction_params_t *param,
+                                               size_t index_of_element_being_updated)
 {
     return cps_api_ret_code_OK;
 }
@@ -305,5 +309,5 @@ t_std_error dn_pas_main_thread()
     while (1) {
         pause();
     }
-    return STD_ERR_OK; 
+    return STD_ERR_OK;
 }

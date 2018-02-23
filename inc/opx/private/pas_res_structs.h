@@ -38,6 +38,7 @@
 #include <time.h>
 #include <stdio.h>
 
+#define PAS_HOST_SYSTEM_FAB_ID_SIZE 32
 /*
  * Set of common macros to handle the length of struct fields
  * which will be used for accessing the data.
@@ -122,6 +123,7 @@ typedef struct _pas_host_system_t {
     bool                 present;          /* host-system present status */
     bool                 booted;           /* IOM boot state */
     uint_t               slot_occupation;  /* Occupied slot number */
+    char                 fab_id[PAS_HOST_SYSTEM_FAB_ID_SIZE];
     char                 software_rev[SDI_COMM_DEV_FW_VERSION_SIZE]; /* IOM software version */
 } pas_host_system_t;
 
@@ -156,9 +158,13 @@ typedef struct _pas_entity_t {
     uint_t                       num_displays;
     uint_t                       num_temp_sensors;
     uint_t                       num_plds;
+    uint_t                       num_power_monitors;
     uint8_t                      reboot_type;    /* 1 for Cold reboot, 2 for Warm reboot */
 } pas_entity_t;
 
+/*
+ * entity key generation in PAS data store
+ */
 static inline const char *dn_pas_res_key_entity(
     char   *buf,
     uint_t buf_size,
@@ -261,6 +267,36 @@ static inline const char *dn_pas_res_key_fan(
     return ((const char *) buf);
 }
 
+/*
+ * pas_power_monitor_t structure is to hold power monitor resource attributes and it
+ * will be used to cache the data in data store for further access.
+ */
+
+typedef struct _pas_power_monitor_t {
+    pas_entity_t           *parent;          /* Parent entity */
+    uint_t                 pm_idx;
+    sdi_resource_hdl_t     sdi_resource_hdl; /* SDI resource handle */
+    bool                   valid;            /* Contents valid flag */
+    pas_oper_fault_state_t oper_fault_state[1];
+    float                  obs_pm_voltage_volt;
+    float                  obs_pm_current_amp;
+    float                  obs_pm_power_watt;
+} pas_power_monitor_t;
+
+/*
+ * power-monitor key generation in PAS data store
+ */
+static inline const char *dn_pas_res_key_pm(
+    char   *buf,
+    uint_t buf_size,
+    uint_t entity_type,
+    uint_t slot,
+    uint_t pm_idx
+        )
+{
+    snprintf(buf, buf_size, "power-monitor.%u.%u.%u", entity_type, slot, pm_idx);
+    return ((const char *) buf);
+}
 
 /*
  * pas_led_t structure is to hold LED resource attributes and it

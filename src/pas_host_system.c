@@ -89,7 +89,7 @@ bool dn_pas_host_system_init (void)
 }
 
 /*
- * dn_pas_set_host_system_booted is used to set booted bit 
+ * dn_pas_set_host_system_booted is used to set booted bit
  * to inform the peer about the status of host-system
  */
 
@@ -99,6 +99,11 @@ bool dn_pas_set_host_system_booted(void)
 
     if ((host_system_rec = dn_host_system_rec_get()) == NULL) {
         PAS_ERR("Invalid fred ");
+        return false;
+    }
+
+    if (dn_pas_comm_dev_messaging_enable(true) == false) {
+        PAS_ERR("Enabling comm dev messsaging failed");
         return false;
     }
 
@@ -181,6 +186,12 @@ bool dn_pas_host_system_attr_add (cps_api_object_t obj)
     if (cps_api_object_attr_add(obj, BASE_PAS_HOST_SYSTEM_SOFTWARE_REV,
                 rec->software_rev, sizeof(rec->software_rev)) == false) {
         PAS_ERR("Adding BASE_PAS_HOST_SYSTEM_SOFTWARE_REV attribute failed");
+        return false;
+    }
+
+    if (cps_api_object_attr_add(obj, BASE_PAS_HOST_SYSTEM_FABRIC_ID,
+                rec->fab_id, sizeof(rec->fab_id)) == false) {
+        PAS_ERR("Adding BASE_PAS_HOST_SYSTEM_FABRIC_ID attribute failed");
         return false;
     }
     return true;

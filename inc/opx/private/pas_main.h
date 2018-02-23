@@ -16,8 +16,8 @@
 
 /*
  * filename: pas_main.h
- */ 
-     
+ */
+
 #ifndef __PAS_MAIN_H__
 #define __PAS_MAIN_H__
 
@@ -51,7 +51,7 @@ cps_api_return_code_t dn_pas_rollback_function(
                           cps_api_transaction_params_t *param, 
                           size_t index_of_element_being_updated
                                                );
- 
+
 
 /* cps get and set  handlers */
 
@@ -153,6 +153,8 @@ t_std_error dn_pas_media_config_set(cps_api_transaction_params_t * param,
 t_std_error dn_pas_phy_get(cps_api_get_params_t *param, size_t key);
 
 t_std_error dn_pas_phy_set(cps_api_key_t *key, cps_api_object_t obj);
+
+t_std_error dn_pas_power_monitor_get(cps_api_get_params_t * param, size_t key_idx);
 
 #endif
 

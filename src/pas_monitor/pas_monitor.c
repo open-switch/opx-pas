@@ -55,6 +55,11 @@ void populate_pollable_port_list(void)
 {
     uint_t res = 0;
     uint_t index = dn_pas_config_media_get()->port_count;
+
+    if (index == 0) {
+        PAS_ERR("Media port count is 0. Nothing to poll");
+        return;
+    }
     if(index < PAS_MEDIA_START_PORT) {
         PAS_ERR("Invalid port count: %d from config. Aborting.", index);
         assert(!(index < PAS_MEDIA_START_PORT));
@@ -253,7 +258,7 @@ static t_std_error timerq_init(void)
        Poll only  pluggable media, so use pluggable count for timer period */
     n = dn_pas_config_media_get()->pluggable_media_count;
     populate_pollable_port_list();
-    if (n > 0) {
+    if (( dn_pas_config_media_get()->port_count > 0) &&  (n > 0)) {
         timers[num_timers].cnt = n;
         timers[num_timers].period =
             dn_pas_config_media_get()->poll_interval / n;

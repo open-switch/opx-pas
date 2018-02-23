@@ -40,14 +40,14 @@
 
 static pas_comm_dev_t comm_dev;
 
-/* 
+/*
  * dn_comm_dev_rec_get is used to get comm-dev data
  */
 
 pas_comm_dev_t* dn_comm_dev_rec_get(void)
 {
     return (comm_dev.sdi_comm_dev_hdl == NULL)
-            ? NULL 
+            ? NULL
             : &comm_dev;
 }
 
@@ -87,6 +87,7 @@ bool dn_pas_comm_dev_init (void)
         return false;
     }
 
+    dn_pas_comm_dev_messaging_enable(false);
     dn_pas_comm_dev_platform_info_get();
 
     return true;
@@ -200,6 +201,23 @@ static uint_t dn_pas_host_system_slot_get (uint8_t slot_pos)
     return slot_num;
 }
 
+bool dn_pas_comm_dev_messaging_enable(bool enable)
+{
+
+    pas_comm_dev_t      *comm_dev_rec = dn_comm_dev_rec_get();
+    if ((comm_dev_rec == NULL)) {
+        return false;
+    }
+
+    if (sdi_comm_dev_messaging_enable(comm_dev_rec->sdi_comm_dev_hdl,
+                enable) != STD_ERR_OK) {
+        PAS_ERR(" Error reading platform comm dev info");
+        return false;
+    }
+
+    return true;
+}
+
 /*
  * dn_pas_comm_dev_platform_info_get is used to get platform info
  * from comm dev device.
@@ -218,6 +236,7 @@ bool dn_pas_comm_dev_platform_info_get(void)
     if ((comm_dev_rec == NULL) || (host_system_rec == NULL)) {
         return false;
     }
+
     if (sdi_comm_dev_platform_info_get(comm_dev_rec->sdi_comm_dev_hdl,
                 platform_info) != STD_ERR_OK) {
         PAS_ERR(" Error reading platform comm dev info");
@@ -240,8 +259,25 @@ bool dn_pas_comm_dev_platform_info_get(void)
 
     comm_dev_rec->valid = true;
 
-    host_system_rec->slot_occupation = 
+    host_system_rec->slot_occupation =
         dn_pas_host_system_slot_get(platform_info->slot_occupation);
+
+    switch (host_system_rec->slot_occupation){
+        case 1:
+            safestrncpy(host_system_rec->fab_id,"A1",PAS_HOST_SYSTEM_FAB_ID_SIZE);
+            break;
+        case 2:
+            safestrncpy(host_system_rec->fab_id,"A2",PAS_HOST_SYSTEM_FAB_ID_SIZE);
+            break;
+        case 3:
+            safestrncpy(host_system_rec->fab_id,"B1",PAS_HOST_SYSTEM_FAB_ID_SIZE);
+            break;
+        case 4:
+            safestrncpy(host_system_rec->fab_id,"B2",PAS_HOST_SYSTEM_FAB_ID_SIZE);
+            break;
+        default :
+            break;
+    }
 
     if (sdi_comm_dev_host_sw_version_get(comm_dev_rec->sdi_comm_dev_hdl,
                 (uint8_t *)buff) != STD_ERR_OK) {
@@ -257,7 +293,7 @@ bool dn_pas_comm_dev_platform_info_get(void)
     return true;
 }
 
-/* 
+/*
  * dn_pas_comm_dev_notify is used to publish comm-dev CPS object
  */
 

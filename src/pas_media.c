@@ -642,6 +642,10 @@ bool dn_pas_phy_media_init (void)
     struct pas_config_media *cfg = dn_pas_config_media_get();
     sdi_entity_hdl_t        entity_hdl;
 
+    if (cfg->port_count == 0) {
+        PAS_ERR("Media count is 0. Media functionality not initialized.");
+        return true;
+    }
     phy_media_count = cfg->port_count;
 
     /* Alloc +1 for easier indexing*/

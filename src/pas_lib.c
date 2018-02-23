@@ -462,6 +462,99 @@ void dn_pas_obj_key_fan_set(
     }
 }
 
+/* Get object qualifier and instance fields for a power monitor object */
+
+void dn_pas_obj_key_pm_get(
+    cps_api_object_t    obj,
+    cps_api_qualifier_t *qual,
+    bool                *entity_type_valid,
+    uint_t              *entity_type,
+    bool                *slot_valid,
+    uint_t              *slot,
+    bool                *pm_idx_valid,
+    uint_t              *pm_idx
+                               )
+{
+    cps_api_key_t         *key = cps_api_object_key(obj);
+    cps_api_object_attr_t a;
+    
+    *entity_type_valid = *slot_valid = *pm_idx_valid = false;
+
+    *qual = cps_api_key_get_qual(key);
+
+    if (cps_api_key_get_len(key) <= CPS_OBJ_KEY_APP_INST_POS) {
+        /* Neither entity type, slot nor power monitor index given */
+
+        return;
+    }
+
+    a = cps_api_get_key_data(obj, BASE_PAS_POWER_MONITOR_ENTITY_TYPE);
+    if ((*entity_type_valid = (a != 0))) {
+        *entity_type = cps_api_object_attr_data_u8(a);
+    }
+    
+    a = cps_api_get_key_data(obj, BASE_PAS_POWER_MONITOR_SLOT);
+    if ((*slot_valid = (a != 0))) {
+        *slot = cps_api_object_attr_data_u8(a);
+    }
+
+    a = cps_api_get_key_data(obj, BASE_PAS_POWER_MONITOR_MONITOR_INDEX);
+    if ((*pm_idx_valid = (a != 0))) {
+        *pm_idx = cps_api_object_attr_data_u8(a);
+    }
+}
+/* Set object qualifier and instance fields for a power-monitor object */
+
+void dn_pas_obj_key_pm_set(
+    cps_api_object_t    obj,
+    cps_api_qualifier_t qual,
+    bool                entity_type_valid,
+    uint_t              entity_type,
+    bool                slot_valid,
+    uint_t              slot,
+    bool                pm_idx_valid,
+    uint_t              pm_idx
+                               )
+{
+    cps_api_key_from_attr_with_qual(cps_api_object_key(obj),
+                                    BASE_PAS_POWER_MONITOR_OBJ,
+                                    qual
+                                    );
+
+    if (entity_type_valid) {
+        uint8_t temp = entity_type;
+
+        cps_api_object_attr_add_u8(obj, BASE_PAS_POWER_MONITOR_ENTITY_TYPE, temp);
+        cps_api_set_key_data(obj,
+                             BASE_PAS_POWER_MONITOR_ENTITY_TYPE,
+                             cps_api_object_ATTR_T_BIN,
+                             &temp, sizeof(temp)
+                             );
+    }
+
+    if (slot_valid) {
+        uint8_t temp = slot;
+
+        cps_api_object_attr_add_u8(obj, BASE_PAS_POWER_MONITOR_SLOT, temp);
+        cps_api_set_key_data(obj,
+                             BASE_PAS_POWER_MONITOR_SLOT,
+                             cps_api_object_ATTR_T_BIN,
+                             &temp, sizeof(temp)
+                             );
+    }
+
+    if (pm_idx_valid) {
+        uint8_t temp = pm_idx;
+
+        cps_api_object_attr_add_u8(obj, BASE_PAS_POWER_MONITOR_MONITOR_INDEX, temp);
+        cps_api_set_key_data(obj,
+                             BASE_PAS_POWER_MONITOR_MONITOR_INDEX,
+                             cps_api_object_ATTR_T_BIN,
+                             &temp, sizeof(temp)
+                             );
+    }
+}
+
 /* Get object qualifier and instance fields for an LED object */
 
 void dn_pas_obj_key_led_get(
