@@ -1,3 +1,9 @@
+opx-pas (3.0.1+opx4) unstable; urgency=medium
+  
+  * Update: Remove virtual package dependency with platform-config
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Wed, 18 Mar 2018 11:00:00 -0800
+
 opx-pas (3.0.1+opx3) unstable; urgency=medium
 
   * Update: Add check while updating the output param (speed_list) and calling dn_pas_media_parse_speed function with
