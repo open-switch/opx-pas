@@ -2,11 +2,15 @@ ACLOCAL_AMFLAGS=-I m4
 
 SUBDIRS = inc
 
+COMMON_HARDEN_FLAGS=-fexceptions -fstack-protector-strong -fstack-protector-all -D_FORTIFY_SOURCE=2 -Wall -Wformat -Wformat-security -Werror
+C_HARDEN_FLAGS=-Wimplicit-function-declaration
+LD_HARDEN_FLAGS=-Wl,-z,defs -Wl,-z,now -Wl,-z,relo
+
 lib_LTLIBRARIES = libopx_pas.la
 libopx_pas_la_SOURCES=   src/platform-utils/dn_platform_utils_imp.c
-libopx_pas_la_CPPFLAGS= -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top_srcdir)/inc/opx/private -I$(includedir)/opx
-libopx_pas_la_CXXFLAGS=-std=c++11
-libopx_pas_la_LDFLAGS= -shared -version-info 1:1:0
+libopx_pas_la_CPPFLAGS= -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top_srcdir)/inc/opx/private -I$(includedir)/opx $(COMMON_HARDEN_FLAGS) -fpic
+libopx_pas_la_CXXFLAGS=-std=c++11 $(COMMON_HARDEN_FLAGS)
+libopx_pas_la_LDFLAGS= $(LD_HARDEN_FLAGS) -shared -version-info 1:1:0
 libopx_pas_la_LIBADD= -lopx_common -lopx_cps_api_common -lopx_cps_class_map -lopx_logging
 
 #copy opx-pas systemd service file to target
@@ -18,6 +22,7 @@ systemdconf_DATA= config/init/opx-pas.service
 bin_PROGRAMS = opx_pas_service
 
 nobase_include_HEADERS = inc/opx/private/dn_pas.h inc/opx/dn_platform_utils.h
+
 
 opx_pas_service_SOURCES = src/pas_lib.c src/pald.c src/pas_monitor/pas_monitor.c src/pas/pas_main.c src/fuse/pas_fuse_main.c \
                        src/pas/pas_chassis_handler.c src/pas/pas_entity_handler.c src/pas/pas_psu_handler.c src/pas/pas_fan_tray_handler.c \
@@ -33,11 +38,11 @@ opx_pas_service_SOURCES+= src/fuse/pas_fuse_fan.c src/fuse/pas_fuse_common.c src
 			src/fuse/pas_fuse_parser.c src/fuse/pas_fuse_diag_mode.c src/remote_poller/pas_remote_poller.c \
 			src/fuse/pas_fuse_nvram.c
 
-opx_pas_service_SOURCES +=	src/pas_comm_dev.c src/pas_host_system.c src/pas/pas_comm_dev_handler.c src/pas/pas_host_system_handler.c
+opx_pas_service_SOURCES += src/pas_comm_dev.c src/pas_host_system.c src/pas/pas_comm_dev_handler.c src/pas/pas_host_system_handler.c
 
-opx_pas_service_CPPFLAGS= -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top_srcdir)/inc/opx/private -I$(includedir)/opx
-opx_pas_service_CXXFLAGS= -std=c++11
-opx_pas_service_LDFLAGS= -shared
+opx_pas_service_CPPFLAGS= -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top_srcdir)/inc/opx/private -I$(includedir)/opx $(COMMON_HARDEN_FLAGS) $(C_HARDEN_FLAGS)
+opx_pas_service_CXXFLAGS= -std=c++11 $(COMMON_HARDEN_FLAGS)
+opx_pas_service_LDFLAGS= $(LD_HARDEN_FLAGS) 
 opx_pas_service_LDADD= libopx_pas.la -lfuse -lopx_common -lopx_sdi_sys -lopx_cps_api_common -lopx_cps_class_map -lrt -lopx_logging -lpthread -lsystemd -ldl
 
 
