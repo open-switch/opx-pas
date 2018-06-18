@@ -382,6 +382,37 @@ static void dn_entity_res_poll(
     dn_entity_power_monitors_poll(rec);
 }
 
+static void dn_entity_fans_rec_clear(pas_entity_t *parent)
+{
+    uint_t        fan_idx;
+    pas_fan_t     *rec;
+
+    for (fan_idx = 1; fan_idx <= parent->num_fans; ++fan_idx) {
+        char res_key[PAS_RES_KEY_SIZE];
+
+        rec = (pas_fan_t *) dn_pas_res_getc(dn_pas_res_key_fan(res_key,
+                                                               sizeof(res_key),
+                                                               parent->entity_type,
+                                                               parent->slot,
+                                                               fan_idx
+                                                               )
+                                            );
+        if (rec == 0)  break;
+
+        rec->targ_speed = rec->max_speed;
+
+    }
+}
+
+/*
+ * clear resource records of the entity
+ */
+static void dn_entity_res_clear(pas_entity_t *rec)
+{
+
+    dn_entity_fans_rec_clear(rec);
+}
+
 /* Set the operational status of an entity */
 
 bool dn_pas_entity_fault_state_set(pas_entity_t *rec, uint_t fault_state)
@@ -487,6 +518,7 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
                 rec->init_ok       = false;
                 rec->init_fail_cnt = 0;
                 rec->eeprom_valid = false;
+                dn_entity_res_clear(rec);
             }
         }
 
@@ -611,10 +643,20 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
                                                   );
                 } else if (fault_status) {
                     if (parent->fault_cnt < FAULT_LIMIT)  ++parent->fault_cnt;
-                    if (parent->fault_cnt >= FAULT_LIMIT) {
+                    if (parent->fault_cnt == FAULT_LIMIT) {
+                            /* only report a log error once on fault */
+                            PAS_WARN("Fault count (%d) exceeded for %s %d\n",
+                                    parent->fault_cnt,
+                                    rec->entity_type == PLATFORM_ENTITY_TYPE_PSU ? "PSU" :
+                                    rec->entity_type == PLATFORM_ENTITY_TYPE_FAN_TRAY ? "Fan Tray" : "Other",
+                                    rec->slot);
+
+                            /* increment count to avoid futher logs (until cleared) */
+                        ++parent->fault_cnt;
+                    }
+                    if ((parent->fault_cnt >= FAULT_LIMIT) && (rec->entity_type == PLATFORM_ENTITY_TYPE_FAN_TRAY)) {
                         dn_pas_entity_fault_state_set(parent,
-                                                      PLATFORM_FAULT_TYPE_EHW
-                                                      );
+                                PLATFORM_FAULT_TYPE_EHW );
                     } else {
                         *rec->oper_fault_state = *prev_oper_fault_state;
                     }

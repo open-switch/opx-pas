@@ -19,7 +19,10 @@ import cps
 import cps_utils
 
 def cps_attr_get(cps_data, attr):
+    try:
         return cps_utils.cps_attr_types_map.from_data(attr, cps_data[attr])
+    except:
+        return ""
 
 def attr_map(val, map):
         return 'Invalid' if val not in map else map[val]
@@ -31,7 +34,7 @@ def oper_status_to_string(oper_status):
         return attr_map(oper_status, {1: 'Up', 2: 'Down', 3: 'Testing', 4: 'Unknown', 5: 'Dormant', 6: 'Not present', 7: 'Lower layer down', 8: 'Fail'})
 
 def fan_airflow_to_string(fan_airflow):
-        return attr_map(fan_airflow, {1: 'Unknown', 2: 'Normal', 3: 'Reverse'})
+    return attr_map(fan_airflow, {1: 'Unknown', 2: 'Normal', 3: 'Reverse', 4: 'NA'})
 
 def fault_type_to_string(fault_type):
         return attr_map(fault_type, {1: 'OK', 2: 'Unknown', 3: 'Communication failure', 4: 'Configuration error', 5: 'Compatibility error', 6: 'Hardware failure', 7: 'No power'})

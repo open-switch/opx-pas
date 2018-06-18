@@ -38,7 +38,8 @@ opx_pas_service_SOURCES+= src/fuse/pas_fuse_fan.c src/fuse/pas_fuse_common.c src
 			src/fuse/pas_fuse_parser.c src/fuse/pas_fuse_diag_mode.c src/remote_poller/pas_remote_poller.c \
 			src/fuse/pas_fuse_nvram.c
 
-opx_pas_service_SOURCES += src/pas_comm_dev.c src/pas_host_system.c src/pas/pas_comm_dev_handler.c src/pas/pas_host_system_handler.c
+opx_pas_service_SOURCES += src/pas_comm_dev.c src/pas_host_system.c src/pas/pas_comm_dev_handler.c src/pas/pas_host_system_handler.c \
+                        src/pas_log.c src/pas_media_properties_discovery.c src/pas_media_info_map.cpp src/pas_media_properties_utils.c
 
 opx_pas_service_CPPFLAGS= -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top_srcdir)/inc/opx/private -I$(includedir)/opx $(COMMON_HARDEN_FLAGS) $(C_HARDEN_FLAGS)
 opx_pas_service_CXXFLAGS= -std=c++11 $(COMMON_HARDEN_FLAGS)

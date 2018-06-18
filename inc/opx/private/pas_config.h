@@ -117,6 +117,7 @@ struct pas_config_media {
     pas_media_type_config  *media_type_config; /* Media type config based on platform. */
     pas_port_info_t  **port_info_tbl   ; /* An array of pointers to info of port*/
     uint_t port_count;                      /* Number of ports. */
+    uint_t poll_cycles_to_skip;             /*How many polling cycles to skip. This forces a delay before reading media EEPROM */
 };
 
 /* Default configuration information for media type */

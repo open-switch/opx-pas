@@ -112,6 +112,7 @@ bool dn_pas_set_host_system_booted(void)
         PAS_ERR("Setting Host System booted failed");
         return false;
     }
+    dn_pas_debug_log("PAS_HOST_SYSTEM", "Host system booted is set, value(%s)", "true");
     host_system_rec->booted = true;
 
     if (dn_pas_comm_dev_platform_info_get() == false) {

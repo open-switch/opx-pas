@@ -463,6 +463,7 @@ t_std_error dn_pald_reinit()
 t_std_error main(int argc, char *argv[])
 {
     PAS_NOTICE("Starting");
+    dn_pas_debug_log("PAS_DAEMON", "PAS starting");
 
     // signal must install before service init
     (void)signal(SIGTERM, sigterm_hdlr);

@@ -123,7 +123,7 @@ static const media_type_map_t media_qsfp_type_tbl [] = {
         PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_PSM4_LR},
     {6, MEDIA_DIST_DONT_CARE, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_QSFP_40GBASE_SM4},
-    {7, 1, 1, MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFP_40GBASE_BIDI},
+    {7, 1, 1, MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFPPLUS_40GBASE_BIDI},
     {8, 2, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_AR_QSFP_40GBASE_CR4_1M},
     {9, 6, QSFP_PROTO_4x10GBASE, MEDIA_LENGTH_DONT_CARE,
@@ -185,6 +185,8 @@ static const media_type_map_t media_qsfp28_type_tbl [] = {
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFP28_128GBASE_FC_SW4},
     {1, 1, MEDIA_PROT_DONT_CARE,
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_QSFP28_100GBASE_SR4},
+    {1, 5, 1,
+        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_SR4_NOF},
     {2, 0, 4, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_QSFP28_4X32_32GBASE_FC_LW},
     {2, 0, MEDIA_PROT_DONT_CARE,
@@ -193,12 +195,16 @@ static const media_type_map_t media_qsfp28_type_tbl [] = {
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_QSFP28_100GBASE_LR4},
     {2, 4, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_LR4_LITE},
+    {2, 7, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_ER4_LITE},
     {4, 0, MEDIA_PROT_DONT_CARE,
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_QSFP28_100GBASE_CWDM4},
     {5, 0, MEDIA_PROT_DONT_CARE,
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_QSFP28_100GBASE_PSM4_IR},
     {6, 0, 1, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_SWDM4},
+    {7, 1, 1,
+        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_BIDI},
     {9, 0, 1,
         1, PLATFORM_MEDIA_TYPE_AR_QSFP28_100GBASE_CR4_1M},
     {9, 0, 1,
@@ -245,8 +251,16 @@ static const media_type_map_t media_qsfp28_type_tbl [] = {
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_2X50_50GBASE_CR2_HALFM},
     {10, 0, 1,
         MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_QSFP28_100GBASE_AOC},
+    {10, 0, 2,
+        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFP28_4X25GBASE_SR_AOC_XXM},
+    {10, 0, 6,
+        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_AR_QSFP28_100GBASE_AOC},
+    {12, 0, 1,
+        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_ESR4},
     {13, 0, 1, MEDIA_LENGTH_DONT_CARE,
-        PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_PSM4_PIGTAIL}
+        PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_PSM4_PIGTAIL},
+    {14, 3, 1,
+        MEDIA_LENGTH_DONT_CARE, PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_DWDM2},
 };
 
 static const media_type_map_t media_depop_qsfp28_type_tbl [] = {
@@ -389,7 +403,15 @@ static const media_type_map_t media_sfpp_type_tbl [] = {
     {12, 10, MEDIA_PROT_DONT_CARE, MEDIA_LENGTH_DONT_CARE,
         PLATFORM_MEDIA_TYPE_AR_SFPPLUS_10GBASE_ACU15M},
     {13, 5, 1, MEDIA_LENGTH_DONT_CARE,
-        PLATFORM_MEDIA_TYPE_SFPPLUS_10GBASE_ZR_TUNABLE}
+        PLATFORM_MEDIA_TYPE_SFPPLUS_10GBASE_ZR_TUNABLE},
+    {14, 1, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP_PLUS_10GBASE_BX10_UP},
+    {14, 4, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP_PLUS_10GBASE_BX40_UP},
+    {15, 1, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP_PLUS_10GBASE_BX10_DOWN},
+    {15, 4, 1, MEDIA_LENGTH_DONT_CARE,
+        PLATFORM_MEDIA_TYPE_SFP_PLUS_10GBASE_BX40_DOWN},
 };
 
 static const sfp_vpn_to_type_map_t media_sfp_vpn_type_tbl [] = {
@@ -473,6 +495,11 @@ static const media_type_to_breakout_map_t media_type_to_breakout_tbl[] = {
         BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_100GIGE,
             BASE_IF_SPEED_25GIGE},
     {PLATFORM_MEDIA_TYPE_4X25_25GBASE_CR1_4M,
+        BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_100GIGE,
+            BASE_IF_SPEED_25GIGE},
+
+
+    {PLATFORM_MEDIA_TYPE_QSFP28_4X25GBASE_SR_AOC_XXM,
         BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, BASE_IF_SPEED_100GIGE,
             BASE_IF_SPEED_25GIGE},
 
@@ -821,7 +848,7 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_product_id_to_optics_type (
  * based on MSA fields.
  */
 
-static BASE_IF_SPEED_t dn_pas_max_fc_supported_speed(uint8_t sfp_fc_speed)
+BASE_IF_SPEED_t dn_pas_max_fc_supported_speed(uint8_t sfp_fc_speed)
 {
     if(sfp_fc_speed & 0x08) {
         return BASE_IF_SPEED_32GFC;
@@ -1336,6 +1363,7 @@ BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
     if (fc_speed) {
         capability = dn_pas_max_fc_supported_speed(fc_speed);
     }
+
     return capability;
 }
 
@@ -1739,5 +1767,32 @@ sdi_media_fw_rev_t pas_media_fw_rev_get (pas_media_t *res_data)
         }
     }
     return rev;
+}
+
+PLATFORM_QSA_ADAPTER_t pas_media_get_qsa_adapter_type (phy_media_tbl_t *mtbl)
+{
+    sdi_qsa_adapter_type_t adap = PLATFORM_QSA_ADAPTER_UNKNOWN;
+    t_std_error rc = STD_ERR_OK;
+
+    rc = sdi_media_qsa_adapter_type_get(mtbl->res_hdl, &adap);
+    if (rc != STD_ERR_OK){
+        PAS_ERR("Unable to get QSA type on port %u", mtbl->fp_port);
+    }
+
+    switch (adap) {
+        case SDI_QSA_ADAPTER_NONE:
+            return PLATFORM_QSA_ADAPTER_NO_QSA;
+        case SDI_QSA_ADAPTER_UNKNOWN:
+            PAS_ERR("QSA type/presence unknown on port %u", mtbl->fp_port);
+            return PLATFORM_QSA_ADAPTER_UNKNOWN;
+        case SDI_QSA_ADAPTER_QSA:
+            return PLATFORM_QSA_ADAPTER_QSA;
+        case SDI_QSA_ADAPTER_QSA28:
+           return PLATFORM_QSA_ADAPTER_QSA28;
+        default:
+            PAS_ERR("Undefined QSA type/presence on port %u. Oper returned  %u", mtbl->fp_port, adap);
+            return PLATFORM_QSA_ADAPTER_UNKNOWN;
+    }
+
 }
 

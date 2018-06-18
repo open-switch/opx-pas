@@ -14,6 +14,7 @@
  * permissions and limitations under the License.
  */
 
+#include "private/pas_comm_dev.h"
 #include "private/pas_temp_sensor.h"
 #include "private/pas_entity.h"
 #include "private/pas_res_structs.h"
@@ -349,6 +350,13 @@ bool dn_temp_sensor_poll(
             break;
         }
                 
+        /*
+         * XXX: This is a hack for Starlynx platforms which have only one
+         * temperature sensor accessible through I2C. On all other platforms,
+         * the following function will return early because there is no
+         * comm_dev resource.
+         */
+        dn_pas_comm_dev_ambient_temp_set(temp);
         rec->prev = rec->cur;
         rec->cur  = temp;
         if (rec->nsamples < 2)  ++rec->nsamples;
