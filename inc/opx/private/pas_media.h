@@ -33,6 +33,50 @@
 #include "cps_api_events.h"
 #include "private/pas_config.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#define MAX_MEDIA_DISPLAY_STRING_LEN     60    /* MAx length of media disp string */
+
+/* prefix is a non standard term we're using to handle double density media. Might change term to "density" */
+#define PAS_MEDIA_INTERFACE_PREFIX_SINGLE_DENSITY       1
+#define PAS_MEDIA_INTERFACE_PREFIX_NORMAL               PAS_MEDIA_INTERFACE_PREFIX_SINGLE_DENSITY
+#define PAS_MEDIA_INTERFACE_PREFIX_DOUBLE_DENSITY       2
+
+
+/* Number of transmission lanes/channel */
+#define PAS_MEDIA_INTERFACE_LANE_COUNT_SINGLE  1
+#define PAS_MEDIA_INTERFACE_LANE_COUNT_DOUBLE  2
+#define PAS_MEDIA_INTERFACE_LANE_COUNT_QUAD    4
+#define MEDIA_INTERFACE_LANE_COUNT_DEFAULT     PAS_MEDIA_INTERFACE_LANE_COUNT_SINGLE   /* Default transceiver lane count */
+
+/* Will start using "transceiver type" since "category' is ambiguous */
+typedef PLATFORM_MEDIA_CATEGORY_t pas_media_transceiver_type;
+typedef uint_t PLATFORM_MEDIA_INTERFACE_PREFIX_t;
+
+/* This is a set of basic attributes needed to qualify a connected device. */
+typedef struct dn_pas_basic_media_info
+{
+    pas_media_transceiver_type            transceiver_type;
+    PLATFORM_MEDIA_CONNECTOR_TYPE_t       connector_type;
+    PLATFORM_MEDIA_CABLE_TYPE_t           cable_type;
+    PLATFORM_MEDIA_INTERFACE_t            media_interface;
+
+    PLATFORM_MEDIA_INTERFACE_QUALIFIER_t  media_interface_qualifier;
+    uint_t                                media_interface_lane_count;
+    PLATFORM_MEDIA_INTERFACE_PREFIX_t     media_interface_prefix;
+    uint_t                                cable_length_cm;
+    bool                                  connector_separable;
+    char                                  display_string[MAX_MEDIA_DISPLAY_STRING_LEN];
+    media_capability_t                    capability_list[1];
+    PLATFORM_EXT_SPEC_COMPLIANCE_CODE_t   ext_spec_code_25g_dac;
+    BASE_IF_SUPPORTED_AUTONEG_t           default_autoneg;
+    BASE_CMN_FEC_TYPE_t                   default_fec;
+}dn_pas_basic_media_info_t;
+
 enum {
     /* Will removed once get my slot function is ready */
     //TODO need to remove PAS_MEDIA_MY_SLOT and use function call
@@ -66,6 +110,43 @@ enum {
     SFP_GIGE_XCVR_CODE_OFFSET       =  0x3,
     QSFP28_OPTION1_BIT_MASK         =  0xff,
     QSFP28_OPTION1_BIT_SHIFT        =  24
+};
+
+/* MSA IDs used to identify media types */
+enum pas_media_discovery_ids {
+
+    PAS_MEDIA_QSFP28_DD_ID_2SR4     = 0x02,
+    PAS_MEDIA_QSFP28_DD_ID_2SR4_AOC = 0x03,
+    PAS_MEDIA_QSFP28_DD_ID_2CWDM4   = 0x06,
+    PAS_MEDIA_QSFP28_DD_ID_2PSM4_IR = 0x07,
+    PAS_MEDIA_QSFP28_DD_ID_2CR4     = 0x08,
+
+    PAS_MEDIA_QSFP28_ID_SR4_AOC     = QSFP_100GBASE_AOC,
+    PAS_MEDIA_QSFP28_ID2_SR4_AOC    = 0x18,
+    PAS_MEDIA_QSFP28_ID_SR4         = QSFP_100GBASE_SR4,
+    PAS_MEDIA_QSFP28_ID_ER4         = 0x04,
+    PAS_MEDIA_QSFP28_ID_LR4         = QSFP_100GBASE_LR4,
+    PAS_MEDIA_QSFP28_ID_CWDM4       = QSFP_100GBASE_CWDM4,
+    PAS_MEDIA_QSFP28_ID_PSM4_IR     = QSFP_100GBASE_PSM4_IR,
+    PAS_MEDIA_QSFP28_ID_CR4         = 0x19,
+    PAS_MEDIA_QSFP28_ID_SWDM4       = 0x20,
+    PAS_MEDIA_QSFP28_ID_BIDI        = 0x21,
+    PAS_MEDIA_QSFP28_ID_DWDM2       = 0x1A,
+    PAS_MEDIA_QSFP28_ID_CR4_CA_L    = QSFP_100GBASE_CR4,
+    PAS_MEDIA_QSFP28_ID_CR4_CA_S    = QSFP28_BRKOUT_CR_CAS,
+    PAS_MEDIA_QSFP28_ID_CR4_CA_N    = QSFP28_BRKOUT_CR_CAN,
+
+    PAS_MEDIA_BX_UP_WAVELENGTH_ID   = 0x04F6,
+    PAS_MEDIA_BX_DOWN_WAVELENGTH_ID = 0x0532,
+
+    PAS_MEDIA_SFP_PLUS_ID_FC_LW     = 0x01,
+    PAS_MEDIA_SFP_PLUS_ID_FC_SW     = 0x04,
+
+    PAS_MEDIA_SFP28_ID_SR           = 0x02,
+    PAS_MEDIA_SFP28_ID_LR           = 0x03,
+    PAS_MEDIA_SFP28_ID_CR_CA_L      = QSFP_100GBASE_CR4,
+    PAS_MEDIA_SFP28_ID_CR_CA_S      = QSFP28_BRKOUT_CR_CAS,
+    PAS_MEDIA_SFP28_ID_CR_CA_N      = QSFP28_BRKOUT_CR_CAN
 };
 
 /*
@@ -109,6 +190,9 @@ typedef struct _phy_media_tbl_t {
     pas_media_t            *res_data;
     uint_t                 channel_cnt;
     pas_media_channel_t    *channel_data;
+    dn_pas_basic_media_info_t media_info;
+    uint_t                 poll_cycles_to_skip;
+    bool                   module_ready;
 } phy_media_tbl_t;
 
 /*
@@ -175,6 +259,64 @@ typedef struct _media_type_to_breakout_map_t {
     BASE_IF_SPEED_t          breakout_speed;
 } media_type_to_breakout_map_t;
 
+/* Callback function type for getting media info from transceiver types*/
+typedef bool (*pas_media_disc_cb_t)(phy_media_tbl_t *, dn_pas_basic_media_info_t*);
+
+/* Function which resolves appropriate callback from map */
+pas_media_disc_cb_t pas_media_get_disc_cb_from_trans_type (uint_t trans_type);
+
+/* Functions which resolve appropriate sfp info from map */
+bool pas_media_get_sfp_info_from_part_no (char* part_no, uint_t* wavelength, PLATFORM_MEDIA_INTERFACE_t* media_if);
+PLATFORM_MEDIA_INTERFACE_t pas_media_get_sfp_media_if_from_id (uint_t id);
+
+/* Funcitons to get connector, cable and string info from map, based on media interface and qualifier */
+PLATFORM_MEDIA_CONNECTOR_TYPE_t pas_media_get_media_interface_connector_type_expected (PLATFORM_MEDIA_INTERFACE_t media_if);
+PLATFORM_MEDIA_CABLE_TYPE_t pas_media_get_media_interface_cable_type_expected (PLATFORM_MEDIA_INTERFACE_t media_if);
+const char* pas_media_get_media_interface_disp_string (PLATFORM_MEDIA_INTERFACE_t media_if);
+
+PLATFORM_MEDIA_CONNECTOR_TYPE_t pas_media_get_media_interface_qualifier_connector_type_expected (PLATFORM_MEDIA_INTERFACE_QUALIFIER_t media_if_qual);
+PLATFORM_MEDIA_CABLE_TYPE_t pas_media_get_media_interface_qualifier_cable_type_expected (PLATFORM_MEDIA_INTERFACE_QUALIFIER_t media_if_qual);
+const char* pas_media_get_media_interface_qualifier_disp_string (PLATFORM_MEDIA_INTERFACE_QUALIFIER_t media_if_qual);
+
+/* Translation between SDI enum and platform enum*/
+PLATFORM_MEDIA_CONNECTOR_TYPE_t pas_media_get_media_connector_enum (sdi_media_connector_t conn);
+
+/* Get if connector is separable from connector type */
+bool pas_media_is_media_connector_separable (PLATFORM_MEDIA_CONNECTOR_TYPE_t conn, bool *result);
+
+/* Functions to get trans type info  */
+const char* pas_media_get_transceiver_type_display_string (pas_media_transceiver_type trans_type);
+uint_t pas_media_get_transceiver_type_channel_count (pas_media_transceiver_type trans_type);
+bool pas_media_get_transceiver_type_is_breakout_supported (pas_media_transceiver_type trans_type);
+
+/* Get far and near breakout values from breakout */
+uint_t pas_media_map_get_breakout_near_end_val (BASE_CMN_BREAKOUT_TYPE_t brk);
+uint_t pas_media_map_get_breakout_far_end_val (BASE_CMN_BREAKOUT_TYPE_t brk);
+
+/* Get speed as integer in mbps */
+uint_t pas_media_map_get_speed_as_uint_mbps (BASE_IF_SPEED_t speed);
+
+/* Get phy mode form speed */
+BASE_IF_PHY_MODE_TYPE_t pas_media_map_get_phy_mode_from_speed (BASE_IF_SPEED_t speed);
+
+/* Functions for deriving media info from transceiver */
+bool dn_pas_std_media_get_basic_properties_sfp(phy_media_tbl_t *mtbl, dn_pas_basic_media_info_t* media_info);
+bool dn_pas_std_media_get_basic_properties_qsfp_plus(phy_media_tbl_t *mtbl, dn_pas_basic_media_info_t* media_info);
+bool dn_pas_std_media_get_basic_properties_qsfp28_dd(phy_media_tbl_t *mtbl, dn_pas_basic_media_info_t* media_info);
+bool dn_pas_std_media_get_basic_properties_qsfp28_depop(phy_media_tbl_t *mtbl, dn_pas_basic_media_info_t* media_info);
+bool dn_pas_std_media_get_basic_properties_sfp_plus(phy_media_tbl_t *mtbl, dn_pas_basic_media_info_t* media_info);
+bool dn_pas_std_media_get_basic_properties_sfp28(phy_media_tbl_t *mtbl, dn_pas_basic_media_info_t* media_info);
+bool dn_pas_std_media_get_basic_properties_qsfp28(phy_media_tbl_t *mtbl, dn_pas_basic_media_info_t* media_info);
+bool dn_pas_std_media_get_basic_properties_fixed_port (phy_media_tbl_t *mtbl, dn_pas_basic_media_info_t* media_info);
+
+/* This derives the media properties including calling the discovery function to the trans type*/
+bool pas_media_get_media_properties(phy_media_tbl_t *mtbl);
+
+/* Use the fc speed code to the derive maximum supported fc speed */
+BASE_IF_SPEED_t dn_pas_max_fc_supported_speed(uint8_t sfp_fc_speed);
+
+/* Get the default brekaout mode from a phy media table */
+BASE_CMN_BREAKOUT_TYPE_t dn_pas_media_get_default_breakout_info( media_capability_t* cap, phy_media_tbl_t *mtbl);
 /*
  * Function declarations of phy media.
  */
@@ -192,6 +334,8 @@ bool dn_pas_media_set_capability_values(media_capability_t* cap,
                                         BASE_IF_PHY_MODE_TYPE_t  phy_mode);
 
 bool dn_pas_is_media_present(uint_t port);
+
+PLATFORM_QSA_ADAPTER_t pas_media_get_qsa_adapter_type (phy_media_tbl_t *mtbl);
 
 uint_t dn_pas_media_channel_count_get (PLATFORM_MEDIA_CATEGORY_t category);
 
@@ -323,4 +467,8 @@ bool dn_pas_media_wavelength_config_set (uint_t port, float value,
  */
 sdi_media_fw_rev_t pas_media_fw_rev_get (pas_media_t *res_data);
 
+
+#ifdef __cplusplus
+}
+#endif
 #endif  //__PAS_DATA_STORE_H

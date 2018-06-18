@@ -31,4 +31,11 @@
 #define PAS_ERR(_msg, ...) \
     EV_LOGGING(PAS, ERR, __func__, _msg, ## __VA_ARGS__)
 
+#define DEBUG_LOG_MAXLEN       (4096)
+#define TIME_STAMP_LEN         (30)
+#define DEBUG_FILE_PATH        "/var/log/pas_debug.txt"
+
+
+void dn_pas_debug_log (char *module, const char *fmt, ...);
+
 #endif /* !defined(__PAS_LOG_H) */

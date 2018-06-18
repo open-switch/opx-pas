@@ -731,7 +731,7 @@ struct {
         func    : media_channel_monitor_threshold_get, 
         args    : { 
                     SDI_MEDIA_STATUS_TXLOSS, 
-                    "%-30s : %d mW",
+                    "%-30s : %d dBm",
                     "RX Loss threshold" 
                   }
     },
@@ -792,7 +792,7 @@ struct {
         args    : { 
                     SDI_MEDIA_INTERNAL_RX_POWER_MONITOR, 
                     "%s\n",
-                    "Internal RX Power Monitor (mW)\n" 
+                    "Internal RX Power Monitor (dBm)\n"
                   }
     },
 

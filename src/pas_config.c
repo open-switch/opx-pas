@@ -470,7 +470,7 @@ static config_entry_t media_app_cfg_tbl [] = {{"media", dn_pas_media_read_app_co
 static struct pas_config_media cfg_media[1] = {
     { poll_interval: 1000, rtd_interval: 5, lockdown: false, led_control: false,
         identification_led_control: false, pluggable_media_count: 0, lr_restriction: false, media_count: 0,
-        media_type_config: NULL, port_info_tbl: NULL, port_count: 0}
+        media_type_config: NULL, port_info_tbl: NULL, port_count: 0, poll_cycles_to_skip: 0}
 };
 /* Searches for the appropriate string to enum map*/
 bool convert_str_to_enum(char* label, char* value, uint_t* result) 
@@ -760,6 +760,13 @@ static void dn_pas_config_media(std_config_node_t nd)
         if (strcmp(a, "enable") == 0) {
             cfg_media->lr_restriction = true;
         }
+    }
+
+    a = std_config_attr_get(nd, "poll-cycles-to-skip");
+    if (a != NULL) {
+        sscanf(a, "%u", &cfg_media->poll_cycles_to_skip);
+        PAS_TRACE("Inserted media polling will be delayed for %u seconds upon insertion",
+            (cfg_media->poll_cycles_to_skip) * cfg_media->rtd_interval );
     }
 
     if (access(pas_media_app_cfg_filename, F_OK) == 0) {

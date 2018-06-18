@@ -74,6 +74,11 @@ static const phy_media_member_info_t  media_mem_info[] = {
         MEMEBER_SIZEOF(pas_media_t, insertion_timestamp),
         cps_api_object_ATTR_T_U64},
 
+    {BASE_PAS_MEDIA_QSA_ADAPTER,
+        offsetof(pas_media_t, qsa_adapter_type),
+        MEMEBER_SIZEOF(pas_media_t, qsa_adapter_type),
+        cps_api_object_ATTR_T_U32},
+
     {BASE_PAS_MEDIA_ADMIN_STATUS, offsetof(pas_media_t, admin_status),
         MEMEBER_SIZEOF(pas_media_t, admin_status), cps_api_object_ATTR_T_U32},
 
@@ -401,6 +406,7 @@ static const cps_api_attr_id_t pp_list[] = { BASE_PAS_MEDIA_PRESENT,
                                       BASE_PAS_MEDIA_CATEGORY,
                                       BASE_PAS_MEDIA_TYPE,
                                       BASE_PAS_MEDIA_CAPABILITY,
+                                      BASE_PAS_MEDIA_QSA_ADAPTER,
                                       BASE_PAS_MEDIA_VENDOR_ID,
                                       BASE_PAS_MEDIA_SERIAL_NUMBER,
                                       BASE_PAS_MEDIA_QUALIFIED };
@@ -446,6 +452,9 @@ static bool dn_pas_media_obj_attr_add (phy_media_member_info_t const *memp,
 
 static bool dn_pas_media_obj_attr_list_add (phy_media_member_info_t *memp,
         cps_api_object_t obj, void * res_data, size_t member_size, int count);
+
+static bool dn_pas_media_add_basic_media_info_to_obj (dn_pas_basic_media_info_t* media_info,
+                                                 cps_api_object_t *obj);
 
 /* Returns whether a port is fixed(false) or pluggable (true)*/
 bool dn_pas_is_port_pluggable(uint_t port)
@@ -716,7 +725,8 @@ static bool dn_media_data_store_init (uint_t count)
         phy_media_tbl[cnt].fp_port = cnt;
         phy_media_tbl[cnt].port_density = cfg->port_info_tbl[cnt]->port_density;
         phy_media_tbl[cnt].res_data->lockdown_state = false;
-
+        phy_media_tbl[cnt].poll_cycles_to_skip = cfg->poll_cycles_to_skip;
+        phy_media_tbl[cnt].module_ready = false;
         char res_key[PAS_RES_KEY_SIZE];
 
         if (dn_pas_res_insertc(dn_pas_res_key_media(res_key,
@@ -747,6 +757,19 @@ static bool dn_media_data_store_init (uint_t count)
             phy_media_tbl[cnt].max_port_speed         = cfg->port_info_tbl[cnt]->speed;
             phy_media_tbl[cnt].res_data->present      = cfg->port_info_tbl[cnt]->present;
             phy_media_tbl[cnt].res_data->qualified = true;
+            phy_media_tbl[cnt].res_data->qsa_adapter_type = PLATFORM_QSA_ADAPTER_NO_QSA;
+
+            phy_media_tbl[cnt].res_data->media_capabilities[0].media_speed =
+                               cfg->port_info_tbl[cnt]->speed;
+            phy_media_tbl[cnt].res_data->media_capabilities[0].breakout_speed =
+                               cfg->port_info_tbl[cnt]->speed;
+            phy_media_tbl[cnt].res_data->media_capabilities[0].breakout_mode =
+                               BASE_CMN_BREAKOUT_TYPE_BREAKOUT_1X1;
+            phy_media_tbl[cnt].res_data->media_capabilities[0].phy_mode =
+                               pas_media_map_get_phy_mode_from_speed(
+                                         cfg->port_info_tbl[cnt]->speed);
+
+            pas_media_get_media_properties(&(phy_media_tbl[cnt]));
             }
 
         else {
@@ -862,7 +885,7 @@ cps_api_object_t  dn_pas_media_data_publish (uint_t port,
                                            obj,mtbl,port) == false) {
                 break;
             }
-             /* Add default media capabilities */
+            /* Add default media capabilities */
             if (!dn_pas_media_add_capabilities_to_obj(
                    dn_pas_media_get_default_media_capability(mtbl), obj)){
                 PAS_ERR("Failed to add default capability attrs, port %s",
@@ -870,6 +893,14 @@ cps_api_object_t  dn_pas_media_data_publish (uint_t port,
                         );
                 break;
             }
+            /* Add basic media properties */
+            if (!dn_pas_media_add_basic_media_info_to_obj(&(mtbl->media_info), obj)){
+                PAS_ERR("Failed to add basic media properties attrs, port %s",
+                        mtbl->port_str
+                        );
+                break;
+            }
+
         } else {
             cps_api_attr_id_t attr = BASE_PAS_MEDIA_PRESENT;
             if (dn_pas_media_obj_all_attr_add(media_mem_info,
@@ -904,7 +935,6 @@ cps_api_object_t  dn_pas_media_data_publish (uint_t port,
 
                 break;
             }
-
             attr = BASE_PAS_MEDIA_CAPABILITY;
 
             if (dn_pas_media_obj_all_attr_add(media_mem_info,
@@ -934,7 +964,17 @@ cps_api_object_t  dn_pas_media_data_publish (uint_t port,
                         port);
                 break;
             }
-            
+
+            attr = BASE_PAS_MEDIA_QSA_ADAPTER;
+
+            if (dn_pas_media_obj_all_attr_add(media_mem_info,
+                        ARRAY_SIZE(media_mem_info), &attr, 1, obj,
+                         mtbl->res_data) == false) {
+                PAS_ERR("Failed to add attribute list, QSA adapter, port %u",
+                        port);
+                break;
+            }
+
             if (dn_pas_media_add_port_info_to_cps_obj(obj, mtbl, port)==false) {
                 break;
             }
@@ -1054,7 +1094,6 @@ static bool dn_pas_media_presence_poll (uint_t port, cps_api_object_t obj)
     phy_media_tbl_t          *mtbl = NULL;
     uint_t                   slot = PAS_MEDIA_MY_SLOT;
     bool                     presence = false;
-
 
     mtbl = dn_phy_media_entry_get(port);
 
@@ -1252,6 +1291,9 @@ static bool dn_pas_media_type_poll (uint_t port, cps_api_object_t obj)
             &mtbl->res_data->connector, obj, BASE_PAS_MEDIA_CONNECTOR, &ret);
 
     type = dn_pas_media_type_get(mtbl->res_data);
+
+
+    mtbl->res_data->qsa_adapter_type = pas_media_get_qsa_adapter_type (mtbl);
 
     if ((type == PLATFORM_MEDIA_TYPE_SFPPLUS_10GBASE_ZR_TUNABLE)
             && (mtbl->res_data->target_wavelength != 0)) {
@@ -2696,6 +2738,95 @@ static bool dn_pas_media_default_capability_poll(uint_t port,
    return true;
 }
 
+static bool dn_pas_media_add_basic_media_info_to_obj (dn_pas_basic_media_info_t* media_info,
+                                                 cps_api_object_t *obj)
+{
+    bool ret = true;
+    if (obj == NULL) {
+        PAS_ERR("Attempt to add media info to null CPS object");
+        return false;
+    }
+    if (media_info == NULL) {
+        PAS_ERR("Attempt to add null media info to CPS object");
+        return false;
+    }
+    /* TODO: HAndle capability and prefix addition */
+
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_MEDIA_INTERFACE,
+            &(media_info->media_interface),
+            sizeof(media_info->media_interface)) == false) {
+        PAS_ERR("Failed to add media info (media interface) object attr");
+        ret &= false;
+    }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_CONNECTOR_TYPE,
+            &(media_info->connector_type),
+            sizeof(media_info->connector_type)) == false) {
+        PAS_ERR("Failed to add media info (connetcor type) object attr");
+        ret &= false;
+    }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_CABLE_TYPE,
+            &(media_info->cable_type),
+            sizeof(media_info->cable_type)) == false) {
+        PAS_ERR("Failed to add media info (cable type) object attr");
+        ret &= false;
+    }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_MEDIA_INTERFACE_QUALIFIER,
+            &(media_info->media_interface_qualifier),
+            sizeof(media_info->media_interface_qualifier)) == false) {
+        PAS_ERR("Failed to add media info (media interface qualifier) object attr");
+        ret &= false;
+    }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_MEDIA_INTERFACE_LANE_COUNT,
+            &(media_info->media_interface_lane_count),
+            sizeof(media_info->media_interface_lane_count)) == false) {
+        PAS_ERR("Failed to add media info (media interface lane count) object attr");
+        ret &= false;
+    }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_CABLE_LENGTH_CM,
+            &(media_info->cable_length_cm),
+            sizeof(media_info->cable_length_cm)) == false) {
+        PAS_ERR("Failed to add media info (cable length in centimeters) object attr");
+        ret &= false;
+    }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_CONNECTOR_SEPARABLE,
+            &(media_info->connector_separable),
+            sizeof(media_info->connector_separable)) == false) {
+        PAS_ERR("Failed to add media info (connector separable) object attr");
+        ret &= false;
+    }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_DISPLAY_STRING,
+            &(media_info->display_string),
+            sizeof(media_info->display_string)) == false) {
+        PAS_ERR("Failed to add media info (display string) object attr");
+        ret &= false;
+     }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_EXT_SPEC_COMPLIANCE_CODE,
+            &(media_info->ext_spec_code_25g_dac),
+            sizeof(media_info->ext_spec_code_25g_dac)) == false) {
+        PAS_ERR("Failed to add media info (extended specification compliance code) object attr");
+        ret &= false;
+     }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_DEFAULT_AUTONEG,
+            &(media_info->default_autoneg),
+            sizeof(media_info->default_autoneg)) == false) {
+        PAS_ERR("Failed to add media info (default autoneg) object attr");
+        ret &= false;
+     }
+
+
+    return ret;
+}
+
 static bool dn_pas_media_add_capabilities_to_obj(media_capability_t *cap,
                                                  cps_api_object_t *obj)
 {
@@ -2771,6 +2902,7 @@ static bool dn_pas_media_oir_poll (uint_t port, cps_api_object_t obj)
         return false;
     }
     bool cur_presence = dn_pas_phy_media_is_present(port);
+
     if ((cur_presence == true)
             && (mtbl->res_data->type == PLATFORM_MEDIA_TYPE_SFP_T)) {
 
@@ -2787,7 +2919,6 @@ static bool dn_pas_media_oir_poll (uint_t port, cps_api_object_t obj)
     if (dn_pas_phy_media_is_present(port) == false) {
 
         dn_pas_media_high_power_mode_set(port, false);
-
         PAS_NOTICE("Optic removed from front panel port (%d).", port);
 
         return ret;
@@ -2881,7 +3012,7 @@ static bool dn_pas_media_oir_poll (uint_t port, cps_api_object_t obj)
 
         ret = false;
     }
-
+    pas_media_get_media_properties(mtbl);
     return ret;
 }
 
@@ -3074,6 +3205,7 @@ void dn_pas_phy_media_poll (uint_t port, bool publish)
     }
 
     if (dn_pas_phy_media_is_present(port) == true) {
+
         struct pas_config_media *cfg = dn_pas_config_media_get();
 
         if ((mtbl->res_data->polling_count > 0)

@@ -509,6 +509,7 @@ typedef struct _pas_media_t {
     char                         vendor_id [SDI_MEDIA_MAX_VENDOR_OUI_LEN];
     char                         serial_number [SDI_MEDIA_MAX_VENDOR_SERIAL_NUMBER_LEN];
     bool                         qualified;
+    PLATFORM_QSA_ADAPTER_t       qsa_adapter_type;
     bool                         high_power_mode;
     uint_t                       identifier;
     uint_t                       ext_identifier;

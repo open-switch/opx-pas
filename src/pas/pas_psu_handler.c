@@ -83,6 +83,12 @@ static t_std_error dn_pas_psu_get1(
     
     if (rec->parent->present) {
         /* Add result attributes to response object */
+        if ((rec->fan_airflow_type != PLATFORM_FAN_AIRFLOW_TYPE_NORMAL) &&
+            (rec->fan_airflow_type != PLATFORM_FAN_AIRFLOW_TYPE_REVERSE) &&
+            (rec->fan_airflow_type != PLATFORM_FAN_AIRFLOW_TYPE_NOT_APPLICABLE)) {
+
+             rec->fan_airflow_type = PLATFORM_FAN_AIRFLOW_TYPE_UNKNOWN;
+        }
         
         cps_api_object_attr_add_u8(resp_obj,
                                    BASE_PAS_PSU_INPUT_TYPE,

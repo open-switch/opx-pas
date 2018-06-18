@@ -310,11 +310,13 @@ bool dn_pas_comm_dev_notify(cps_api_object_t  obj)
 }
 
 /*
- * dn_pas_comm_dev_temp_set is used to update temperature sensor
+ * dn_pas_comm_dev_npu_temp_set is used to update temperature sensor
  * data to comm dev
  */
 
-void dn_pas_comm_dev_temp_set (int temp)
+#define NPU_TEMP_CRITICAL     (105)
+
+void dn_pas_comm_dev_npu_temp_set (int temp)
 {
     pas_comm_dev_t    *cd_rec = dn_comm_dev_rec_get();
     pas_host_system_t *hs_rec = dn_host_system_rec_get();
@@ -324,10 +326,56 @@ void dn_pas_comm_dev_temp_set (int temp)
         return;
     }
 
-    if(sdi_comm_dev_host_temperature_set(cd_rec->sdi_comm_dev_hdl,
+    dn_pas_lock();
+    if (dn_pald_diag_mode_get()) {
+        dn_pas_unlock();
+        return;
+    }
+
+    if (temp >= NPU_TEMP_CRITICAL) {
+        dn_pas_debug_log("PAS_NPU_TEMP_SENSOR", "NPU temperature crossed critical threshold value(%d)", temp);
+    }
+    if(sdi_comm_dev_host_npu_temperature_set(cd_rec->sdi_comm_dev_hdl,
                     temp) != STD_ERR_OK) {
         PAS_ERR("Failed to update NPU temperature sensor date to comm dev");
     }
+
+    dn_pas_unlock();
+    return;
+}
+
+/*
+ * dn_pas_comm_dev_ambient_temp_set is used to update temperature sensor
+ * data to comm dev
+ */
+
+#define AMBIENT_TEMP_CRITICAL (85)
+
+void dn_pas_comm_dev_ambient_temp_set (int temp)
+{
+    pas_comm_dev_t    *cd_rec = dn_comm_dev_rec_get();
+    pas_host_system_t *hs_rec = dn_host_system_rec_get();
+
+    if ((cd_rec == NULL) || (hs_rec == NULL)
+            || (hs_rec->booted == false)) {
+        return;
+    }
+
+    dn_pas_lock();
+    if (dn_pald_diag_mode_get()) {
+        dn_pas_unlock();
+        return;
+    }
+
+    if (temp >= AMBIENT_TEMP_CRITICAL) {
+        dn_pas_debug_log("PAS_AMBIENT_TEMP_SENSOR", "Ambient temperature crossed critical threshold value(%d)", temp);
+    }
+    if(sdi_comm_dev_host_ambient_temperature_set(cd_rec->sdi_comm_dev_hdl,
+                    temp) != STD_ERR_OK) {
+        PAS_ERR("Failed to update Ambient temperature sensor date to comm dev");
+    }
+
+    dn_pas_unlock();
     return;
 }
 

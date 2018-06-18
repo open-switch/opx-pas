@@ -93,8 +93,8 @@ static t_std_error dn_pas_fan_get1(
         
         dn_entity_poll(rec->parent, true);
     }
-    
-    if (rec->parent->present) {
+
+    if (rec->parent && rec->parent->present) {
         /* Add result attributes to response object */    
         
         if (qual == cps_api_qualifier_TARGET) {

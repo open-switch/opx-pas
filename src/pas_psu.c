@@ -115,6 +115,9 @@ bool dn_psu_poll(pas_psu_t *rec, bool update_allf)
         case SDI_PWR_AIR_FLOW_REVERSE:
             rec->fan_airflow_type = PLATFORM_FAN_AIRFLOW_TYPE_REVERSE;
             break;
+        case SDI_PWR_AIR_FLOW_NOT_APPLICABLE:
+            rec->fan_airflow_type = PLATFORM_FAN_AIRFLOW_TYPE_NOT_APPLICABLE;
+            break;
 
         default:
             rec->fan_airflow_type = PLATFORM_FAN_AIRFLOW_TYPE_UNKNOWN;

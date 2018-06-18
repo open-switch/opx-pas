@@ -246,7 +246,7 @@ static bool dn_remote_temp_sensor_poll(void)
             break;
         }
 
-        dn_pas_comm_dev_temp_set(temp);
+        dn_pas_comm_dev_npu_temp_set(temp);
         rec->prev = rec->cur;
         rec->cur  = temp;
         if (rec->nsamples < 2)  ++rec->nsamples;

@@ -375,14 +375,19 @@ t_std_error dn_pas_chassis_get(cps_api_get_params_t * param, size_t key_idx)
     return (STD_ERR_OK);
 }
 
+#define PAS_REBOOT_CMD_LEN      (128)
+#define PAS_REBOOT_REASON_LEN   (4096)
+#define PAS_CMD_BUFF_SIZE       (PAS_REBOOT_REASON_LEN + PAS_REBOOT_CMD_LEN)
 
 static t_std_error dn_pas_chassis_set1(
                     cps_api_transaction_params_t *param,
                     cps_api_qualifier_t           qual,
-                    uint8_t                       reboot_type)
+                    uint8_t                       reboot_type,
+                    char                         *reboot_reason)
 {
     cps_api_object_t old_obj;
     pas_chassis_t    *rec;
+    char             cmd_buf[PAS_CMD_BUFF_SIZE] = "";
 
     rec = (pas_chassis_t *) dn_pas_res_getc(dn_pas_res_key_chassis());
     if (rec == 0) {
@@ -411,7 +416,10 @@ static t_std_error dn_pas_chassis_set1(
 
     rec->reboot_type = reboot_type;
 
-    if (system("/usr/sbin/opx-reload") != 0) {
+    snprintf(cmd_buf, sizeof(cmd_buf) - 1, "/usr/sbin/opx-reload %s",
+             reboot_reason);
+
+    if (system(cmd_buf) != 0) {
         PAS_ERR("Reboot failed");
 
         return (STD_ERR(PAS, FAIL, 0));
@@ -427,6 +435,8 @@ t_std_error dn_pas_chassis_set(cps_api_transaction_params_t* param,
     cps_api_qualifier_t      qual;
     uint8_t                  reboot_type;
     cps_api_object_attr_t    a;
+    char                     reboot_reason[PAS_REBOOT_REASON_LEN];
+    uint32_t                 len = 0;
 
     if (cps_api_object_type_operation(cps_api_object_key(obj)) != cps_api_oper_SET) {
         return cps_api_ret_code_ERR;
@@ -436,7 +446,6 @@ t_std_error dn_pas_chassis_set(cps_api_transaction_params_t* param,
     if (a == CPS_API_ATTR_NULL) {
         return (STD_ERR(PAS, FAIL, 0));
     }
-
     reboot_type = cps_api_object_attr_data_u8(a);
 
     if (reboot_type != PLATFORM_REBOOT_TYPE_COLD &&
@@ -445,10 +454,17 @@ t_std_error dn_pas_chassis_set(cps_api_transaction_params_t* param,
 
         return (STD_ERR(PAS, FAIL, 0));
     }
+    memset(reboot_reason, 0, sizeof(reboot_reason));
+    a = cps_api_object_attr_get(obj, BASE_PAS_CHASSIS_REBOOT_REASON);
+    if (a != CPS_API_ATTR_NULL) {
+        len = (cps_api_object_attr_len(a) > sizeof(reboot_reason) - 1)
+            ?  sizeof(reboot_reason) - 1 : cps_api_object_attr_len(a);
+        strncpy(reboot_reason, (char *) cps_api_object_attr_data_bin(a), len);
+    }
 
     qual = cps_api_key_get_qual(cps_api_object_key(obj));
 
-    dn_pas_chassis_set1(param, qual, reboot_type);
+    dn_pas_chassis_set1(param, qual, reboot_type, reboot_reason);
 
     return STD_ERR_OK;
 }
