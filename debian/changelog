@@ -1,20 +1,19 @@
 opx-pas (3.1.2) unstable; urgency=medium
 
   * Update: Media Cable Naming/Organization Cleanup in Software
-  * Update: Enhance PAS logging to handle/identify IOM unknown power off and reboot scenarios.
   * Update: Added debug logs for booted flag set and temperature crossing critical thresholds.
-  * Bugfix: Some temperatures not reported on LE IOM
   * Update: Push temperature values to FReD
   * Bugfix: Added entries for media IF and ESR discovery
   * Bugfix: Added changes for fixed port property discovery
   * Bugfix: Fantray Airflow type should never be 0
   * Update: QSA Adapter Support
-  * Update: Isilon REST reporting of fan failure incorrectly
   * Update: PAS - reload feature enhancement
+  * Update: Made changes to handle reboot reason as optional attribute.
+            Enhanced reload handler to accept tow mandatory parameters: service name and reboot reason.
   * Update: Port-channel support in FPORT mode
   * Bugfix: PAS should report "Not Applicable" for airflow direction of PSU which does not have fans
   * Bugfix: handle reboot reason as optional attribute
-
+  
  -- Dell EMC <ops-dev@lists.openswitch.net>  Tue, 29 May 2018 21:00:00 -0800
 
 opx-pas (3.0.1+opx5) unstable; urgency=medium

@@ -114,7 +114,6 @@ enum {
 
 /* MSA IDs used to identify media types */
 enum pas_media_discovery_ids {
-
     PAS_MEDIA_QSFP28_DD_ID_2SR4     = 0x02,
     PAS_MEDIA_QSFP28_DD_ID_2SR4_AOC = 0x03,
     PAS_MEDIA_QSFP28_DD_ID_2CWDM4   = 0x06,
