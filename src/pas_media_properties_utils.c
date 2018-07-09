@@ -29,6 +29,11 @@
 #include "private/pas_event.h"
 #include "private/pas_utils.h"
 #include <stdlib.h>
+#include "std_utils.h"
+
+#include "std_utils.h"
+
+#define QSFP_PLUS_40G_BIDI_PART_NUMBER "AFBR-79EBPZ-CS"
 
 /* Function to construct the display string from a series of attibutes */
 /* Consumer services will add extra string if QSA detected  */
@@ -36,14 +41,15 @@
 static void pas_media_construct_display_string (dn_pas_basic_media_info_t*
                                                    media_info)
 {
-    char far_end_str[10] = {0};
-    char speed_str[20] = {0};
-    char length_str[10] = {0};
+    char far_end_str[10]  = {0};
+    char speed_str[20]    = {0};
+    char length_str[10]   = {0};
     char media_if_str[20] = {0};
-    char prefix_str[5] = {0};
-    char postfix_str[5] = {0};
+    char prefix_str[5]    = {0};
+    char postfix_str[5]   = {0};
+    const char* qsa_str   = NULL;
 
-    const char fc_str[] = " FC";
+    const char fc_str[]   = " FC";
     const char* trans_str =
             pas_media_get_transceiver_type_display_string(media_info->transceiver_type);
     const char* media_interface_str =
@@ -61,13 +67,13 @@ static void pas_media_construct_display_string (dn_pas_basic_media_info_t*
             * media_info->media_interface_lane_count)
                        / ( (far_end < 1) ? 1 : far_end);
 
-    if (brk_speed > 1000) {
+    if (brk_speed >= 1000) {
         brk_speed_unit = 'G';
         brk_speed /= 1000;
     }
 
     if (far_end > 1){
-        snprintf (far_end_str, sizeof(far_end_str), "%ux", far_end);
+        snprintf (far_end_str, sizeof(far_end_str), "%ux(", far_end);
     }
     if (media_info->media_interface_prefix > 1){
         snprintf (prefix_str, sizeof(prefix_str), "%d",
@@ -96,12 +102,22 @@ static void pas_media_construct_display_string (dn_pas_basic_media_info_t*
         snprintf(length_str, sizeof(length_str)," %.1fM",
                 ((float)(media_info->cable_length_cm))/100.0);
         snprintf(media_info->display_string,
-                sizeof(media_info->display_string),"%s%s%s%s",
-                        trans_str, speed_str, media_if_str, length_str);
+                sizeof(media_info->display_string),"%s%s%s%s%s",
+                        trans_str, speed_str, media_if_str,(far_end > 1) ? ")" :"", length_str);
     }else {
         snprintf(media_info->display_string,
-                sizeof(media_info->display_string),"%s%s%s",
-                        trans_str, speed_str, media_if_str);
+                sizeof(media_info->display_string),"%s%s%s%s",
+                        trans_str, speed_str, media_if_str, (far_end > 1) ? ")" :"");
+    }
+
+    qsa_str = pas_media_get_qsa_string_from_enum(media_info->qsa_adapter_type);
+    if (qsa_str != NULL){
+        if (strlen(media_info->display_string) + strlen(qsa_str) <  sizeof(media_info->display_string)){
+            strcat(media_info->display_string, qsa_str);
+        } else {
+            PAS_ERR ("Unable to append QSA info %s to display name %s ; because name too long for buffer",
+                qsa_str, media_info->display_string);
+        }
     }
 }
 
@@ -220,6 +236,7 @@ static bool pas_media_populate_basic_media_info(
     return true;
 }
 
+
 /* Function to get media properties including display string, connector, cable etc */
 
 bool pas_media_get_media_properties(phy_media_tbl_t *mtbl)
@@ -236,6 +253,10 @@ bool pas_media_get_media_properties(phy_media_tbl_t *mtbl)
     media_info->connector_separable  = false;
     media_info->default_autoneg = 0;
     media_info->default_fec = 0;
+    media_info->qsa_adapter_type = 0;
+    media_info->qsa28_expected = false;
+
+
     pas_media_disc_cb_t disc_cb      = NULL;   
     bool ret                         = false;
 
@@ -250,11 +271,19 @@ bool pas_media_get_media_properties(phy_media_tbl_t *mtbl)
     /* Get the callback to handle given trans type */
     disc_cb = pas_media_get_disc_cb_from_trans_type(
                             media_info->transceiver_type);
+    safestrncpy(media_info->display_string, PAS_MEDIA_UNKNOWN_MEDIA, sizeof(media_info->display_string));
+    safestrncpy(media_info->transceiver_type_string,
+                   PAS_MEDIA_UNKNOWN_MEDIA_CATEGORY, sizeof(media_info->transceiver_type_string));
+
     if (disc_cb == NULL) {
         PAS_ERR("FATAL: No media discovery implementation for media on port %u",
                            mtbl->fp_port);
+
         return false;
     }
+    safestrncpy(media_info->transceiver_type_string,
+                pas_media_get_transceiver_type_display_string(media_info->transceiver_type),
+                          sizeof(media_info->transceiver_type_string));
     ret = disc_cb (mtbl, media_info);
 
     /* to do capability stuff */
@@ -265,11 +294,25 @@ bool pas_media_get_media_properties(phy_media_tbl_t *mtbl)
     }
     media_info->cable_length_cm = (media_info->connector_separable) ? 0 : pas_media_get_cable_length_cm(mtbl);
 
+
+    media_info->qsa_adapter_type =  mtbl->res_data->qsa_adapter_type;
+
+    media_info->qsa28_expected = ((media_info->qsa_adapter_type == PLATFORM_QSA_ADAPTER_QSA)
+                                 && (media_info->capability_list[0].media_speed == BASE_IF_SPEED_25GIGE));
+
     pas_media_construct_display_string(media_info);
     pas_media_resolve_autoneg(mtbl);
 
     if ((media_info->display_string)[0] == '\0') {
         ret &= false;
     }
+
+    /* If legacy type is not know, try to derive from name */
+    if (mtbl->res_data->type == PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN) {
+        mtbl->res_data->type = pas_media_get_enum_from_new_media_name (media_info->display_string);
+    }
+
+    /* For now, media name is same as display str*/
+    safestrncpy(media_info->media_name, media_info->display_string, sizeof(media_info->media_name));
     return ret;
 }

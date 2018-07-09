@@ -247,7 +247,8 @@ static t_std_error dn_pas_fan_set1(
     pas_oper_fault_state_t prev_oper_fault_state[1];
     t_std_error            rc = STD_ERR_OK;
     uint_t                 targ_speed = 0;
-    bool                   notif = false;
+    bool                   notif = false, power_status;
+    pas_entity_t           *parent;
 
     /* Look up object in cache */
     
@@ -264,6 +265,21 @@ static t_std_error dn_pas_fan_set1(
         /* Not found */
 
         return (STD_ERR(PAS, NEXIST, 0));
+    }
+
+    parent = rec->parent;
+    /* Do not attempt to set speed for a PSU fan if it is not powered on */
+    if (parent->entity_type == PLATFORM_ENTITY_TYPE_PSU) {
+        if (STD_IS_ERR(sdi_entity_psu_output_power_status_get(
+                                parent->sdi_entity_hdl, &power_status))) {
+            dn_pas_entity_fault_state_set(parent,
+                                          PLATFORM_FAULT_TYPE_ECOMM);
+            return (STD_ERR(PAS, FAIL, 0));
+        } else if (!power_status) {
+            dn_pas_entity_fault_state_set(parent,
+                                          PLATFORM_FAULT_TYPE_EPOWER);
+            return (STD_ERR(PAS, FAIL, 0));
+        }
     }
 
     *prev_oper_fault_state = *rec->oper_fault_state;

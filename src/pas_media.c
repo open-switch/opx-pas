@@ -2822,7 +2822,27 @@ static bool dn_pas_media_add_basic_media_info_to_obj (dn_pas_basic_media_info_t*
         PAS_ERR("Failed to add media info (default autoneg) object attr");
         ret &= false;
      }
-
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_CATEGORY_STRING,
+            &(media_info->transceiver_type_string),
+            sizeof(media_info->transceiver_type_string)) == false) {
+        PAS_ERR("Failed to add media info (category string) object attr");
+        ret &= false;
+     }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_MEDIA_NAME,
+            &(media_info->media_name),
+            sizeof(media_info->media_name)) == false) {
+        PAS_ERR("Failed to add media info (media_name) object attr");
+        ret &= false;
+     }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_QSA28_EXPECTED,
+            &(media_info->qsa28_expected),
+            sizeof(media_info->qsa28_expected)) == false) {
+        PAS_ERR("Failed to add media info (qsa28 expected) object attr");
+        ret &= false;
+     }
 
     return ret;
 }

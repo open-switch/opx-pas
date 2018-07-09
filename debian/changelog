@@ -1,3 +1,20 @@
+opx-pas (3.1.5) unstable; urgency=medium
+
+  * Update: Allow Media EEPROM Read/Write From FUSE.
+  * Bugfix: Fix Null QSA Str.
+  * Bugfix: S4100- Reset alarm status for FAN and PSU after PSU OIR.
+  * Bugfix: 10G Amphenol 10m DAC cable is displayed incorrectly in "show inventory media".
+  * Update: Added QSA flag.
+  * Bugfix: Z9264F - "show inventory" output doesn't show proper Power Supply details, 
+            Part no., PPID, Rev information.
+  * Update: Publish  entity info when enetity info valid flag changes.
+  * Bugfix: Stop dn_ppm crash and multiple reboot on upgradation to build 7513.
+  * Update: Organizing all media details into a single central file
+  * Update: Added CISCO bidi check
+  * Update: Added 25G AOC discovery
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Mon, 9 Jul 2018 21:00:00 -0800
+
 opx-pas (3.1.2) unstable; urgency=medium
 
   * Update: Media Cable Naming/Organization Cleanup in Software

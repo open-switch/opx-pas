@@ -27,7 +27,6 @@
 #include "std_error_codes.h"
 #include "sdi_entity.h"
 #include "sdi_fan.h"
-#include "cps_api_service.h"
 #include "dell-base-platform-common.h"
 #include "dell-base-pas.h"
 
@@ -146,7 +145,7 @@ bool dn_fan_poll(
     pas_entity_t           *parent = rec->parent;
     bool                   fault_status;
     uint_t                 speed, targ_speed;
-    bool                   notif = false;
+    bool                   notif = false, power_status;
 
     pas_oper_fault_state_t prev_oper_fault_state[1];
     *prev_oper_fault_state = *rec->oper_fault_state;
@@ -172,6 +171,22 @@ bool dn_fan_poll(
         rec->max_speed = entity_info->max_speed;
 
         rec->valid = true;
+    }
+
+    /* Do not poll a PSU fan if it is not powered on */
+    if (parent && parent->entity_type == PLATFORM_ENTITY_TYPE_PSU) {
+        if (STD_IS_ERR(sdi_entity_psu_output_power_status_get(
+                                parent->sdi_entity_hdl, &power_status))) {
+                dn_pas_entity_fault_state_set(parent,
+                                              PLATFORM_FAULT_TYPE_ECOMM
+                                              );
+                return false;
+            } else if (!power_status) {
+                dn_pas_entity_fault_state_set(parent,
+                                              PLATFORM_FAULT_TYPE_EPOWER
+                                              );
+                return false;
+            }
     }
 
     do {
