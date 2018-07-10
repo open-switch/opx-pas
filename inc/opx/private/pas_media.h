@@ -39,7 +39,11 @@ extern "C" {
 #endif
 
 
-#define MAX_MEDIA_DISPLAY_STRING_LEN     60    /* MAx length of media disp string */
+#define PAS_MEDIA_NO_QSA_STR             "\0"
+#define PAS_MEDIA_UNKNOWN_MEDIA          "UNKNOWN MEDIA"
+#define PAS_MEDIA_UNKNOWN_MEDIA_CATEGORY "UNKNOWN"
+#define MAX_MEDIA_DISPLAY_STRING_LEN     70    /* MAx length of media disp string */
+#define MAX_MEDIA_NAME_LEN               MAX_MEDIA_DISPLAY_STRING_LEN
 
 /* prefix is a non standard term we're using to handle double density media. Might change term to "density" */
 #define PAS_MEDIA_INTERFACE_PREFIX_SINGLE_DENSITY       1
@@ -71,10 +75,16 @@ typedef struct dn_pas_basic_media_info
     uint_t                                cable_length_cm;
     bool                                  connector_separable;
     char                                  display_string[MAX_MEDIA_DISPLAY_STRING_LEN];
+    char                                  media_name[MAX_MEDIA_NAME_LEN];
     media_capability_t                    capability_list[1];
     PLATFORM_EXT_SPEC_COMPLIANCE_CODE_t   ext_spec_code_25g_dac;
     BASE_IF_SUPPORTED_AUTONEG_t           default_autoneg;
     BASE_CMN_FEC_TYPE_t                   default_fec;
+    char                                  transceiver_type_string[MAX_MEDIA_DISPLAY_STRING_LEN];
+    PLATFORM_QSA_ADAPTER_t                qsa_adapter_type;
+
+    /* This flag is used to note when QSA (which is optimized for SFP/SFP+) is used with SFP28. This is because SFP28 expects QSA28 and not QSA */
+    bool                                  qsa28_expected;
 }dn_pas_basic_media_info_t;
 
 enum {
@@ -91,17 +101,9 @@ enum {
     PAS_MEDIA_INST_KEY_LEN          =  2, /* Key Length, instance part of media obj */
     PAS_MEDIA_CHANNEL_INST_KEY_LEN  =  3, /* Key Length, instance part of channel obj */
     PAS_MEDIA_MEMBER_START          =  0, /* Pas media member starts from 0 */
-    PAS_MEDIA_QSFP_INVALID_ID       =  0xffff,  /* Invalid ID */
     PAS_PRODUCT_ID_MAGIC0           =  0x0F,
     PAS_PRODUCT_ID_MAGIC1           =  0x10,
     PAS_PRODUCT_ID_QSFP28_MAGIC0    =  0xDF, /* QSFP28 Magic 0 */
-    QSFP_PROTO_4x10GBASE            =  0x2,
-    QSFP_PROTO_4x1GBASET            =  0x2,
-    QSFP_PROTO_4x25GBASE            =  0x2,
-    QSFP_PROTO_2x50GBASE            =  0x3,
-    MEDIA_DIST_DONT_CARE            =  PAS_MEDIA_QSFP_INVALID_ID, /* Distance never be 0xffff */
-    MEDIA_PROT_DONT_CARE            =  PAS_MEDIA_QSFP_INVALID_ID, /* Protocol never be 0xffff */
-    MEDIA_LENGTH_DONT_CARE          =  PAS_MEDIA_QSFP_INVALID_ID, /* Cable length never be 0xffff */
     PAS_MEDIA_INVALID_ID            =  0xffffffff,
     PAS_MEDIA_MON_ALL_FLAGS         =  0xff,
     PAS_MEDIA_CH_STATUS_FLAGS       =  0xf,
@@ -141,6 +143,8 @@ enum pas_media_discovery_ids {
     PAS_MEDIA_SFP_PLUS_ID_FC_LW     = 0x01,
     PAS_MEDIA_SFP_PLUS_ID_FC_SW     = 0x04,
 
+    PAS_MEDIA_SFP28_ID_AOC          = 0x01,
+    PAS_MEDIA_SFP28_ID2_AOC         = 0x18,
     PAS_MEDIA_SFP28_ID_SR           = 0x02,
     PAS_MEDIA_SFP28_ID_LR           = 0x03,
     PAS_MEDIA_SFP28_ID_CR_CA_L      = QSFP_100GBASE_CR4,
@@ -215,17 +219,6 @@ typedef struct _sdi_to_pas_map_t {
     uint_t  pas_id;
 } sdi_to_pas_map_t;
 
-/*
- * Media type map table.
- */
-
-typedef struct _media_type_map_t {
-    uint_t                wave_len; /* input wave length*/
-    uint_t                distance; /* input distance */
-    uint_t                protocol; /* input protocol */
-    uint_t                cable_length; /* cable length */
-    PLATFORM_MEDIA_TYPE_t optics_type; /* media type */
-} media_type_map_t;
 
 /*
  * SFP Media type map by vendor PN name
@@ -297,6 +290,12 @@ uint_t pas_media_map_get_speed_as_uint_mbps (BASE_IF_SPEED_t speed);
 
 /* Get phy mode form speed */
 BASE_IF_PHY_MODE_TYPE_t pas_media_map_get_phy_mode_from_speed (BASE_IF_SPEED_t speed);
+
+/* QSA str for display*/
+const char* pas_media_get_qsa_string_from_enum (PLATFORM_QSA_ADAPTER_t qsa_type);
+
+/* This assigns the PLATFORM_MEDIA_TYPE_t enum to new media, which previously do not have a type enum derivation from MSA */
+PLATFORM_MEDIA_TYPE_t  pas_media_get_enum_from_new_media_name (char* name);
 
 /* Functions for deriving media info from transceiver */
 bool dn_pas_std_media_get_basic_properties_sfp(phy_media_tbl_t *mtbl, dn_pas_basic_media_info_t* media_info);

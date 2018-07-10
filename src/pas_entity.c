@@ -455,7 +455,7 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
                    rec->slot, present ? "is present" : "is removed"
                    );
     }
-    if ((!rec->valid || !rec->present) && present) {
+    if ((!rec->valid || !rec->eeprom_valid || !rec->present) && present) {
         /* Transitioned to present */
 
         update_allf = true;     /* Update whole cache record */
@@ -564,6 +564,7 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
                     dn_pas_entity_fault_state_set(rec,
                                                   PLATFORM_FAULT_TYPE_ECOMM
                                                   );
+                    rec->eeprom_valid = false;
                 } else {
                     STRLCPY(rec->eeprom->vendor_name,   entity_info->vendor_name);
                     STRLCPY(rec->eeprom->product_name,  entity_info->prod_name);
@@ -573,7 +574,10 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
                     STRLCPY(rec->eeprom->ppid,          entity_info->ppid);
                     STRLCPY(rec->eeprom->service_tag,   entity_info->service_tag);
 
-                    rec->eeprom_valid = true;
+                    if (rec->eeprom_valid != true) {
+                        notif = true;
+                        rec->eeprom_valid = true;
+                    }
                 }
 
                 if (rec->oper_fault_state->oper_status
