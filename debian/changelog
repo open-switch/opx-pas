@@ -5,8 +5,8 @@ opx-pas (3.1.5) unstable; urgency=medium
   * Bugfix: S4100- Reset alarm status for FAN and PSU after PSU OIR.
   * Bugfix: 10G Amphenol 10m DAC cable is displayed incorrectly in "show inventory media".
   * Update: Added QSA flag.
-  * Bugfix: Z9264F - "show inventory" output doesn't show proper Power Supply details, 
-            Part no., PPID, Rev information.
+  * Bugfix: "show inventory" output doesn't show proper Power Supply details, 
+            Part no., PPID and Rev information.
   * Update: Publish  entity info when enetity info valid flag changes.
   * Bugfix: Stop dn_ppm crash and multiple reboot on upgradation to build 7513.
   * Update: Organizing all media details into a single central file
