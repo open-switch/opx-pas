@@ -60,20 +60,6 @@ bool dn_pas_comm_dev_notify(cps_api_object_t obj);
 pas_comm_dev_t * dn_comm_dev_rec_get(void);
 
 /*
- * dn_pas_comm_dev_npu_temp_set is used for setting/updating temperature
- * sensor dat in comm dev register
- */
-
-void dn_pas_comm_dev_npu_temp_set (int temp);
-
-/*
- * dn_pas_comm_dev_ambient_temp_set is used for setting/updating temperature
- * sensor dat in comm dev register
- */
-
-void dn_pas_comm_dev_ambient_temp_set (int temp);
-
-/*
  * dn_pas_comm_dev_comm_msg_write is to write mail-box message to
  * communication device.
  */

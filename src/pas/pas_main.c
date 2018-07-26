@@ -50,87 +50,88 @@ cps_api_return_code_t dn_pas_read_function (void *context,
     cps_api_key_t    *the_key = cps_api_object_key(obj);
     uint_t           cat      = cps_api_key_get_cat(the_key);
     uint_t           sub_cat  = cps_api_key_get_subcat(the_key);
+    t_std_error      ret = STD_ERR_OK;
 
     if (cat == cps_api_obj_CAT_BASE_PAS) {
       switch (sub_cat) {
         case BASE_PAS_CHASSIS_OBJ:
-              dn_pas_chassis_get(param, key_ix);
+              ret = dn_pas_chassis_get(param, key_ix);
               break;
     
         case BASE_PAS_ENTITY_OBJ:
-              dn_pas_entity_get(param, key_ix);
+              ret = dn_pas_entity_get(param, key_ix);
               break;
 
         case BASE_PAS_PSU_OBJ:
-              dn_pas_psu_get(param, key_ix);
+              ret = dn_pas_psu_get(param, key_ix);
               break;
 
         case BASE_PAS_FAN_TRAY_OBJ:
-              dn_pas_fan_tray_get(param, key_ix);
+              ret = dn_pas_fan_tray_get(param, key_ix);
               break;
 
         case BASE_PAS_CARD_OBJ:
-              dn_pas_card_get(param, key_ix);
+              ret = dn_pas_card_get(param, key_ix);
               break;
     
         case BASE_PAS_FAN_OBJ:
-              dn_pas_fan_get(param, key_ix);
+              ret = dn_pas_fan_get(param, key_ix);
               break;
 
         case BASE_PAS_LED_OBJ:
-              dn_pas_led_get(param, key_ix);
+              ret = dn_pas_led_get(param, key_ix);
               break;
 
         case BASE_PAS_DISPLAY_OBJ:
-              dn_pas_display_get(param, key_ix);
+              ret = dn_pas_display_get(param, key_ix);
               break;
 
         case BASE_PAS_TEMPERATURE_OBJ:
-              dn_pas_temperature_get(param, key_ix);
+              ret = dn_pas_temperature_get(param, key_ix);
               break;
 
         case BASE_PAS_TEMP_THRESHOLD_OBJ:
-              dn_pas_temp_threshold_get(param, key_ix);
+              ret = dn_pas_temp_threshold_get(param, key_ix);
               break;
 
         case BASE_PAS_POWER_MONITOR_OBJ:
-              dn_pas_power_monitor_get(param, key_ix);
+              ret = dn_pas_power_monitor_get(param, key_ix);
               break;
                               
         case BASE_PAS_PLD_OBJ:
-              dn_pas_pld_get(param, key_ix);
+              ret = dn_pas_pld_get(param, key_ix);
               break;
 
         case BASE_PAS_PORT_MODULE_OBJ:
-              dn_pas_port_module_get(param, key_ix);
+              ret = dn_pas_port_module_get(param, key_ix);
               break;
 
         case BASE_PAS_MEDIA_OBJ:
-              dn_pas_media_get(param, key_ix);
+              ret = dn_pas_media_get(param, key_ix);
               break;
 
         case BASE_PAS_MEDIA_CHANNEL_OBJ:
-              dn_pas_media_channel_get(param, key_ix);
+              ret = dn_pas_media_channel_get(param, key_ix);
               break;
 
         case BASE_PAS_MEDIA_CONFIG_OBJ:
-              dn_pas_media_config_get(param, key_ix);
+              ret = dn_pas_media_config_get(param, key_ix);
               break;
 
         case BASE_PAS_PHY_OBJ:
-              dn_pas_phy_get(param, key_ix);
+              ret = dn_pas_phy_get(param, key_ix);
               break;
  
         case BASE_PAS_READY_OBJ:
-              dn_pas_status_get(param, key_ix);
+              ret = dn_pas_status_get(param, key_ix);
               break;
 
         case BASE_PAS_COMM_DEV_OBJ:
-              dn_pas_comm_dev_get(param, key_ix);
+              ret = dn_pas_comm_dev_get(param, key_ix);
               break;
 
         case BASE_PAS_HOST_SYSTEM_OBJ:
-              dn_pas_host_system_get(param, key_ix);
+              ret = dn_pas_host_system_get(param, key_ix);
               break;
 
         default:
@@ -142,7 +143,7 @@ cps_api_return_code_t dn_pas_read_function (void *context,
     else {
         PAS_WARN("Invalid category");
     }
-    return cps_api_ret_code_OK;
+    return ((ret == STD_ERR_OK) ? cps_api_ret_code_OK : cps_api_ret_code_ERR);
 }
 
 /************************************************************************
@@ -167,6 +168,7 @@ cps_api_return_code_t dn_pas_write_function(void *context,
     cps_api_object_t obj     = CPS_API_OBJECT_NULL;
     uint_t           cat;
     uint_t           sub_cat;
+    t_std_error      ret = STD_ERR_OK;
 
     obj = cps_api_object_list_get(param->change_list,index_of_element_being_updated);
     STD_ASSERT(obj != CPS_API_OBJECT_NULL);
@@ -186,75 +188,75 @@ cps_api_return_code_t dn_pas_write_function(void *context,
         }
         switch (sub_cat) {
             case BASE_PAS_CHASSIS_OBJ:
-                  dn_pas_chassis_set(param, obj);
+                  ret = dn_pas_chassis_set(param, obj);
                   break;
         
             case BASE_PAS_ENTITY_OBJ:
-                  dn_pas_entity_set(param, obj);
+                  ret = dn_pas_entity_set(param, obj);
                   break;
 
             case BASE_PAS_PSU_OBJ:
-                  dn_pas_psu_set(the_key, obj);
+                  ret = dn_pas_psu_set(the_key, obj);
                   break;
 
             case BASE_PAS_FAN_TRAY_OBJ:
-                  dn_pas_fan_tray_set(the_key, obj);
+                  ret = dn_pas_fan_tray_set(the_key, obj);
                   break;
 
             case BASE_PAS_CARD_OBJ:
-                  dn_pas_card_set(the_key, obj);
+                  ret = dn_pas_card_set(the_key, obj);
                   break;
 
             case BASE_PAS_FAN_OBJ:
-                  dn_pas_fan_set(param, obj);
+                  ret = dn_pas_fan_set(param, obj);
                   break;
 
             case BASE_PAS_LED_OBJ:
-                  dn_pas_led_set(param, obj);
+                  ret = dn_pas_led_set(param, obj);
                   break;
 
             case BASE_PAS_DISPLAY_OBJ:
-                  dn_pas_display_set(param, obj);
+                  ret = dn_pas_display_set(param, obj);
                   break;
 
             case BASE_PAS_TEMPERATURE_OBJ:
-                  dn_pas_temperature_set(param, obj);
+                  ret = dn_pas_temperature_set(param, obj);
                   break;
 
             case BASE_PAS_TEMP_THRESHOLD_OBJ:
-                  dn_pas_temp_threshold_set(param, obj);
+                  ret = dn_pas_temp_threshold_set(param, obj);
                   break;
 
             case BASE_PAS_PLD_OBJ:
-                  dn_pas_pld_set(the_key, obj);
+                  ret = dn_pas_pld_set(the_key, obj);
                   break;
 
             case BASE_PAS_PORT_MODULE_OBJ:
-                  dn_pas_port_module_set(the_key, obj);
+                  ret = dn_pas_port_module_set(the_key, obj);
                   break;
 
             case BASE_PAS_MEDIA_OBJ:
-                  dn_pas_media_set(param, obj);
+                  ret = dn_pas_media_set(param, obj);
                   break;
 
             case BASE_PAS_MEDIA_CHANNEL_OBJ:
-                  dn_pas_media_channel_set(param, obj);
+                  ret = dn_pas_media_channel_set(param, obj);
                   break;
 
             case BASE_PAS_MEDIA_CONFIG_OBJ:
-                  dn_pas_media_config_set(param, obj);
+                  ret = dn_pas_media_config_set(param, obj);
                   break;
 
             case BASE_PAS_PHY_OBJ:
-                  dn_pas_phy_set(the_key, obj);
+                  ret = dn_pas_phy_set(the_key, obj);
                   break;
 
             case BASE_PAS_COMM_DEV_OBJ:
-                  dn_pas_comm_dev_set(param, obj);
+                  ret = dn_pas_comm_dev_set(param, obj);
                   break;
 
             case BASE_PAS_HOST_SYSTEM_OBJ:
-                  dn_pas_host_system_set(param, obj);
+                  ret = dn_pas_host_system_set(param, obj);
                   break;
          
             default:
@@ -266,7 +268,7 @@ cps_api_return_code_t dn_pas_write_function(void *context,
     else {
         PAS_WARN("Invalid category");
     }
-    return cps_api_ret_code_OK;
+    return ((ret == STD_ERR_OK) ? cps_api_ret_code_OK : cps_api_ret_code_ERR);
 }
 
 /************************************************************************

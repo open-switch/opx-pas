@@ -29,7 +29,6 @@
 #include "std_error_codes.h"
 #include "sdi_entity.h"
 #include "sdi_thermal.h"
-#include "cps_api_service.h"
 #include "dell-base-platform-common.h"
 #include "dell-base-pas.h"
 
@@ -349,14 +348,7 @@ bool dn_temp_sensor_poll(
 
             break;
         }
-                
-        /*
-         * XXX: This is a hack for Starlynx platforms which have only one
-         * temperature sensor accessible through I2C. On all other platforms,
-         * the following function will return early because there is no
-         * comm_dev resource.
-         */
-        dn_pas_comm_dev_ambient_temp_set(temp);
+        
         rec->prev = rec->cur;
         rec->cur  = temp;
         if (rec->nsamples < 2)  ++rec->nsamples;

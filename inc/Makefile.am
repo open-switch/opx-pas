@@ -24,7 +24,8 @@ nobase_include_HEADERS = \
 	opx/private/pas_res_structs.h \
 	opx/private/pas_temp_sensor.h \
 	opx/private/pas_timer.h \
-	opx/private/pas_utils.h
+	opx/private/pas_utils.h \
+    opx/private/pas_ext_ctrl.h
 
 nobase_include_HEADERS += \
 	opx/dn_pas_media_vendor.h \

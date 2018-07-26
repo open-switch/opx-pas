@@ -46,6 +46,7 @@ static std::unordered_map<int, pas_media_disc_cb_t> trans_type_to_media_disc_cb_
     {PLATFORM_MEDIA_CATEGORY_SFP,          dn_pas_std_media_get_basic_properties_sfp},
     {PLATFORM_MEDIA_CATEGORY_SFP_PLUS,     dn_pas_std_media_get_basic_properties_sfp_plus},
     {PLATFORM_MEDIA_CATEGORY_SFP28,        dn_pas_std_media_get_basic_properties_sfp28},
+    {PLATFORM_MEDIA_CATEGORY_QSFP,         dn_pas_std_media_get_basic_properties_qsfp_plus},
     {PLATFORM_MEDIA_CATEGORY_QSFP_PLUS,    dn_pas_std_media_get_basic_properties_qsfp_plus},
     {PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28, dn_pas_std_media_get_basic_properties_qsfp28_depop},
     {PLATFORM_MEDIA_CATEGORY_QSFP28,       dn_pas_std_media_get_basic_properties_qsfp28},
@@ -124,6 +125,7 @@ static std::unordered_map<int, transceiver_type_info_t> transceiver_type_info_ma
     {PLATFORM_MEDIA_CATEGORY_SFP_PLUS,     (transceiver_type_info_t) {"SFP+", 1, false}},
     {PLATFORM_MEDIA_CATEGORY_SFP28,        (transceiver_type_info_t) {"SFP28", 1, false}},
     {PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28, (transceiver_type_info_t) {"QSFP28-DEPOP", 2, true}},
+    {PLATFORM_MEDIA_CATEGORY_QSFP,         (transceiver_type_info_t) {"QSFP+", 4, true}},
     {PLATFORM_MEDIA_CATEGORY_QSFP_PLUS,    (transceiver_type_info_t) {"QSFP+", 4, true}},
     {PLATFORM_MEDIA_CATEGORY_QSFP28,       (transceiver_type_info_t) {"QSFP28", 4, true}},
     {PLATFORM_MEDIA_CATEGORY_QSFP_DD,      (transceiver_type_info_t) {"QSFP28-DD", 8, true}},
@@ -364,3 +366,49 @@ bool pas_media_is_media_connector_separable (PLATFORM_MEDIA_CONNECTOR_TYPE_t con
     *result = (bool)(it->second);
     return true;
 }
+
+static std::unordered_map<int, std::string> qsa_enum_to_str_map = {
+    {PLATFORM_QSA_ADAPTER_UNKNOWN,      "(QSA?)"},
+    {PLATFORM_QSA_ADAPTER_NO_QSA,       "\0"},
+    {PLATFORM_QSA_ADAPTER_QSA,          "(QSA)"},
+    {PLATFORM_QSA_ADAPTER_QSA28,        "(QSA28)"},
+};
+
+const char* pas_media_get_qsa_string_from_enum (PLATFORM_QSA_ADAPTER_t qsa_type)
+{
+    auto it = qsa_enum_to_str_map.find(qsa_type);
+    return ( it == qsa_enum_to_str_map.end()) ? NULL : (const char*)(it->second.c_str());
+}
+
+/*Code beyind this point is to ensure backwards compatibility */
+
+/* This section assigns the PLATFORM_MEDIA_TYPE_t enum to new media, which previously do not have a type enum derivation from MSA */
+/* This is done to maintain compatibility with other areas which have not migrated to string-based model yet */
+
+static std::unordered_map<std::string, int> media_name_to_enum_type = {
+    {"QSFP28 100GBASE BIDI", PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_BIDI},
+    {"QSFP28 100GBASE ESR4", PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_ESR4},
+    {"QSFP28 100GBASE SR4 NOF", PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_SR4_NOF},
+    {"SFP+ 10GBASE BX10 UP", PLATFORM_MEDIA_TYPE_SFP_PLUS_10GBASE_BX10_UP},
+    {"SFP+ 10GBASE BX40 UP", PLATFORM_MEDIA_TYPE_SFP_PLUS_10GBASE_BX40_UP},
+    {"SFP+ 10GBASE BX10 DOWN", PLATFORM_MEDIA_TYPE_SFP_PLUS_10GBASE_BX10_DOWN},
+    {"SFP+ 10GBASE BX40 DOWN", PLATFORM_MEDIA_TYPE_SFP_PLUS_10GBASE_BX40_DOWN},
+    {"QSFP+ 40GBASE BIDI", PLATFORM_MEDIA_TYPE_QSFPPLUS_40GBASE_BIDI},
+    {"QSFP28 100GBASE DWDM2", PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_DWDM2},
+    {"QSFP28 100GBASE ER4 LITE", PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_ER4_LITE},
+    {"QSFP28 100GBASE SWDM4", PLATFORM_MEDIA_TYPE_QSFP28_100GBASE_SWDM4},
+    {"QSFP+ 40GBASE SR4 AOC 1.0M", PLATFORM_MEDIA_TYPE_QSFPPLUS_40GBASE_SR4_AOC1M},
+
+};
+
+PLATFORM_MEDIA_TYPE_t  pas_media_get_enum_from_new_media_name (char* name)
+{
+    std::string s = std::string(name);
+    auto it = media_name_to_enum_type.find(s);
+    if (it == media_name_to_enum_type.end()) {
+        return PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
+    }
+
+    return (PLATFORM_MEDIA_TYPE_t)(it->second);
+}
+

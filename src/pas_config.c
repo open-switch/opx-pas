@@ -42,7 +42,7 @@ typedef struct config_entry_s {
 static port_info_node_t* port_info_node_head;
 
 
-static char pas_media_app_cfg_filename[] = "/etc/opt/dell/os10/pas/media-config.xml";
+static char pas_media_app_cfg_filename[] = "/etc/opx/pas/media-config.xml";
 
 static void dn_pas_media_read_app_config (std_config_node_t nd);
 static bool dn_pas_config_parse (const char *config_filename,
@@ -92,6 +92,7 @@ static void dn_pas_config_chassis(std_config_node_t nd)
     if ((a = std_config_attr_get(nd, "service-tag")) != 0) {
         STRLCPY(chassis_cfg->service_tag, a);
     }
+
     if ((a = std_config_attr_get(nd, "base-mac-addresses")) != 0
         && sscanf(a, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
                   &chassis_cfg->base_mac[0],
@@ -464,6 +465,104 @@ static void dn_pas_config_comm_dev (std_config_node_t nd)
     }
 }
 
+static pas_config_extctrl cfg_extctrl;
+
+pas_config_extctrl* dn_pas_config_extctrl_get(void)
+{
+     return (&cfg_extctrl);
+}
+
+static inline bool dn_pas_extctrl_find_sensor (std_config_node_t sd, const char *ctrl_ptr,
+                                               pas_extctrl_slist_config  *slist)
+{
+    char *val_str;
+
+    if (strcmp(ctrl_ptr, "sensor") == 0) {
+        val_str = std_config_attr_get(sd, "name");
+        if (val_str != 0) {
+           if (slist->count > PAS_EXTCTRL_MAX_SSOR_IN_LIST-1)
+               return false;
+
+           STRLCPY(slist->sensor[slist->count].name, val_str);
+           slist->count++;
+        }
+    }
+
+    return true;
+}
+
+static void dn_pas_config_extctrl (std_config_node_t extctrl_cfg)
+{
+    std_config_node_t nd, sd;
+    const char *nm, *cnm;
+    char *val_str;
+    pas_extctrl_slist_config  *slist;
+    uint cnt = 0;
+    uint sensor_cnt = 0;
+
+    memset(&cfg_extctrl, 0, sizeof(cfg_extctrl));
+
+    for (nd = std_config_get_child(extctrl_cfg); nd != 0; nd = std_config_next_node(nd)) {
+        nm = std_config_name_get(nd);
+        if (strcmp(nm, "extctrl") == 0) {
+            cnt++;
+        }
+    }
+
+    cfg_extctrl.slist_config = (pas_extctrl_slist_config *)
+        CALLOC_T(cnt, pas_extctrl_slist_config);
+    if (cfg_extctrl.slist_config == NULL) {
+        PAS_ERR("Run out of memory slist config");
+        return;
+    }
+
+    for (nd = std_config_get_child(extctrl_cfg); nd != 0; nd = std_config_next_node(nd)) {
+        nm = std_config_name_get(nd);
+        if (strcmp(nm, "extctrl") == 0) {
+            slist = &cfg_extctrl.slist_config[cfg_extctrl.slist_cnt];
+            slist->idx = cfg_extctrl.slist_cnt;
+            cfg_extctrl.slist_cnt++;
+
+            val_str = std_config_attr_get(nd, "extctrl-name");
+            if (val_str != 0) {
+              STRLCPY(slist->extctrl, val_str);
+            }
+
+            val_str = std_config_attr_get(nd, "type");
+            slist->type = PAS_SLIST_TYPE_MAX; /* default use max temperature */
+            if (val_str != 0) {
+              if (strcmp(val_str, "avg") == 0) {
+                slist->type = PAS_SLIST_TYPE_AVG;
+              }
+            }
+
+            sensor_cnt = 0;
+            for (sd = std_config_get_child(nd); sd != 0; sd = std_config_next_node(sd)) {
+                cnm = std_config_name_get(sd);
+                if (strcmp(cnm, "sensor") == 0) {
+                    sensor_cnt++;
+                }
+            }
+
+            if (sensor_cnt > PAS_EXTCTRL_MAX_SSOR_IN_LIST) {
+                /* Cannot exceed PAS_EXTCTRL_MAX_SSOR_IN_LIST */
+                sensor_cnt = PAS_EXTCTRL_MAX_SSOR_IN_LIST;
+            }
+
+            slist->sensor = (pas_extctrl_sensor_config *)CALLOC_T(sensor_cnt, pas_extctrl_sensor_config);
+            if (slist->sensor == NULL) {
+                PAS_ERR("Run out of memory sensor config");
+                return;
+            }
+
+            for (sd = std_config_get_child(nd); sd != 0; sd = std_config_next_node(sd)) {
+                cnm = std_config_name_get(sd);
+                if (false == dn_pas_extctrl_find_sensor(sd, cnm, slist))
+                   break; /* Cannot exceed PAS_EXTCTRL_MAX_SSOR_IN_LIST */
+            }  
+        }
+    }
+}
 
 static config_entry_t media_app_cfg_tbl [] = {{"media", dn_pas_media_read_app_config}};
 
@@ -1253,7 +1352,8 @@ static config_entry_t element_tbl[] = {
     { "media",       dn_pas_config_media },
     { "phy-config",  dn_pas_media_read_phy_default_config },
     { "comm-dev", dn_pas_config_comm_dev},
-    { "port-config",        dn_pas_port_config}
+    { "port-config",        dn_pas_port_config},
+    { "extctrl-config", dn_pas_config_extctrl },
 };
 
 

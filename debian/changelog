@@ -1,3 +1,17 @@
+opx-pas (3.1.2+vxlan1) unstable; urgency=medium
+
+  * Update: Increased timeout for pas lock from 5 to 15 seconds, Media polling at pas startup taking more than 5 seconds on S6000 platform
+  * Update: Handle tx state failure error
+  * Update: Force tx state down on media detection
+  * Update: Add support for timedlock and set/get handlers of the pas objects will be using timedlock (with timeout of 5 seconds)
+  * Update: Remove unnecessary include
+  * Bugfix: Operate on PSU fans only if it has power
+  * Bugfix: Add flag to note when qsa used in place of qsa28
+  * Update: Changes to publish entity info when enetity info valid flag changes
+  * Update: Add case for qsfp+ when named as qsfp in media discovery
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Wed, 25 Jul 2018 21:00:00 -0800
+
 opx-pas (3.1.2) unstable; urgency=medium
 
   * Update: Media Cable Naming/Organization Cleanup in Software

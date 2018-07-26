@@ -1323,6 +1323,11 @@ static bool dn_pas_media_type_poll (uint_t port, cps_api_object_t obj)
         }
     }
 
+    /* Bring down all channels whenever media is seen. The xceiver state function argument is inverted */
+    if (!dn_pas_media_transceiver_state_set(port, true)) {
+        PAS_ERR("Unable to force tx state low for media on port %u", port);
+    }
+
     dn_pas_media_high_power_mode_set(port,
                 (high_power_mode == false) ? false : true);
 
@@ -2822,7 +2827,27 @@ static bool dn_pas_media_add_basic_media_info_to_obj (dn_pas_basic_media_info_t*
         PAS_ERR("Failed to add media info (default autoneg) object attr");
         ret &= false;
      }
-
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_CATEGORY_STRING,
+            &(media_info->transceiver_type_string),
+            sizeof(media_info->transceiver_type_string)) == false) {
+        PAS_ERR("Failed to add media info (category string) object attr");
+        ret &= false;
+     }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_MEDIA_NAME,
+            &(media_info->media_name),
+            sizeof(media_info->media_name)) == false) {
+        PAS_ERR("Failed to add media info (media_name) object attr");
+        ret &= false;
+     }
+    if (cps_api_object_attr_add(obj,
+            BASE_PAS_MEDIA_QSA28_EXPECTED,
+            &(media_info->qsa28_expected),
+            sizeof(media_info->qsa28_expected)) == false) {
+        PAS_ERR("Failed to add media info (qsa28 expected) object attr");
+        ret &= false;
+     }
 
     return ret;
 }

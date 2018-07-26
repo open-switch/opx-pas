@@ -27,12 +27,15 @@
 #include "sdi_entity_info.h"
 #include "dell-base-pas.h"
 
-#define INTERFACE_MODE_STR_LEN   (17)
-#define MEDIA_TYPE_STR_LEN       (128)
+#define INTERFACE_MODE_STR_LEN         (17)
+#define MEDIA_TYPE_STR_LEN             (128)
+
 #define MAX_SUPPORTED_SPEEDS           (BASE_IF_SPEED_MAX)
 #define PAS_MEDIA_MAX_PORT_DENSITY     (10) /* Arbitrary upper limit for port density */
 #define PAS_MEDIA_PORT_DENSITY_DEFAULT (1)  /* Port density is normally 1, but can be higher. Example it is 2 for QSFP28-DD*/
 #define PAS_MEDIA_PORT_STR_BUF_LEN     (20)
+
+#define PAS_EXTCTRL_MAX_SSOR_IN_LIST   (16)
 
 #define PRE_STRINGIZE(enm) #enm
 #define STRINGIZE_ENUM(enm) PRE_STRINGIZE(enm)
@@ -138,6 +141,35 @@ typedef struct pas_config_media_phy_s {
     pas_media_phy_defaults   *media_phy_defaults; /* List of default config for media types */
 } pas_config_media_phy;
 
+
+typedef enum _pas_extctrl_alg_type_t { // algorithm type to compute from the sensor list
+    PAS_SLIST_TYPE_MAX = 0, /* use the max of all sensors */
+    PAS_SLIST_TYPE_AVG = 1, /* use the average of all sensors, keyword "avg" */
+
+    PAS_SLIST_TYPE_END,
+} pas_extctrl_alg_type;
+
+typedef struct _pas_extctrl_sensor_config_t {
+    char name[NAME_MAX];
+} pas_extctrl_sensor_config;
+
+typedef struct _pas_extctrl_slist_config_t {
+    pas_extctrl_sensor_config *sensor;
+    char extctrl[NAME_MAX];
+
+    pas_extctrl_alg_type type; /* driving algorithm */
+    uint_t idx;
+    uint_t test_force_val;
+    uint_t count; /* how many sensors are in this list */
+} pas_extctrl_slist_config;
+
+typedef struct _pas_config_extctrl_t {
+    uint_t slist_cnt;         /* multiple sensor one control config count,
+				 <= PAS_EXTCTRL_MAX_LIST */
+    pas_extctrl_slist_config  *slist_config; /* multiple sensor one control config */
+} pas_config_extctrl;
+
+
 /* Get the chassis configuration */
 sdi_entity_info_t *dn_pas_config_chassis_get(void);
 
@@ -155,6 +187,9 @@ struct pas_config_temperature *dn_pas_config_temperature_get(void);
 
 /* Get comm dev configuration */
 struct pas_config_comm_dev *dn_pas_config_comm_dev_get (void);
+
+/* Get external control configuration */
+pas_config_extctrl* dn_pas_config_extctrl_get(void);
 
 /* Get the media configuration */
 struct pas_config_media *dn_pas_config_media_get(void);

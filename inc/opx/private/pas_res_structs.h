@@ -129,6 +129,55 @@ typedef struct _pas_host_system_t {
 
 
 /*
+ * pas_extctrl_t structure is to hold ext_ctrl attributes and it
+ * will be used to cache the data in data store for further access.
+ */
+
+typedef struct _pas_extctrl_t {
+    sdi_resource_hdl_t     sdi_extctrl_hdl;
+    uint_t                 idx;
+    uint_t                 slot;
+    uint_t                 entity_type;
+    char                   name[PAS_NAME_LEN_MAX];
+} pas_extctrl_t;
+
+typedef struct _pas_extctrl_group_t {
+    uint_t           num_ctrls;
+    pas_extctrl_t    *extctrls;
+} pas_extctrl_group_t;
+
+static inline const char *dn_pas_res_key_extctrl_idx(char   *buf,
+						     uint_t buf_size,
+						     uint_t entity_type,
+						     uint_t ctrl_idx)
+{
+    snprintf(buf, buf_size, "extctrl-%u-idx.%u", 
+	     entity_type, ctrl_idx);
+    return ((const char *) buf);
+}
+
+static inline const char *dn_pas_res_key_extctrl_name(char       *buf,
+						      uint_t     buf_size,
+						      uint_t     entity_type,
+						      uint_t     slot,
+						      const char *ctrl_name
+						      )
+{
+    snprintf(buf, buf_size, "extctrl-%u-name.%u.%s",
+	     entity_type, slot, ctrl_name);
+    return ((const char *) buf);
+}
+
+static inline const char *dn_pas_res_key_extctrl_sensor_name(
+						      char       *buf,
+						      uint_t     buf_size,
+						      const char *sensor_name)
+{
+    snprintf(buf, buf_size, "extctrl-sensor-name.%s", sensor_name);
+    return ((const char *) buf);
+}
+
+/*
  * pas_entity_t structure is to hold common attributes
  * of the entity and it will be used to cache the data
  * in data store for further access.

@@ -109,8 +109,10 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
     phy_media_tbl_t         *mtbl = NULL;
     cps_api_operation_types_t operation;
 
-    dn_pas_lock();
-
+    if (dn_pas_timedlock() != STD_ERR_OK) {
+        PAS_ERR("Not able to acquire the mutex (timeout)");
+        return (STD_ERR(PAS, FAIL, 0));
+    }
     if(dn_pald_diag_mode_get()) {
 
         dn_pas_unlock();

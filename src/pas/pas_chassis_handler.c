@@ -281,7 +281,11 @@ t_std_error dn_pas_chassis_get(cps_api_get_params_t * param, size_t key_idx)
     if (rec == 0)  return (STD_ERR(PAS, NEXIST, 0));
 
     if (!rec->valid || cps_api_key_get_qual(key) == cps_api_qualifier_REALTIME) {
-        dn_pas_lock();
+        if (dn_pas_timedlock() != STD_ERR_OK) {
+            PAS_ERR("Not able to acquire the mutex (timeout)");
+            return (STD_ERR(PAS, FAIL, 0));
+        }
+
 
         if (!dn_pald_diag_mode_get())  rec->valid = dn_pas_chassis_poll(rec);
 

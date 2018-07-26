@@ -471,6 +471,12 @@ bool dn_pas_std_media_get_basic_properties_sfp28(phy_media_tbl_t *mtbl, dn_pas_b
             }
             break;
 
+        case PAS_MEDIA_SFP28_ID2_AOC:
+        case PAS_MEDIA_SFP28_ID_AOC:
+            media_interface = PLATFORM_MEDIA_INTERFACE_SR;
+            media_interface_qualifier = PLATFORM_MEDIA_INTERFACE_QUALIFIER_AOC;
+            break;
+
         case PAS_MEDIA_SFP28_ID_LR:
             if (length_sfm_km == 0x3){
                 media_interface = PLATFORM_MEDIA_INTERFACE_LR;

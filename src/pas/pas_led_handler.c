@@ -227,7 +227,10 @@ static t_std_error dn_pas_led_set1(
         if (!grec->sdi_on_valid || grec->sdi_on != sdi_on) {
 
             /* New SDI state != current SDI state */
-            dn_pas_lock();
+            if (dn_pas_timedlock() != STD_ERR_OK) {
+                PAS_ERR("Not able to acquire the mutex (timeout)");
+                return (STD_ERR(PAS, FAIL, 0));
+            }
 
             if(!dn_pald_diag_mode_get()) {
 
