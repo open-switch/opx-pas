@@ -241,7 +241,10 @@ static filename_enum_map_t media_files[] = {
     {fuse_default_file_size, "media_internal_tx_power_bias"     , FUSE_MEDIA_FILETYPE_INTERNAL_TX_POWER_BIAS},
     
     {fuse_default_file_size, "alias_name"                       , FUSE_MEDIA_FILETYPE_ALIAS},
-    {fuse_default_file_size, "diag_mode"                        , FUSE_MEDIA_FILETYPE_DIAG_MODE}
+    {fuse_default_file_size, "diag_mode"                        , FUSE_MEDIA_FILETYPE_DIAG_MODE},
+
+    {fuse_default_file_size, "eeprom_cursor"                    , FUSE_MEDIA_FILETYPE_EEPROM_CURSOR},
+    {fuse_default_file_size, "eeprom_data"                      , FUSE_MEDIA_FILETYPE_EEPROM_DATA},
 };
 
 

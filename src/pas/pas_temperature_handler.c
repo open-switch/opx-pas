@@ -138,7 +138,10 @@ t_std_error dn_pas_temperature_get(cps_api_get_params_t * param, size_t key_idx)
 
         for (slot = slot_start; slot <= slot_limit; ++slot) {
             if (sensor_name_valid) {
-                dn_pas_lock();
+                if (dn_pas_timedlock() != STD_ERR_OK) {
+                    PAS_ERR("Not able to acquire the mutex (timeout)");
+                    return (STD_ERR(PAS, FAIL, 0));
+                }
 
                 temp_rec = dn_pas_temperature_rec_get_name(e->entity_type, slot, sensor_name);
                 if (temp_rec != 0)  dn_pas_temperature_get1(param, qual, temp_rec);
@@ -151,8 +154,10 @@ t_std_error dn_pas_temperature_get(cps_api_get_params_t * param, size_t key_idx)
             entity_rec = dn_pas_entity_rec_get(e->entity_type, slot);
             if (entity_rec == 0)  continue;
 
-            dn_pas_lock();
-
+            if (dn_pas_timedlock() != STD_ERR_OK) {
+                PAS_ERR("Not able to acquire the mutex (timeout)");
+                return (STD_ERR(PAS, FAIL, 0));
+            }
             for (sensor_idx = 1; sensor_idx <= entity_rec->num_temp_sensors; ++sensor_idx) {
                 temp_rec = dn_pas_temperature_rec_get_idx(e->entity_type, slot, sensor_idx);
                 if (temp_rec == 0)  continue;
@@ -282,7 +287,10 @@ t_std_error dn_pas_temperature_set(cps_api_transaction_params_t *param, cps_api_
 
         for (slot = slot_start; slot <= slot_limit; ++slot) {
             if (sensor_name_valid) {
-                dn_pas_lock();
+                if (dn_pas_timedlock() != STD_ERR_OK) {
+                    PAS_ERR("Not able to acquire the mutex (timeout)");
+                    return (STD_ERR(PAS, FAIL, 0));
+                }
 
                 temp_rec = dn_pas_temperature_rec_get_name(e->entity_type,
                                                            slot,
@@ -305,8 +313,10 @@ t_std_error dn_pas_temperature_set(cps_api_transaction_params_t *param, cps_api_
             entity_rec = dn_pas_entity_rec_get(e->entity_type, slot);
             if (entity_rec == 0)  continue;
 
-            dn_pas_lock();
-
+            if (dn_pas_timedlock() != STD_ERR_OK) {
+                PAS_ERR("Not able to acquire the mutex (timeout)");
+                return (STD_ERR(PAS, FAIL, 0));
+            }
             for (sensor_idx = 1; sensor_idx <= entity_rec->num_temp_sensors; ++sensor_idx) {
                 temp_rec = dn_pas_temperature_rec_get_idx(e->entity_type, slot, sensor_idx);
                 if (temp_rec == 0)  continue;

@@ -28,6 +28,22 @@
 #define SUPPORTED   1
 #define UNSUPPORTED 0
 
+#define EEPROM_PAGE_MAX_SIZE    256
+
+
+/* Cursor is csv of format: "device,bank,page,offset" . If field is N/A, set as -1 */
+typedef struct {
+    int bank;
+    int page;
+    int device;
+    int offset;
+} eeprom_cursor_t;
+static eeprom_cursor_t eeprom_cursor = {
+                                 .bank = -1,
+                                 .page = -1,
+                                 .device = -1,
+                                 .offset = -1};
+
 /** Internal helper function for media reads */
 static bool media_get(
         dev_node_t *node, 
@@ -196,6 +212,28 @@ static void media_alias_name_get(
 
 /** Internal helper function to get the media presence */
 static void media_presence_get(
+        dev_node_t *node, 
+        int        array, 
+        char       *format, 
+        char       *disp_str, 
+        char       *trans_buf, 
+        size_t     *len, 
+        int        *res
+        );
+
+/** Internal helper function to read specific media eeprom data  */
+static void media_eeprom_data_read(
+        dev_node_t *node, 
+        int        array, 
+        char       *format, 
+        char       *disp_str, 
+        char       *trans_buf, 
+        size_t     *len, 
+        int        *res
+        );
+
+/** Internal helper function to read eeprom cursor  */
+static void media_eeprom_cursor_read(
         dev_node_t *node, 
         int        array, 
         char       *format, 
@@ -814,7 +852,29 @@ struct {
                     "%-25s : %s",
                     "Diagnostic Mode" 
                   }
-    }
+    },
+
+    [FUSE_MEDIA_FILETYPE_EEPROM_CURSOR] = {
+        status  : SUPPORTED,
+        func    : media_eeprom_cursor_read,
+        args    : {
+                    0,
+                    "%-25s : Device 0x%x, Bank 0x%x, Page 0x%x, Offset %d",
+                    "EEPROM Cursor"
+                  }
+    },
+
+    [FUSE_MEDIA_FILETYPE_EEPROM_DATA] = {
+        status  : SUPPORTED,
+        func    : media_eeprom_data_read,
+        args    : {
+                    0,
+                    "%-25s : 0x%02x 0d%03d 0b%s 0c%c",
+                    "EEPROM Data"
+                  }
+    },
+
+
 };
 
 /** PAS Daemon entity_info read interface */
@@ -860,7 +920,15 @@ int dn_pas_fuse_media_write(
 {
     //write permission denied
     int    res   = -ENOTSUP;
+    int    ret = 0;
+    uint_t data = 0;
+    uint8_t write_data = 0;
     uint_t state = 0;
+    sdi_media_eeprom_addr_t addr = {
+                                    .device_addr = SDI_MEDIA_DEVICE_ADDR_AUTO,
+                                    .page        = SDI_MEDIA_PAGE_SELECT_NOT_SUPPORTED,
+                                    .offset      = 0
+                                   };
 
     /** check for node & buffer validity */
     if ((NULL == node) || (NULL == buf)) {
@@ -894,6 +962,46 @@ int dn_pas_fuse_media_write(
                 break;
             }
 
+        case FUSE_MEDIA_FILETYPE_EEPROM_CURSOR:
+
+            /* Cursor is csv of format: "device,bank,page,offset" . If field is N/A, set as -1 */
+            /* device, bank, page are in hexadecimal. Offset is in decimal */
+            /* will handle potential errors in string input */
+            ret = sscanf(buf, "%x,%x,%x,%d", &(eeprom_cursor.device)
+                                           , &(eeprom_cursor.bank)
+                                           , &(eeprom_cursor.page)
+                                           , &(eeprom_cursor.offset));
+            if (ret != 4){
+                res = -EINVAL;
+            } else {
+                res = size;
+            }
+            break;
+
+        case FUSE_MEDIA_FILETYPE_EEPROM_DATA:
+
+            /* banks not yet implemented */
+            addr.device_addr = eeprom_cursor.device;
+            addr.page        = eeprom_cursor.page;
+            addr.offset      = eeprom_cursor.offset;
+
+            ret = sscanf(buf, "%u", &data);
+
+            write_data = (uint8_t)data;
+            /*Need to test validity of eeprom_cursor */
+            if ((addr.offset > (EEPROM_PAGE_MAX_SIZE-1)) || (ret !=1)) {
+                res = -EINVAL;
+                break;
+            }
+
+            if (STD_ERR_OK !=
+                sdi_media_write_generic(node->fuse_resource_hdl,
+                   &addr, &write_data, sizeof(uint8_t))) {
+                res = -EPERM;
+            } else {
+                res = size;
+            }
+           break;
         default:
             {    
                 if(node->fuse_filetype >= FUSE_MEDIA_FILETYPE_MIN && 
@@ -1331,6 +1439,71 @@ static void media_presence_get(
     }
 }
 
+
+static void media_eeprom_cursor_read(
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
+        int        *res
+        )
+{
+
+    dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res,
+            format, disp_str, eeprom_cursor.device
+                            , eeprom_cursor.bank
+                            , eeprom_cursor.page
+                            , eeprom_cursor.offset);
+
+}
+
+/* converts decimal to binary-looking string */
+/* size of buffer 'out' has to be greater than 8 */
+static void convert_dec_to_binary_str (uint8_t num, char* out)
+{
+    short count = 7;
+    while(count >= 0) {
+        strcat(out, (num >> count--) & 0x01 ? "1" :"0" );
+    }
+}
+static void media_eeprom_data_read (
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
+        int        *res
+        )
+{
+
+    uint8_t data = 0;
+    char bin_out[10] = {0}; /* holds byte formatted as binary */
+    sdi_media_eeprom_addr_t addr = {
+                                    .device_addr = SDI_MEDIA_DEVICE_ADDR_AUTO,
+                                    .page        = SDI_MEDIA_PAGE_SELECT_NOT_SUPPORTED,
+                                    .offset      = 0
+                                   };
+
+    /* banks not yet implemented */
+    addr.device_addr = eeprom_cursor.device;
+    addr.page        = eeprom_cursor.page;
+    addr.offset      = eeprom_cursor.offset;
+
+    /*Need to test validity of eeprom_cursor */
+    if (addr.offset > (EEPROM_PAGE_MAX_SIZE-1)) {
+        return;
+    }
+    if (STD_ERR_OK ==
+            sdi_media_read_generic(node->fuse_resource_hdl,
+               &addr, &data, sizeof(data) )){
+        convert_dec_to_binary_str(data, bin_out);
+        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res,
+                format, disp_str, data, data, bin_out, isprint(data) ? (char)data : '\0');
+    }
+}
 /** Internal helper function for media reads */
 static bool media_get(
         dev_node_t *node, 

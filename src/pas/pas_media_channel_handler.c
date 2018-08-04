@@ -109,8 +109,10 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
     phy_media_tbl_t         *mtbl = NULL;
     cps_api_operation_types_t operation;
 
-    dn_pas_lock();
-
+    if (dn_pas_timedlock() != STD_ERR_OK) {
+        PAS_ERR("Not able to acquire the mutex (timeout)");
+        return (STD_ERR(PAS, FAIL, 0));
+    }
     if(dn_pald_diag_mode_get()) {
 
         dn_pas_unlock();
@@ -243,6 +245,10 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
 
                                 ret = STD_ERR(PAS, FAIL, 0);
                             }
+
+                            if ((mtbl->res_data->type == PLATFORM_MEDIA_TYPE_SFP_T) && (!status)) {
+                                sdi_media_phy_serdes_control(mtbl->res_hdl, PAS_MEDIA_CH_START, SDI_MEDIA_DEFAULT, false);
+                            }
                             mtbl->channel_data[ch_start].is_link_status_valid = false;
 
                             if (status == true) {
@@ -305,6 +311,10 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
                                 }
                             }
 
+                            /* Force tx up */
+                            if (!dn_pas_media_channel_state_set(start, ch_start, true)){
+                                PAS_ERR("Failed to force media tx state on, port %u channel %u", start, ch_start);
+                            }
                             if (media_cfg->led_control == true) {
 
                                 if (dn_pas_media_channel_led_set (start, ch_start,

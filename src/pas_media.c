@@ -1326,6 +1326,19 @@ static bool dn_pas_media_type_poll (uint_t port, cps_api_object_t obj)
     dn_pas_media_high_power_mode_set(port,
                 (high_power_mode == false) ? false : true);
 
+    /* Bring down all channels whenever media is seen. The xceiver state function argument is inverted */
+    if (!dn_pas_media_transceiver_state_set(port, true)){
+        PAS_ERR("Unable to force tx state low for media on port %u", port);
+    }
+
+    /* Bring sfp t serdes down also */
+
+    if (mtbl->res_data->type == PLATFORM_MEDIA_TYPE_SFP_T) {
+        if (sdi_media_phy_serdes_control(mtbl->res_hdl, PAS_MEDIA_CH_START, SDI_MEDIA_DEFAULT, false) != STD_ERR_OK) {
+            PAS_ERR("Serdes control failed, port(%u), channel(%u), state(false)", port, PAS_MEDIA_CH_START);
+        }
+    }
+
     if (mtbl->res_data->type != type) {
         mtbl->res_data->type = type;
 

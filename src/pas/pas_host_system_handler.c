@@ -88,7 +88,11 @@ t_std_error dn_pas_host_system_set(cps_api_transaction_params_t *param,
     cps_api_key_t         *key = cps_api_object_key(obj);
     cps_api_qualifier_t   qual = cps_api_key_get_qual(key);
 
-    dn_pas_lock();
+    if (dn_pas_timedlock() != STD_ERR_OK) {
+        PAS_ERR("Not able to acquire the mutex (timeout)");
+        return (STD_ERR(PAS, FAIL, 0));
+    }
+
     if(dn_pald_diag_mode_get()) {
          dn_pas_unlock();
          return STD_ERR(PAS, FAIL, 0);

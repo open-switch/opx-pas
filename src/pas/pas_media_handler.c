@@ -63,8 +63,10 @@ t_std_error dn_pas_media_get(cps_api_get_params_t * param,
     } else {
         start = end = port;
     }
-
-    dn_pas_lock();
+    if (dn_pas_timedlock() != STD_ERR_OK) {
+        PAS_ERR("Not able to acquire the mutex (timeout)");
+        return (STD_ERR(PAS, FAIL, 0));
+    }
 
     for ( ; (start <= end); start++) {
 
@@ -146,8 +148,10 @@ t_std_error dn_pas_media_set(cps_api_transaction_params_t * param,
     cps_api_object_t        cloned;
     cps_api_operation_types_t operation;
 
-    dn_pas_lock();
-
+    if (dn_pas_timedlock() != STD_ERR_OK) {
+        PAS_ERR("Not able to acquire the mutex (timeout)");
+        return (STD_ERR(PAS, FAIL, 0));
+    }
     if(dn_pald_diag_mode_get()) {
 
         dn_pas_unlock();

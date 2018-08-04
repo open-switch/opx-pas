@@ -37,6 +37,7 @@
 #include  <stdio.h>
 #include  <stdlib.h>
 #include  <sys/time.h>
+#include  <sched.h>
 
 
 struct timer {
@@ -335,6 +336,7 @@ t_std_error dn_pas_monitor_thread(void)
         cur->deadline += cur->period;
 
         timerq_shuffle();
+        sched_yield();
     }
 
     return (STD_ERR_OK);        /* Should never return */

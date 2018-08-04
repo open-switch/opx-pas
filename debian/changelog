@@ -1,3 +1,14 @@
+opx-pas (3.1.7) unstable; urgency=medium
+
+  * Bugfix: CPS Get fails for BASE_PAS_CHASSIS_OBJ on bootup.
+  * Update: Added sched_yield call in poller thread to relinquish the CPU after polling the device.
+  * Update: Added sfp t serdes control on media detection and tx control request.
+  * Update: Increased timeout for pas lock from 5 to 15 seconds.
+  * Update: Added support for timedlock.
+  * Update: Added capability for  media EEPROM Read/Write From the FUSE.
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Fri, 10 Aug 2018 21:00:00 -0800
+
 opx-pas (3.1.5) unstable; urgency=medium
 
   * Update: Allow Media EEPROM Read/Write From FUSE.

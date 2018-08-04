@@ -27,6 +27,7 @@
 
 void dn_pas_lock(void);
 void dn_pas_unlock(void);
+t_std_error dn_pas_timedlock(void);
 
 /* Return pald program name (argv[0]) */
 char *dn_pald_progname_get(void);

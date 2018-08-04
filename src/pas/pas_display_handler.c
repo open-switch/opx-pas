@@ -78,7 +78,11 @@ static t_std_error dn_pas_disp_get1(
 
     /*If the realtime value is requested, get string from hardware*/
     if (qual == cps_api_qualifier_REALTIME) {
-        dn_pas_lock();
+        if (dn_pas_timedlock() != STD_ERR_OK) {
+            PAS_ERR("Not able to acquire the mutex (timeout)");
+            return (STD_ERR(PAS, FAIL, 0));
+        }
+
         if(!dn_pald_diag_mode_get()) {
             /* Get message and state */
             sdi_digital_display_led_get(rec->sdi_resource_hdl, rec->mesg, sizeof(rec->mesg));
@@ -213,7 +217,10 @@ static t_std_error dn_pas_disp_set1(
 
     old_obj = CPS_API_OBJECT_NULL; /* No longer owned */
 
-    dn_pas_lock();
+    if (dn_pas_timedlock() != STD_ERR_OK) {
+        PAS_ERR("Not able to acquire the mutex (timeout)");
+        return (STD_ERR(PAS, FAIL, 0));
+    }
     if(!dn_pald_diag_mode_get()) {
         if (mesg_valid && (mesg_len > 1) && (mesg != NULL)){  /* Valid and not empty string*/
              memcpy(rec->mesg, mesg, mesg_len);

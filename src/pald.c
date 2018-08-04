@@ -203,6 +203,32 @@ void dn_pas_unlock(void)
     std_mutex_unlock(&pas_lock);
 }
 
+/*
+ * Name: dn_pas_timedlock
+ *
+ *      This function is to lock a mutex with timeout of 30 seconds, if calling
+ *      thread is able to acquire the mutex with in 30 seconds it returns STD_ERR_OK
+ *      otherwise error.
+ * Input: None
+ * Return Values: On success STD_ERR_OK, otherwise ERROR.
+ */
+
+t_std_error dn_pas_timedlock(void)
+{
+    struct timespec timeout;
+    t_std_error     ret = STD_ERR_OK;
+
+    memset(&timeout, 0, sizeof(timeout));
+    clock_gettime(CLOCK_REALTIME, &timeout);
+    timeout.tv_sec += 30; // 30 seconds timeout
+
+    if (pthread_mutex_timedlock(&pas_lock, &timeout) != 0) {
+        ret = STD_ERR(PAS, FAIL, 0);
+    }
+
+    return ret;
+}
+
 /************************************************************************
  *
  * Name: dn_pas_config_file_handle

@@ -83,9 +83,10 @@ static t_std_error dn_pas_fan_get1(
                            true, slot,
                            true, fan_idx
                            );
-
-    dn_pas_lock();
-    
+    if (dn_pas_timedlock() != STD_ERR_OK) {
+        PAS_ERR("Not able to acquire the mutex (timeout)");
+        return (STD_ERR(PAS, FAIL, 0));
+    }
     if ((!rec->valid || qual == cps_api_qualifier_REALTIME) && !dn_pald_diag_mode_get()) {
         /* Cache not valid or realtime object requested
            => Update cache from hardware
@@ -316,8 +317,11 @@ static t_std_error dn_pas_fan_set1(
     if (speed_valid)  targ_speed = speed;
 
     if (targ_speed == rec->targ_speed) return rc;
-        
-    dn_pas_lock();
+
+    if (dn_pas_timedlock() != STD_ERR_OK) {
+        PAS_ERR("Not able to acquire the mutex (timeout)");
+        return (STD_ERR(PAS, FAIL, 0));
+    }
 
     if(!dn_pald_diag_mode_get()) {
         
