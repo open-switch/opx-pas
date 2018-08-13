@@ -26,8 +26,6 @@
 #include "sdi_media.h"
 #include <stdlib.h>
 
-#include "dn_media_mgr.h"
-
 #define ARRAY_SIZE(a)         (sizeof(a)/sizeof(a[0]))
 
 static uint_t dn_pas_media_pas_id_get (const sdi_to_pas_map_t *pmap,
@@ -441,61 +439,6 @@ static uint_t dn_pas_media_sdi_id_get (const sdi_to_pas_map_t *pmap,
 }
 
 /*
- * dn_pas_product_id_to_optics_type is to derive the optics type based on
- * product id.
- */
-
-static PLATFORM_MEDIA_TYPE_t dn_pas_product_id_to_optics_type (
-        PLATFORM_MEDIA_CATEGORY_t category, uint16_t id, uint_t cable_length)
-{
-    uint16_t wave_len = 0, distance = 0, protocol = 0;
-    PLATFORM_MEDIA_TYPE_t optics_type = PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
-
-    if (id != PAS_MEDIA_QSFP_INVALID_ID) {
-
-        wave_len = (id >> 12) & 0xf;
-        distance = (id >> 4) & 0xf;
-        protocol = (id) & 0xf ;
-
-        if ((category == PLATFORM_MEDIA_CATEGORY_QSFP_PLUS)
-                || (category == PLATFORM_MEDIA_CATEGORY_QSFP)) {
-
-            optics_type = dn_pas_media_type_find(media_qsfp_type_tbl,
-                    ARRAY_SIZE(media_qsfp_type_tbl), wave_len,
-                    distance, protocol, cable_length);
-
-        } else if (category == PLATFORM_MEDIA_CATEGORY_QSFP28) {
-
-            optics_type = dn_pas_media_type_find(media_qsfp28_type_tbl,
-                    ARRAY_SIZE(media_qsfp28_type_tbl), wave_len,
-                    distance, protocol, cable_length);
-
-
-        } else if (category == PLATFORM_MEDIA_CATEGORY_SFP_PLUS) {
-
-            optics_type = dn_pas_media_type_find(media_sfpp_type_tbl,
-                    ARRAY_SIZE(media_sfpp_type_tbl), wave_len,
-                    distance, protocol, cable_length);
-        } else if (category == PLATFORM_MEDIA_CATEGORY_SFP28) {
-
-            optics_type = dn_pas_media_type_find(media_sfp28_type_tbl,
-                    ARRAY_SIZE(media_sfp28_type_tbl), wave_len,
-                    distance, protocol, cable_length);
-        } else if (category == PLATFORM_MEDIA_CATEGORY_QSFP_DD) {
-            optics_type = dn_pas_media_type_find(media_qsfp28_dd_type_tbl,
-                    ARRAY_SIZE(media_qsfp28_dd_type_tbl), wave_len,
-                    distance, protocol, cable_length);
-        } else if (category == PLATFORM_MEDIA_CATEGORY_DEPOP_QSFP28) {
-            optics_type = dn_pas_media_type_find(media_depop_qsfp28_type_tbl,
-                    ARRAY_SIZE(media_depop_qsfp28_type_tbl), wave_len,
-                    distance, protocol, cable_length);
-        }
-
-    }  /* If qsfp is not 0xffff */
-    return(optics_type);
-}
-
-/*
  * dn_pas_max_fc_supported_speed is to derive the max supported optics speed
  * based on MSA fields.
  */
@@ -787,8 +730,6 @@ PLATFORM_MEDIA_TYPE_t dn_pas_media_type_get (pas_media_t *res_data)
         }
     }
 
-    op_type = dn_pas_product_id_to_optics_type(res_data->category, PAS_MEDIA_QSFP_INVALID_ID, res_data->length_cable);
-    
     if(op_type == PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_SW) {
         
         if(res_data->wavelength == 1310 && res_data->length_sfm_km == 10) {
