@@ -104,13 +104,6 @@ enum {
     PAS_PRODUCT_ID_MAGIC0           =  0x0F,
     PAS_PRODUCT_ID_MAGIC1           =  0x10,
     PAS_PRODUCT_ID_QSFP28_MAGIC0    =  0xDF, /* QSFP28 Magic 0 */
-    QSFP_PROTO_4x10GBASE            =  0x2,
-    QSFP_PROTO_4x1GBASET            =  0x2,
-    QSFP_PROTO_4x25GBASE            =  0x2,
-    QSFP_PROTO_2x50GBASE            =  0x3,
-    MEDIA_DIST_DONT_CARE            =  PAS_MEDIA_QSFP_INVALID_ID, /* Distance never be 0xffff */
-    MEDIA_PROT_DONT_CARE            =  PAS_MEDIA_QSFP_INVALID_ID, /* Protocol never be 0xffff */
-    MEDIA_LENGTH_DONT_CARE          =  PAS_MEDIA_QSFP_INVALID_ID, /* Cable length never be 0xffff */
     PAS_MEDIA_INVALID_ID            =  0xffffffff,
     PAS_MEDIA_MON_ALL_FLAGS         =  0xff,
     PAS_MEDIA_CH_STATUS_FLAGS       =  0xf,
