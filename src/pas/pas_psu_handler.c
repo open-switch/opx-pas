@@ -16,8 +16,8 @@
 
 /*
  * filename: pas_psu_handler.c
- */ 
-     
+ */
+
 #include "private/pald.h"
 #include "private/pas_log.h"
 #include "private/pas_main.h"
@@ -46,7 +46,7 @@ static t_std_error dn_pas_psu_get1(
     cps_api_object_t resp_obj;
 
     /* Look up object in cache */
-    
+
     char res_key[PAS_RES_KEY_SIZE];
 
     rec = (pas_psu_t *) dn_pas_res_getc(dn_pas_res_key_psu(res_key,
@@ -59,7 +59,7 @@ static t_std_error dn_pas_psu_get1(
 
         return (STD_ERR(PAS, NEXIST, 0));
     }
-        
+
     /* Compose respose object */
 
     resp_obj = cps_api_object_create();
@@ -75,14 +75,15 @@ static t_std_error dn_pas_psu_get1(
         PAS_ERR("Not able to acquire the mutex (timeout)");
         return (STD_ERR(PAS, FAIL, 0));
     }
+
     if ((!rec->valid || qual == cps_api_qualifier_REALTIME) && !dn_pald_diag_mode_get()) {
         /* Cache not valid or realtime object requested
            => Update cache from hardware
         */
-        
+
         dn_entity_poll(rec->parent, true);
     }
-    
+
     if (rec->parent->present) {
         /* Add result attributes to response object */
         if ((rec->fan_airflow_type != PLATFORM_FAN_AIRFLOW_TYPE_NORMAL) &&
@@ -91,20 +92,20 @@ static t_std_error dn_pas_psu_get1(
 
              rec->fan_airflow_type = PLATFORM_FAN_AIRFLOW_TYPE_UNKNOWN;
         }
-        
+
         cps_api_object_attr_add_u8(resp_obj,
                                    BASE_PAS_PSU_INPUT_TYPE,
                                    rec->input_type
                                    );
-        
+
         cps_api_object_attr_add_u8(resp_obj,
                                    BASE_PAS_PSU_FAN_AIRFLOW_TYPE,
                                    rec->fan_airflow_type
                                    );
     }
-    
+
     dn_pas_unlock();
-    
+
     /* Add response object to get response */
 
     if (!cps_api_object_list_append(param->list, resp_obj)) {
@@ -142,12 +143,12 @@ t_std_error dn_pas_psu_get(cps_api_get_params_t * param, size_t key_idx)
 
     for (slot = slot_start; slot <= slot_limit; ++slot) {
         ret = dn_pas_psu_get1(param, qual, slot);
-        
+
         if (ret == STD_ERR(PAS, NEXIST, 0)) {
             if (slot_valid) {
                 result = STD_ERR(PAS, NEXIST, 0);
             }
-            
+
             break;
         } else if (STD_IS_ERR(ret)) {
             result = STD_ERR(PAS, FAIL, 0);

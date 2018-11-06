@@ -1,3 +1,15 @@
+opx-pas (3.3.0) unstable; urgency=medium
+
+  * Update: Populate compliance code for QSFP28
+  * Update: Add 8x1 breakout support
+  * Update: Enable media-name distinction
+  * Update: Set default RX to conform with dBm measurement
+  * Update: Add media dump handler
+  * Update: Modify media naming and attributes
+  * Update: Add support for publishing pico meter wavelengths
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Tue, 06 Nov 2018 21:00:00 -0800
+
 opx-pas (3.1.7) unstable; urgency=medium
 
   * Bugfix: CPS Get fails for BASE_PAS_CHASSIS_OBJ on bootup.
@@ -16,7 +28,7 @@ opx-pas (3.1.5) unstable; urgency=medium
   * Bugfix: S4100- Reset alarm status for FAN and PSU after PSU OIR.
   * Bugfix: 10G Amphenol 10m DAC cable is displayed incorrectly in "show inventory media".
   * Update: Added QSA flag.
-  * Bugfix: "show inventory" output doesn't show proper Power Supply details, 
+  * Bugfix: "show inventory" output doesn't show proper Power Supply details,
             Part no., PPID and Rev information.
   * Update: Publish  entity info when enetity info valid flag changes.
   * Bugfix: Stop dn_ppm crash and multiple reboot on upgradation to build 7513.
@@ -41,7 +53,7 @@ opx-pas (3.1.2) unstable; urgency=medium
   * Update: Port-channel support in FPORT mode
   * Bugfix: PAS should report "Not Applicable" for airflow direction of PSU which does not have fans
   * Bugfix: handle reboot reason as optional attribute
-  
+
  -- Dell EMC <ops-dev@lists.openswitch.net>  Tue, 29 May 2018 21:00:00 -0800
 
 opx-pas (3.0.1+opx5) unstable; urgency=medium
@@ -51,7 +63,7 @@ opx-pas (3.0.1+opx5) unstable; urgency=medium
  -- Dell EMC <ops-dev@lists.openswitch.net>  Wed, 18 Mar 2018 21:00:00 -0800
 
 opx-pas (3.0.1+opx4) unstable; urgency=medium
-  
+
   * Update: Remove virtual package dependency with platform-config
 
  -- Dell EMC <ops-dev@lists.openswitch.net>  Wed, 18 Mar 2018 11:00:00 -0800
@@ -81,7 +93,7 @@ opx-pas (3.0.1+opx1) unstable; urgency=medium
  -- Dell EMC <ops-dev@lists.openswitch.net>  Thu, 25 Jan 2018 18:21:05 +0000
 
 opx-pas (3.0.1) unstable; urgency=medium
-  
+
   * Update: Removed lockdown from AOC and improved separable connector checking
   * Update: Improve media locking code
   * Update: added dd qsfp media

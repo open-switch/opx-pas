@@ -47,7 +47,7 @@ bool dn_fan_notify(pas_fan_t *rec)
     dn_pas_obj_key_fan_set(obj,
                            cps_api_qualifier_OBSERVED,
                            true,
-                           rec->parent->entity_type, 
+                           rec->parent->entity_type,
                            true,
                            rec->parent->slot,
                            true,
@@ -213,6 +213,7 @@ bool dn_fan_poll(
              */
             *rec->oper_fault_state = *prev_oper_fault_state;
             return (true);
+
         }
         rec->fault_cnt = 0;
 
@@ -247,17 +248,17 @@ bool dn_fan_poll(
             /* | Observed speed - target speed | exceeds margin */
 
             /* Try to set proper speed */
-            
+
             if (rec->targ_speed != targ_speed) {
 
-                if (STD_IS_ERR(sdi_fan_speed_set(rec->sdi_resource_hdl, 
+                if (STD_IS_ERR(sdi_fan_speed_set(rec->sdi_resource_hdl,
                                                  targ_speed))) {
                     dn_pas_oper_fault_state_update(rec->oper_fault_state,
                                                    PLATFORM_FAULT_TYPE_ECOMM);
                 } else {
                     rec->targ_speed = targ_speed;
                 }
-                
+
             }
 
             /* Pump up integrator; raise error if limit reached or exceeded */
@@ -273,15 +274,15 @@ bool dn_fan_poll(
             }
         } else {
             /* | Observed speed - target speed | within margin */
-            
+
             /* Pump down integrator; clear error if 0 */
-            
+
             if (rec->speed_err_integ.decr > rec->speed_err_integ.sum) {
                 rec->speed_err_integ.sum = 0;
             } else {
                 rec->speed_err_integ.sum -= rec->speed_err_integ.decr;
             }
-            
+
             if (rec->speed_err_integ.sum == 0)  rec->speed_err = false;
         }
 
@@ -297,7 +298,7 @@ bool dn_fan_poll(
 
         notif = true;
     }
-    
+
     if (notif)  dn_fan_notify(rec);
 
     return (true);

@@ -16,7 +16,7 @@
 
 /**************************************************************************
  * @file pas_host_system_handler.c
- * 
+ *
  * @brief This file contains source code of host-system CPS set/get handlers.
  **************************************************************************/
 

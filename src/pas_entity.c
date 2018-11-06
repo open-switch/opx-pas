@@ -25,6 +25,7 @@
 #include "private/pas_power_monitor.h"
 #include "private/pas_display.h"
 #include "private/pas_res_structs.h"
+#include "private/pas_ext_ctrl.h"
 #include "private/pas_data_store.h"
 #include "private/pas_event.h"
 #include "private/pas_utils.h"
@@ -33,7 +34,6 @@
 #include "std_type_defs.h"
 #include "std_error_codes.h"
 #include "sdi_entity.h"
-#include "cps_api_service.h"
 
 #include <stdlib.h>
 
@@ -213,6 +213,10 @@ static void _dn_cache_init_entity_res(
         func = dn_cache_init_power_monitor;
         break;
 
+    case SDI_RESOURCE_EXT_CONTROL:
+        func = dn_cache_init_extctrl;
+        break;
+
     default:
         return;
     }
@@ -231,6 +235,9 @@ static void dn_cache_init_entity_res(pas_entity_t *rec)
                     = rec->num_plds
                     = rec->num_power_monitors
                     = 0;
+
+                dn_cache_init_extctrl_db(rec);
+
                 break;
 
         case PLATFORM_ENTITY_TYPE_PSU:
@@ -249,9 +256,8 @@ static void dn_cache_init_entity_res(pas_entity_t *rec)
                                  rec
                                  );
 
-    /* Initialize NPU temperature sensor in the cache DB */
     if(rec->entity_type == PLATFORM_ENTITY_TYPE_CARD){
-
+        /* Initialize NPU temperature sensor in the cache DB */
         dn_cache_init_remote_temp_sensor();
     }
 }
@@ -265,6 +271,8 @@ static void dn_cache_del_entity_res(pas_entity_t *rec)
                 dn_cache_del_led(rec);
                 dn_cache_del_disp(rec);
                 dn_cache_del_power_monitor(rec);
+
+                dn_cache_del_extctrl(rec);
 
                 rec->num_leds
                     = rec->num_displays
@@ -380,6 +388,7 @@ static void dn_entity_res_poll(
     dn_entity_fans_poll(rec, update_allf, notif);
     dn_entity_temp_sensors_poll(rec, update_allf, notif);
     dn_entity_power_monitors_poll(rec);
+    dn_entity_extctrl_poll(rec, update_allf, notif);
 }
 
 static void dn_entity_fans_rec_clear(pas_entity_t *parent)
@@ -470,6 +479,7 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
         rec->init_fail_cnt = 0;
         rec->fault_cnt     = 0;
     }
+
     if (rec->valid && rec->present && !present) {
         /* Transitioned to absent */
 

@@ -158,6 +158,7 @@ static int dn_pas_fuse_device_read(
 {
     int           res   = 0;
     dev_node_t    node;
+    bool          is_printable = true;
 
     dn_pas_fuse_realtime_parser(&node, (char *) path);
 
@@ -194,6 +195,7 @@ static int dn_pas_fuse_device_read(
 
             case SDI_RESOURCE_MEDIA:
                 res = dn_pas_fuse_media_read(&node, buf, size, offset);
+                is_printable = (node.fuse_filetype != FUSE_MEDIA_FILETYPE_EEPROM_PAGE_DUMP);
                 break;
             
             case SDI_RESOURCE_NVRAM:
@@ -218,9 +220,10 @@ static int dn_pas_fuse_device_read(
 
     /* on successful read, append linefeed (assume null terminated string?) */
     if (-ENOENT != res && res < size) {
-        
-        strncat(buf, "\n", size - strlen(buf));
-        res = strlen(buf);
+        if (is_printable) {
+            strncat(buf, "\n", size - strlen(buf));
+            res = strlen(buf);
+        }
     }
 
     return res;

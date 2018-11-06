@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <math.h>
 
 #define ARRAY_SIZE(a)  (sizeof(a) / sizeof((a)[0]))
 #define END(a)         (&(a)[ARRAY_SIZE(a)])
@@ -42,7 +43,7 @@ typedef struct config_entry_s {
 static port_info_node_t* port_info_node_head;
 
 
-static char pas_media_app_cfg_filename[] = "/etc/opt/dell/os10/pas/media-config.xml";
+static char pas_media_app_cfg_filename[] = "/etc/opx/pas/media-config.xml";
 
 static void dn_pas_media_read_app_config (std_config_node_t nd);
 static bool dn_pas_config_parse (const char *config_filename,
@@ -52,6 +53,7 @@ static bool dn_pas_config_parse (const char *config_filename,
 static cps_api_operation_handle_t cps_hdl;
 
 static sdi_entity_info_t chassis_cfg[1];
+
 static bool dn_pas_media_parse_speed (char *val_str,
                                       BASE_IF_SPEED_t *speed_list, uint_t size,
                                       uint_t *speed_count);
@@ -69,6 +71,7 @@ static const port_media_type_str_to_enum_t port_media_type_str_to_enum[] = {
     {STRINGIZE_ENUM(PLATFORM_MEDIA_TYPE_10GBASE_COPPER), PLATFORM_MEDIA_TYPE_10GBASE_COPPER},
     {STRINGIZE_ENUM(PLATFORM_MEDIA_TYPE_25GBASE_BACKPLANE), PLATFORM_MEDIA_TYPE_25GBASE_BACKPLANE}
 };
+
 
 static void dn_pas_config_chassis(std_config_node_t nd)
 {
@@ -92,6 +95,7 @@ static void dn_pas_config_chassis(std_config_node_t nd)
     if ((a = std_config_attr_get(nd, "service-tag")) != 0) {
         STRLCPY(chassis_cfg->service_tag, a);
     }
+
     if ((a = std_config_attr_get(nd, "base-mac-addresses")) != 0
         && sscanf(a, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
                   &chassis_cfg->base_mac[0],
@@ -199,7 +203,6 @@ struct pas_config_entity *dn_pas_config_entity_get_idx(uint_t idx)
 {
     return (idx >= ARRAY_SIZE(entity_cfg_tbl) ? 0 : &entity_cfg_tbl[idx]);
 }
-
 
 
 static struct pas_config_card card_cfg[1];
@@ -439,7 +442,7 @@ struct pas_config_temperature *dn_pas_config_temperature_get(void)
 }
 
 /*
- * Default config for communication device 
+ * Default config for communication device
  */
 static struct pas_config_comm_dev cfg_comm_dev[1] = {{poll_interval:1000}};
 
@@ -464,16 +467,115 @@ static void dn_pas_config_comm_dev (std_config_node_t nd)
     }
 }
 
+static pas_config_extctrl cfg_extctrl;
+
+pas_config_extctrl* dn_pas_config_extctrl_get(void)
+{
+     return (&cfg_extctrl);
+}
+
+static inline bool dn_pas_extctrl_find_sensor (std_config_node_t sd, const char *ctrl_ptr,
+                                               pas_extctrl_slist_config  *slist)
+{
+    char *val_str;
+
+    if (strcmp(ctrl_ptr, "sensor") == 0) {
+        val_str = std_config_attr_get(sd, "name");
+        if (val_str != 0) {
+           if (slist->count > PAS_EXTCTRL_MAX_SSOR_IN_LIST-1)
+               return false;
+
+           STRLCPY(slist->sensor[slist->count].name, val_str);
+           slist->count++;
+        }
+    }
+
+    return true;
+}
+
+static void dn_pas_config_extctrl (std_config_node_t extctrl_cfg)
+{
+    std_config_node_t nd, sd;
+    const char *nm, *cnm;
+    char *val_str;
+    pas_extctrl_slist_config  *slist;
+    uint cnt = 0;
+    uint sensor_cnt = 0;
+
+    memset(&cfg_extctrl, 0, sizeof(cfg_extctrl));
+
+    for (nd = std_config_get_child(extctrl_cfg); nd != 0; nd = std_config_next_node(nd)) {
+        nm = std_config_name_get(nd);
+        if (strcmp(nm, "extctrl") == 0) {
+            cnt++;
+        }
+    }
+
+    cfg_extctrl.slist_config = (pas_extctrl_slist_config *)
+        CALLOC_T(cnt, pas_extctrl_slist_config);
+    if (cfg_extctrl.slist_config == NULL) {
+        PAS_ERR("Run out of memory slist config");
+        return;
+    }
+
+    for (nd = std_config_get_child(extctrl_cfg); nd != 0; nd = std_config_next_node(nd)) {
+        nm = std_config_name_get(nd);
+        if (strcmp(nm, "extctrl") == 0) {
+            slist = &cfg_extctrl.slist_config[cfg_extctrl.slist_cnt];
+            slist->idx = cfg_extctrl.slist_cnt;
+            cfg_extctrl.slist_cnt++;
+
+            val_str = std_config_attr_get(nd, "extctrl-name");
+            if (val_str != 0) {
+              STRLCPY(slist->extctrl, val_str);
+            }
+
+            val_str = std_config_attr_get(nd, "type");
+            slist->type = PAS_SLIST_TYPE_MAX; /* default use max temperature */
+            if (val_str != 0) {
+              if (strcmp(val_str, "avg") == 0) {
+                slist->type = PAS_SLIST_TYPE_AVG;
+              }
+            }
+
+            sensor_cnt = 0;
+            for (sd = std_config_get_child(nd); sd != 0; sd = std_config_next_node(sd)) {
+                cnm = std_config_name_get(sd);
+                if (strcmp(cnm, "sensor") == 0) {
+                    sensor_cnt++;
+                }
+            }
+
+            if (sensor_cnt > PAS_EXTCTRL_MAX_SSOR_IN_LIST) {
+                /* Cannot exceed PAS_EXTCTRL_MAX_SSOR_IN_LIST */
+                sensor_cnt = PAS_EXTCTRL_MAX_SSOR_IN_LIST;
+            }
+
+            slist->sensor = (pas_extctrl_sensor_config *)CALLOC_T(sensor_cnt, pas_extctrl_sensor_config);
+            if (slist->sensor == NULL) {
+                PAS_ERR("Run out of memory sensor config");
+                return;
+            }
+
+            for (sd = std_config_get_child(nd); sd != 0; sd = std_config_next_node(sd)) {
+                cnm = std_config_name_get(sd);
+                if (false == dn_pas_extctrl_find_sensor(sd, cnm, slist))
+                   break; /* Cannot exceed PAS_EXTCTRL_MAX_SSOR_IN_LIST */
+            }
+        }
+    }
+}
 
 static config_entry_t media_app_cfg_tbl [] = {{"media", dn_pas_media_read_app_config}};
 
 static struct pas_config_media cfg_media[1] = {
-    { poll_interval: 1000, rtd_interval: 5, lockdown: false, led_control: false,
-        identification_led_control: false, pluggable_media_count: 0, lr_restriction: false, media_count: 0,
-        media_type_config: NULL, port_info_tbl: NULL, port_count: 0, poll_cycles_to_skip: 0}
+    { poll_interval: PAS_MEDIA_PORT_POLLING_DEFAULT, rtd_interval: 5, lockdown: false, led_control: false,
+      identification_led_control: false, pluggable_media_count: 0, lr_restriction: false, media_count: 0,
+      media_type_config: NULL, port_info_tbl: NULL, port_count: 0}
 };
+
 /* Searches for the appropriate string to enum map*/
-bool convert_str_to_enum(char* label, char* value, uint_t* result) 
+bool convert_str_to_enum(char* label, char* value, uint_t* result)
 {
     *result = 0;
     int count = 0;
@@ -520,7 +622,7 @@ bool convert_str_to_enum(char* label, char* value, uint_t* result)
  /* Argument range is of the form:"a,b" or "a-b,c-d,...". Whitespace not handled */
 
 static void populate_cfg_array(pas_port_info_t** arr,
-                port_info_node_t* info_node, char* range_in)
+                               port_info_node_t* info_node, char* range_in)
 {
     char* start=NULL, *end=NULL, *counter=NULL, *range=NULL, *range_end=NULL;
     uint_t start_n = 0, end_n = 0, len = 0;
@@ -600,8 +702,10 @@ static void dn_pas_config_ports_handler(std_config_node_t nd, void *var)
 
     /* Memory has been allocated and the fields can be populated*/
     if (strcmp(std_config_name_get(nd), "port-config-info") == 0){
-        port_info_node_t* current_node = (port_info_node_t*)malloc(sizeof(port_info_node_t));
+        port_info_node_t* current_node = (port_info_node_t*) calloc(1, sizeof(port_info_node_t));
         uint_t result = 0;
+
+        if (current_node == NULL) return;
 
         /* This is an essential field. Code will not proceed if not present*/
         a = std_config_attr_get(nd, "port-type");
@@ -644,12 +748,29 @@ static void dn_pas_config_ports_handler(std_config_node_t nd, void *var)
             current_node->node.port_density = PAS_MEDIA_PORT_DENSITY_DEFAULT;
         }
 
-        if ((current_node->node.port_density < 0) ||
-            (current_node->node.port_density > PAS_MEDIA_MAX_PORT_DENSITY)) {
+        if (current_node->node.port_density > PAS_MEDIA_MAX_PORT_DENSITY) {
             PAS_ERR("Invalid port density from config file: %d",
-                current_node->node.port_density);
+                    current_node->node.port_density);
             current_node->node.port_density = PAS_MEDIA_PORT_DENSITY_DEFAULT;
         }
+
+        uint_t holding_time = PAS_MEDIA_PORT_HOLDING_DEFAULT;
+        a = std_config_attr_get(nd, "min-holding-time");
+        if (a != NULL) {
+            sscanf(a, "%u", &holding_time);
+            PAS_TRACE("Inserted media will be delayed for %u ms upon insertion to allow initialization",
+                      holding_time );
+        }
+
+        float quotient = (float) holding_time;
+        if (cfg_media->poll_interval) {
+            quotient /= cfg_media->poll_interval;
+        } else {
+            quotient /= PAS_MEDIA_PORT_POLLING_DEFAULT;
+        }
+
+        current_node->node.poll_cycles_to_skip = ceilf(quotient);
+        current_node->node.min_holding_time = holding_time;
 
         /* This is an essential field. Code will not proceed if not present*/
         /* This section needs to run last */
@@ -674,7 +795,6 @@ static void dn_pas_config_ports_handler(std_config_node_t nd, void *var)
         }
         tmp_node->next = current_node;
     }
-
 }
 
 void dn_pas_port_config(std_config_node_t nd)
@@ -698,9 +818,9 @@ void dn_pas_port_config(std_config_node_t nd)
     std_config_for_each_node(nd, dn_pas_config_ports_get_count, NULL);
 
     /* Allocate the required number of ports. Add 1 so that index starts at 1
-     +1 offset allows ports to be accessed using their port IDs 
+     +1 offset allows ports to be accessed using their port IDs
       Using array of pointers to info structs */
-    cfg_media->port_info_tbl = 
+    cfg_media->port_info_tbl =
         (pas_port_info_t**)calloc((cfg_media->port_count) + 1, sizeof(pas_port_info_t*));
 
     /* If there are no ports */
@@ -712,6 +832,7 @@ void dn_pas_port_config(std_config_node_t nd)
     while (count <= cfg_media->port_count){
         cfg_media->port_info_tbl[count++] = &(port_info_node_head->node);
     }
+
     /* Now obtain specifics to populate cfg arrray */
     std_config_for_each_node(nd, dn_pas_config_ports_handler, NULL);
 
@@ -730,7 +851,6 @@ void dn_pas_port_config(std_config_node_t nd)
 static void dn_pas_config_media(std_config_node_t nd)
 {
     char *a;
-
     a = std_config_attr_get(nd, "poll-interval");
     if (a != 0) {
         sscanf(a, "%u", &cfg_media->poll_interval);
@@ -760,13 +880,6 @@ static void dn_pas_config_media(std_config_node_t nd)
         if (strcmp(a, "enable") == 0) {
             cfg_media->lr_restriction = true;
         }
-    }
-
-    a = std_config_attr_get(nd, "poll-cycles-to-skip");
-    if (a != NULL) {
-        sscanf(a, "%u", &cfg_media->poll_cycles_to_skip);
-        PAS_TRACE("Inserted media polling will be delayed for %u seconds upon insertion",
-            (cfg_media->poll_cycles_to_skip) * cfg_media->rtd_interval );
     }
 
     if (access(pas_media_app_cfg_filename, F_OK) == 0) {
@@ -1253,7 +1366,8 @@ static config_entry_t element_tbl[] = {
     { "media",       dn_pas_config_media },
     { "phy-config",  dn_pas_media_read_phy_default_config },
     { "comm-dev", dn_pas_config_comm_dev},
-    { "port-config",        dn_pas_port_config}
+    { "port-config",        dn_pas_port_config},
+    { "extctrl-config", dn_pas_config_extctrl },
 };
 
 

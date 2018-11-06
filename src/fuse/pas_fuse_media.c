@@ -46,200 +46,211 @@ static eeprom_cursor_t eeprom_cursor = {
 
 /** Internal helper function for media reads */
 static bool media_get(
-        dev_node_t *node, 
-        uint_t     filetype, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        uint_t     filetype,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
-        ); 
+        );
 
 /** Internal helper function to convert interget to string Speed */
 static const char *int_to_str_speed(sdi_media_speed_t speed);
 
 /** Internal helper function to get the status */
 static void media_monitor_status_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the media control status */
 static void media_control_status_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the channel tx control status */
 static void media_tx_control_status_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the channel status */
 static void media_channel_status_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the channel monitor TX bias and RX power */
 static void media_channel_monitor_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the media parameters */
 static void media_parameter_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the media vendor information */
 static void media_vendor_info_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the media threshold information */
 static void media_channel_monitor_threshold_get(
-        dev_node_t *node, 
-        int        array, 
+        dev_node_t *node,
+        int        array,
         char       *format,
         char       *disp_str,
         char       *trans_buf,
-        size_t     *len, 
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the media threshold information */
 static void media_monitor_threshold_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the media vendor OUI */
 static void media_vendor_oui_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the media module monitor */
 static void media_module_monitor_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the media diagnostic mode */
 static void media_diag_mode_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the media speed */
 static void media_speed_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the media alias name */
 static void media_alias_name_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to get the media presence */
 static void media_presence_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to read specific media eeprom data  */
 static void media_eeprom_data_read(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
 /** Internal helper function to read eeprom cursor  */
 static void media_eeprom_cursor_read(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
+        int        *res
+        );
+
+/** Internal helper function to dump eeprom based on page in cursor  */
+static void media_eeprom_page_dump(
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         );
 
@@ -254,12 +265,12 @@ typedef struct {
 struct {
 
     int  status;
-    void (* func) (dev_node_t *node, 
-                   int        array, 
-                   char       *format, 
-                   char       *disp_str, 
-                   char       *trans_buf, 
-                   size_t     *len, 
+    void (* func) (dev_node_t *node,
+                   int        array,
+                   char       *format,
+                   char       *disp_str,
+                   char       *trans_buf,
+                   size_t     *len,
                    int        *res);
 
     media_internal_arg_list_t args;
@@ -268,567 +279,567 @@ struct {
 
     [FUSE_MEDIA_FILETYPE_PRESENCE] = {
         status  : SUPPORTED,
-        func    : media_presence_get, 
-        args    : { 
-                    0, 
+        func    : media_presence_get,
+        args    : {
+                    0,
                     "%-25s : %s", "Present" }
-    }, 
- 
+    },
+
     [FUSE_MEDIA_FILETYPE_TEMP_HIGH_ALARM_STATUS] = {
         status  : SUPPORTED,
-        func    : media_monitor_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_TEMP_HIGH_ALARM, 
-                    "%-25s : %s", 
-                    "Temp High Alarm Status" 
+        func    : media_monitor_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_TEMP_HIGH_ALARM,
+                    "%-25s : %s",
+                    "Temp High Alarm Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TEMP_LOW_ALARM_STATUS] = {
         status  : SUPPORTED,
-        func    : media_monitor_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_TEMP_LOW_ALARM, 
-                    "%-25s : %s", 
-                    "Temp Low Alarm Status" 
+        func    : media_monitor_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_TEMP_LOW_ALARM,
+                    "%-25s : %s",
+                    "Temp Low Alarm Status"
                   }
-    }, 
+    },
 
     [FUSE_MEDIA_FILETYPE_TEMP_HIGH_WARNING_STATUS] = {
         status  : SUPPORTED,
-        func    : media_monitor_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_TEMP_HIGH_WARNING, 
-                    "%-25s : %s", 
-                    "Temp High Warning Status" 
+        func    : media_monitor_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_TEMP_HIGH_WARNING,
+                    "%-25s : %s",
+                    "Temp High Warning Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TEMP_LOW_WARNING_STATUS] = {
         status  : SUPPORTED,
-        func    : media_monitor_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_TEMP_LOW_WARNING, 
-                    "%-25s : %s", 
-                    "Temp Low Warning Status" 
+        func    : media_monitor_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_TEMP_LOW_WARNING,
+                    "%-25s : %s",
+                    "Temp Low Warning Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VOLT_HIGH_ALARM_STATUS] = {
         status  : SUPPORTED,
-        func    : media_monitor_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_VOLT_HIGH_ALARM, 
-                    "%-25s : %s", 
-                    "Volt High Alarm Status" 
+        func    : media_monitor_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_VOLT_HIGH_ALARM,
+                    "%-25s : %s",
+                    "Volt High Alarm Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VOLT_LOW_ALARM_STATUS] = {
         status  : SUPPORTED,
-        func    : media_monitor_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_VOLT_LOW_ALARM, 
-                    "%-25s : %s", 
-                    "Volt Low Alarm Status" 
+        func    : media_monitor_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_VOLT_LOW_ALARM,
+                    "%-25s : %s",
+                    "Volt Low Alarm Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VOLT_HIGH_WARNING_STATUS] = {
         status  : SUPPORTED,
-        func    : media_monitor_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_VOLT_HIGH_WARNING, 
-                    "%-25s : %s", 
-                    "Volt High Warning Status" 
+        func    : media_monitor_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_VOLT_HIGH_WARNING,
+                    "%-25s : %s",
+                    "Volt High Warning Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VOLT_LOW_WARNING_STATUS] = {
         status  : SUPPORTED,
-        func    : media_monitor_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_VOLT_LOW_WARNING, 
-                    "%-25s : %s", 
-                    "Volt Low Warning Status" 
+        func    : media_monitor_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_VOLT_LOW_WARNING,
+                    "%-25s : %s",
+                    "Volt Low Warning Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TX_DISABLE_STATUS] = {
         status  : SUPPORTED,
-        func    : media_channel_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_TXDISABLE, 
-                    "%s\n", 
-                    "Tx Disable Status" 
+        func    : media_channel_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_TXDISABLE,
+                    "%s\n",
+                    "Tx Disable Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TX_FAULT_STATUS] = {
         status  : SUPPORTED,
-        func    : media_channel_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_TXFAULT, 
-                    "%s\n", 
-                    "Tx Fault Status" 
+        func    : media_channel_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_TXFAULT,
+                    "%s\n",
+                    "Tx Fault Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TX_LOSS_STATUS] = {
         status  : SUPPORTED,
-        func    : media_channel_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_TXLOSS, 
-                    "%s\n", 
-                    "Tx Loss Status" 
+        func    : media_channel_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_TXLOSS,
+                    "%s\n",
+                    "Tx Loss Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_RX_LOSS_STATUS] = {
         status  : SUPPORTED,
-        func    : media_channel_status_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_RXLOSS, 
-                    "%s\n", 
-                    "Rx Loss Status" 
+        func    : media_channel_status_get,
+        args    : {
+                    SDI_MEDIA_STATUS_RXLOSS,
+                    "%s\n",
+                    "Rx Loss Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TX_CONTROL] = {
         status  : SUPPORTED,
-        func    : media_tx_control_status_get, 
-        args    : { 
-                    0, 
-                    "%s\n", 
-                    "Tx Control Status" 
+        func    : media_tx_control_status_get,
+        args    : {
+                    0,
+                    "%s\n",
+                    "Tx Control Status"
                   }
     },
-    
+
     [FUSE_MEDIA_FILETYPE_SPEED] = {
         status  : SUPPORTED,
-        func    : media_speed_get, 
-        args    : { 
-                    0, 
-                    "%-25s : %s", 
-                    "Media Speed" 
+        func    : media_speed_get,
+        args    : {
+                    0,
+                    "%-25s : %s",
+                    "Media Speed"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_WAVELENGTH] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_WAVELENGTH, 
-                    "%-25s : %d nm", 
-                    "Wavelength" 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_WAVELENGTH,
+                    "%-25s : %d nm",
+                    "Wavelength"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_WAVELENGTH_TOLERANCE] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_WAVELENGTH_TOLERANCE, 
-                    "%-25s : %d nm", 
-                    "Wavelength Tolerance" 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_WAVELENGTH_TOLERANCE,
+                    "%-25s : %d nm",
+                    "Wavelength Tolerance"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_MAX_CASE_TEMP] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_WAVELENGTH_TOLERANCE, 
-                    "%-25s : %d deg C", 
-                    "Max Casing Temp" 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_WAVELENGTH_TOLERANCE,
+                    "%-25s : %d deg C",
+                    "Max Casing Temp"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_CC_BASE] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_CC_BASE, 
-                    "%-25s : 0x%02x", 
-                    "CC Base" 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_CC_BASE,
+                    "%-25s : 0x%02x",
+                    "CC Base"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_CC_EXT] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_CC_EXT, 
-                    "%-25s : 0x%02x", 
-                    "CC Ext" 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_CC_EXT,
+                    "%-25s : 0x%02x",
+                    "CC Ext"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_CONNECTOR] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_CONNECTOR, 
-                    "%-25s : 0x%02x", 
-                    "Connector" 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_CONNECTOR,
+                    "%-25s : 0x%02x",
+                    "Connector"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_ENCODING_BITRATE] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_NM_BITRATE, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_NM_BITRATE,
                     "%-25s : %d MBits/s",
-                    "Bitrate" 
+                    "Bitrate"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_IDENTIFIER] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_IDENTIFIER, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_IDENTIFIER,
                     "%-25s : 0x%x",
-                    "Identifier" 
+                    "Identifier"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_EXT_IDENTIFIER] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_EXT_IDENTIFIER, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_EXT_IDENTIFIER,
                     "%-25s : 0x%x",
-                    "Ext Id" 
+                    "Ext Id"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_LENGTH_SMF_KM] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_LENGTH_SMF_KM, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_LENGTH_SMF_KM,
                     "%-25s : %d km",
-                    "Length(SMF)" 
+                    "Length(SMF)"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_LENGTH_OM1] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_LENGTH_OM1, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_LENGTH_OM1,
                     "%-25s : %d m",
-                    "Length(OM1)" 
+                    "Length(OM1)"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_LENGTH_OM2] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_LENGTH_OM2, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_LENGTH_OM2,
                     "%-25s : %d m",
-                    "Length(OM2)" 
+                    "Length(OM2)"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_LENGTH_OM3] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_LENGTH_OM3, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_LENGTH_OM3,
                     "%-25s : %d 2m",
-                    "Length(OM3)" 
+                    "Length(OM3)"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_LENGTH_CABLE_ASSEMBLY] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_LENGTH_CABLE_ASSEMBLY, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_LENGTH_CABLE_ASSEMBLY,
                     "%-25s : %d m",
-                    "Length(Copper)" 
+                    "Length(Copper)"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_DIAG_MON_TYPE] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_DIAG_MON_TYPE, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_DIAG_MON_TYPE,
                     "%-25s : %d",
-                    "Diag Mon Type" 
+                    "Diag Mon Type"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_LENGTH_SMF] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_LENGTH_SMF, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_LENGTH_SMF,
                     "%-25s : %d m",
-                    "Length SMF 1m" 
+                    "Length SMF 1m"
                   }
     },
- 
+
     [FUSE_MEDIA_FILETYPE_OPTIONS] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_OPTIONS, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_OPTIONS,
                     "%-25s : %d",
-                    "Options" 
+                    "Options"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_ADVANCED_OPTIONS] = {
         status  : SUPPORTED,
-        func    : media_parameter_get, 
-        args    : { 
-                    SDI_MEDIA_ENHANCED_OPTIONS, 
+        func    : media_parameter_get,
+        args    : {
+                    SDI_MEDIA_ENHANCED_OPTIONS,
                     "%-25s : %d",
-                    "Advanced Options" 
+                    "Advanced Options"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VENDOR_NAME] = {
         status  : SUPPORTED,
-        func    : media_vendor_info_get, 
-        args    : { 
-                    SDI_MEDIA_VENDOR_NAME, 
+        func    : media_vendor_info_get,
+        args    : {
+                    SDI_MEDIA_VENDOR_NAME,
                     "%-25s : %s",
-                    "Vendor Name" 
+                    "Vendor Name"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VENDOR_OUI] = {
         status  : SUPPORTED,
-        func    : media_vendor_oui_get, 
-        args    : { 
-                    SDI_MEDIA_VENDOR_OUI, 
+        func    : media_vendor_oui_get,
+        args    : {
+                    SDI_MEDIA_VENDOR_OUI,
                     "%-25s : 0x%02x : 0x%02x",
-                    "Vendor OUI" 
+                    "Vendor OUI"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VENDOR_SN] = {
         status  : SUPPORTED,
-        func    : media_vendor_info_get, 
-        args    : { 
-                    SDI_MEDIA_VENDOR_SN, 
+        func    : media_vendor_info_get,
+        args    : {
+                    SDI_MEDIA_VENDOR_SN,
                     "%-25s : %s",
-                    "Vendor SN" 
+                    "Vendor SN"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VENDOR_DATE] = {
         status  : SUPPORTED,
-        func    : media_vendor_info_get, 
-        args    : { 
-                    SDI_MEDIA_VENDOR_DATE, 
+        func    : media_vendor_info_get,
+        args    : {
+                    SDI_MEDIA_VENDOR_DATE,
                     "%-25s : %s",
-                    "Vendor Datecode" 
+                    "Vendor Datecode"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VENDOR_PN] = {
         status  : SUPPORTED,
-        func    : media_vendor_info_get, 
-        args    : { 
-                    SDI_MEDIA_VENDOR_PN, 
+        func    : media_vendor_info_get,
+        args    : {
+                    SDI_MEDIA_VENDOR_PN,
                     "%-25s : %s",
-                    "Vendor PN" 
+                    "Vendor PN"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VENDOR_REVISION] = {
         status  : SUPPORTED,
-        func    : media_vendor_info_get, 
-        args    : { 
-                    SDI_MEDIA_VENDOR_REVISION, 
+        func    : media_vendor_info_get,
+        args    : {
+                    SDI_MEDIA_VENDOR_REVISION,
                     "%-25s : %s",
-                    "Vendor Rev" 
+                    "Vendor Rev"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VOLT_HIGH_ALARM_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_monitor_threshold_get, 
-        args    : { 
+        func    : media_monitor_threshold_get,
+        args    : {
                     SDI_MEDIA_STATUS_VOLT_HIGH_ALARM,
                     "%-30s : %d V",
-                    "Volt High Alarm threshold" 
+                    "Volt High Alarm threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VOLT_LOW_ALARM_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_monitor_threshold_get, 
-        args    : { 
+        func    : media_monitor_threshold_get,
+        args    : {
                     SDI_MEDIA_STATUS_VOLT_LOW_ALARM,
                     "%-30s : %d V",
-                    "Volt Low Alarm threshold" 
+                    "Volt Low Alarm threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VOLT_HIGH_WARNING_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_monitor_threshold_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_VOLT_HIGH_WARNING, 
+        func    : media_monitor_threshold_get,
+        args    : {
+                    SDI_MEDIA_STATUS_VOLT_HIGH_WARNING,
                     "%-30s : %d V",
-                    "Volt High Warning threshold" 
+                    "Volt High Warning threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VOLT_LOW_WARNING_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_monitor_threshold_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_VOLT_LOW_WARNING, 
+        func    : media_monitor_threshold_get,
+        args    : {
+                    SDI_MEDIA_STATUS_VOLT_LOW_WARNING,
                     "%-30s : %d V",
-                    "Volt Low Warning threshold" 
+                    "Volt Low Warning threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TEMP_HIGH_ALARM_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_monitor_threshold_get, 
-        args    : { 
+        func    : media_monitor_threshold_get,
+        args    : {
                     SDI_MEDIA_STATUS_TEMP_HIGH_ALARM,
                     "%-30s : %d deg C",
-                    "Temp High Alarm threshold" 
+                    "Temp High Alarm threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TEMP_LOW_ALARM_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_monitor_threshold_get, 
-        args    : { 
+        func    : media_monitor_threshold_get,
+        args    : {
                     SDI_MEDIA_STATUS_TEMP_LOW_ALARM,
                     "%-30s : %d deg C",
-                    "Temp Low Alarm threshold" 
+                    "Temp Low Alarm threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TEMP_HIGH_WARNING_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_monitor_threshold_get, 
-        args    : { 
+        func    : media_monitor_threshold_get,
+        args    : {
                     SDI_MEDIA_STATUS_TEMP_HIGH_WARNING,
                     "%-30s : %d deg C",
-                    "Temp High Warning threshold" 
+                    "Temp High Warning threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TEMP_LOW_WARNING_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_monitor_threshold_get, 
-        args    : { 
+        func    : media_monitor_threshold_get,
+        args    : {
                     SDI_MEDIA_STATUS_TEMP_LOW_WARNING,
                     "%-30s : %d deg C",
-                    "Temp Low Warning threshold" 
+                    "Temp Low Warning threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TX_DISABLE_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_channel_monitor_threshold_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_TXDISABLE, 
+        func    : media_channel_monitor_threshold_get,
+        args    : {
+                    SDI_MEDIA_STATUS_TXDISABLE,
                     "%-30s : %d mA",
-                    "TX Disable threshold" 
+                    "TX Disable threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TX_FAULT_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_channel_monitor_threshold_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_TXFAULT, 
+        func    : media_channel_monitor_threshold_get,
+        args    : {
+                    SDI_MEDIA_STATUS_TXFAULT,
                     "%-30s : %d mA",
-                    "TX Fault threshold" 
+                    "TX Fault threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TX_LOSS_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_channel_monitor_threshold_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_TXLOSS, 
+        func    : media_channel_monitor_threshold_get,
+        args    : {
+                    SDI_MEDIA_STATUS_TXLOSS,
                     "%-30s : %d mA",
-                    "TX Loss threshold" 
+                    "TX Loss threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_RX_LOSS_THRESHOLD] = {
         status  : SUPPORTED,
-        func    : media_channel_monitor_threshold_get, 
-        args    : { 
-                    SDI_MEDIA_STATUS_TXLOSS, 
+        func    : media_channel_monitor_threshold_get,
+        args    : {
+                    SDI_MEDIA_STATUS_TXLOSS,
                     "%-30s : %d dBm",
-                    "RX Loss threshold" 
+                    "RX Loss threshold"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_LP_MODE] = {
         status  : SUPPORTED,
-        func    : media_control_status_get, 
-        args    : { 
-                    SDI_MEDIA_LP_MODE, 
+        func    : media_control_status_get,
+        args    : {
+                    SDI_MEDIA_LP_MODE,
                     "%-25s : %s",
-                    "Low Power Mode" 
+                    "Low Power Mode"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_RESET] = {
         status  : SUPPORTED,
-        func    : media_control_status_get, 
-        args    : { 
-                    SDI_MEDIA_RESET, 
+        func    : media_control_status_get,
+        args    : {
+                    SDI_MEDIA_RESET,
                     "%-25s : %s",
-                    "Reset Status" 
+                    "Reset Status"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_VOLT] = {
         status  : SUPPORTED,
-        func    : media_module_monitor_get, 
-        args    : { 
-                    SDI_MEDIA_VOLT, 
+        func    : media_module_monitor_get,
+        args    : {
+                    SDI_MEDIA_VOLT,
                     "%-25s : %.6f V",
-                    "Voltage" 
+                    "Voltage"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_TEMPERATURE] = {
         status  : SUPPORTED,
-        func    : media_module_monitor_get, 
-        args    : { 
-                    SDI_MEDIA_TEMP, 
+        func    : media_module_monitor_get,
+        args    : {
+                    SDI_MEDIA_TEMP,
                     "%-25s : %.6f deg C",
-                    "Temperature" 
+                    "Temperature"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_INTERNAL_RX_POWER_MONITOR] = {
         status  : SUPPORTED,
-        func    : media_channel_monitor_get, 
-        args    : { 
-                    SDI_MEDIA_INTERNAL_TX_POWER_BIAS, 
+        func    : media_channel_monitor_get,
+        args    : {
+                    SDI_MEDIA_INTERNAL_TX_POWER_BIAS,
                     "%s\n",
-                    "Internal TX Power Bias (mA)\n" 
+                    "Internal TX Power Bias (mA)\n"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_INTERNAL_TX_POWER_BIAS] = {
         status  : SUPPORTED,
-        func    : media_channel_monitor_get, 
-        args    : { 
-                    SDI_MEDIA_INTERNAL_RX_POWER_MONITOR, 
+        func    : media_channel_monitor_get,
+        args    : {
+                    SDI_MEDIA_INTERNAL_RX_POWER_MONITOR,
                     "%s\n",
                     "Internal RX Power Monitor (dBm)\n"
                   }
@@ -836,21 +847,21 @@ struct {
 
     [FUSE_MEDIA_FILETYPE_ALIAS] = {
         status  : SUPPORTED,
-        func    : media_alias_name_get, 
-        args    : { 
-                    0, 
+        func    : media_alias_name_get,
+        args    : {
+                    0,
                     "%-25s : %s",
-                    "Alias" 
+                    "Alias"
                   }
     },
 
     [FUSE_MEDIA_FILETYPE_DIAG_MODE] = {
         status  : SUPPORTED,
-        func    : media_diag_mode_get, 
-        args    : { 
-                    0, 
+        func    : media_diag_mode_get,
+        args    : {
+                    0,
                     "%-25s : %s",
-                    "Diagnostic Mode" 
+                    "Diagnostic Mode"
                   }
     },
 
@@ -874,16 +885,25 @@ struct {
                   }
     },
 
+    [FUSE_MEDIA_FILETYPE_EEPROM_PAGE_DUMP] = {
+        status  : SUPPORTED,
+        func    : media_eeprom_page_dump,
+        args    : {
+                    0,
+                    "",
+                    "EEPROM Page Dump"
+                  }
+    },
 
 };
 
 /** PAS Daemon entity_info read interface */
 int dn_pas_fuse_media_read(
-        dev_node_t *node, 
+        dev_node_t *node,
         char       *buf,
-        size_t     size, 
+        size_t     size,
         off_t      offset
-        ) 
+        )
 {
     int    res                               = -ENOTSUP;
     size_t len                               = 0;
@@ -912,9 +932,9 @@ int dn_pas_fuse_media_read(
 
 /** PAS Daemon entity_info write interfthe */
 int dn_pas_fuse_media_write(
-        dev_node_t *node, 
+        dev_node_t *node,
         const char *buf,
-        size_t     size, 
+        size_t     size,
         off_t      offset
         )
 {
@@ -948,17 +968,17 @@ int dn_pas_fuse_media_write(
                         case 1  : /** TODO: define variable and set to true */
                                   res = size;
                                   break;
-                        
+
                         case 0  : /** TODO: define variable and set to false */
                                   res = size;
                                   break;
-                        
+
                         default : res = -EINVAL;
                                   break;
                     }
-                
+
                 } else res = -EINVAL;
-                
+
                 break;
             }
 
@@ -1003,13 +1023,13 @@ int dn_pas_fuse_media_write(
             }
            break;
         default:
-            {    
-                if(node->fuse_filetype >= FUSE_MEDIA_FILETYPE_MIN && 
+            {
+                if(node->fuse_filetype >= FUSE_MEDIA_FILETYPE_MIN &&
                    node->fuse_filetype < FUSE_MEDIA_FILETYPE_MAX) {
-                    
+
                     res = -EPERM;
                 } else {
-                    
+
                     res = -ENOENT;
                 }
                 break;
@@ -1038,13 +1058,13 @@ static const char *int_to_str_speed(sdi_media_speed_t speed)
 /** Internal helper function to get the monitor information */
 static void media_channel_monitor_get(
         dev_node_t *node,
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
-        ) 
+        )
 {
     float  value                            = 0;
     int    channel                          = 0;
@@ -1054,27 +1074,27 @@ static void media_channel_monitor_get(
 
     for (channel = 0; channel <= 3; ++channel) {
 
-        if (STD_ERR_OK == 
+        if (STD_ERR_OK ==
                 sdi_media_channel_monitor_get(node->fuse_resource_hdl, channel, array, &value)) {
 
-            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %.6f\n", 
-                    "Channel", channel, value);    
+            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %.6f\n",
+                    "Channel", channel, value);
 
             if((strlen(trans_buf) + strlen(temp_buf)) < FUSE_FILE_DEFAULT_SIZE) {
-                
+
                 strncat(trans_buf, temp_buf, FUSE_FILE_DEFAULT_SIZE - strlen(trans_buf));
             }
 
         } else {
 
-            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %s\n", 
+            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %s\n",
                     "Channel", channel, "NA");
 
             if((strlen(trans_buf) + strlen(temp_buf)) < FUSE_FILE_DEFAULT_SIZE) {
-                
+
                 strncat(trans_buf, temp_buf, FUSE_FILE_DEFAULT_SIZE - strlen(trans_buf));
             }
-        } 
+        }
     }
 
     *len = strlen(trans_buf) + 1;
@@ -1084,47 +1104,47 @@ static void media_channel_monitor_get(
 /** Internal helper function to get the media monitor status */
 static void media_monitor_status_get(
         dev_node_t *node,
-        int        array, 
-        char       *format,   
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
-        ) 
+        )
 {
     uint_t status = 0;
 
     if (STD_ERR_OK ==
-            sdi_media_module_monitor_status_get(node->fuse_resource_hdl, 
-                array, 
+            sdi_media_module_monitor_status_get(node->fuse_resource_hdl,
+                array,
                 &status)) {
 
-        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, 
-                len, res , format, 
+        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE,
+                len, res , format,
                 disp_str , status ? "True" : "False");
     }
 }
 
 /** Internal helper function to get the media parameters */
 static void media_parameter_get(
-        dev_node_t *node,     
-        int        array, 
-        char       *format,   
-        char       *disp_str, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
         char       *trans_buf,
-        size_t     *len, 
+        size_t     *len,
         int        *res
         )
 {
     uint_t value = 0;
     t_std_error err = STD_ERR_OK;
 
-    if (STD_ERR_OK == 
-            (err = sdi_media_parameter_get(node->fuse_resource_hdl, 
-                                           array, 
+    if (STD_ERR_OK ==
+            (err = sdi_media_parameter_get(node->fuse_resource_hdl,
+                                           array,
                                            &value))) {
 
-        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, 
+        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE,
                 len, res, format, disp_str, value);
 
     } else if (STD_ERR_EXT_PRIV(err) == ENOTSUP) {
@@ -1135,58 +1155,58 @@ static void media_parameter_get(
 
 /** Internal helper function to get the media control status */
 static void media_control_status_get(
-        dev_node_t *node,     
-        int        array, 
-        char       *format,   
-        char       *disp_str, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
         char       *trans_buf,
-        size_t     *len, 
+        size_t     *len,
         int        *res
         )
 {
     bool status = 0;
 
     if (STD_ERR_OK ==
-            sdi_media_module_control_status_get(node->fuse_resource_hdl, 
+            sdi_media_module_control_status_get(node->fuse_resource_hdl,
                 array, &status)) {
 
-        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res, 
+        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res,
                 format, disp_str, status ? "True" : "False");
     }
-} 
+}
 
 
 /** Internal helper function to get the media vendor information */
 static void media_vendor_info_get(
         dev_node_t *node,
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         )
 {
 
     char temp_buf[FUSE_FILE_DEFAULT_SIZE];
 
-    if (STD_ERR_OK == sdi_media_vendor_info_get(node->fuse_resource_hdl, array, 
-                (char *) &temp_buf, 
+    if (STD_ERR_OK == sdi_media_vendor_info_get(node->fuse_resource_hdl, array,
+                (char *) &temp_buf,
                 FUSE_FILE_DEFAULT_SIZE)) {
 
-        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, 
-                res, format, disp_str, temp_buf);    
+        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len,
+                res, format, disp_str, temp_buf);
     }
 }
 
 /** Internal helper function to get the media threshold information */
 static void media_channel_monitor_threshold_get(
         dev_node_t *node,
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         )
 {
@@ -1204,13 +1224,13 @@ static void media_channel_monitor_threshold_get(
 /** Internal helper function to get the media tx control status */
 static void media_tx_control_status_get(
         dev_node_t *node,
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
-        ) 
+        )
 {
     bool   status                           = 0;
     uint_t channel                          = 0;
@@ -1220,27 +1240,27 @@ static void media_tx_control_status_get(
 
     for (channel = 0; channel <= 3; ++channel) {
 
-        if (STD_ERR_OK == 
+        if (STD_ERR_OK ==
                 sdi_media_tx_control_status_get(node->fuse_resource_hdl, channel, &status)) {
 
-            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %s\n", 
-                    "Channel", channel, status ? "True" : "False");    
+            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %s\n",
+                    "Channel", channel, status ? "True" : "False");
 
             if((strlen(trans_buf) + strlen(temp_buf)) < FUSE_FILE_DEFAULT_SIZE) {
-                
+
                 strncat(trans_buf, temp_buf, FUSE_FILE_DEFAULT_SIZE - strlen(trans_buf));
             }
 
         } else {
 
-            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %s\n", 
+            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %s\n",
                     "Channel", channel, "NA");
 
             if((strlen(trans_buf) + strlen(temp_buf)) < FUSE_FILE_DEFAULT_SIZE) {
-                
+
                 strncat(trans_buf, temp_buf, FUSE_FILE_DEFAULT_SIZE - strlen(trans_buf));
             }
-        } 
+        }
     }
 
     *len = strlen(trans_buf) + 1;
@@ -1250,13 +1270,13 @@ static void media_tx_control_status_get(
 /** Internal helper function to get the channel status */
 static void media_channel_status_get(
         dev_node_t *node,
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
-        ) 
+        )
 {
     uint_t status                           = 0;
     int    channel                          = 0;
@@ -1266,27 +1286,27 @@ static void media_channel_status_get(
 
     for (channel = 0; channel <= 3; ++channel) {
 
-        if (STD_ERR_OK == 
+        if (STD_ERR_OK ==
                 sdi_media_channel_status_get(node->fuse_resource_hdl, channel, array, &status)) {
 
-            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %s\n", 
-                    "Channel", channel, status ? "True" : "False");    
+            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %s\n",
+                    "Channel", channel, status ? "True" : "False");
 
             if((strlen(trans_buf) + strlen(temp_buf)) < FUSE_FILE_DEFAULT_SIZE) {
-                
+
                 strncat(trans_buf, temp_buf, FUSE_FILE_DEFAULT_SIZE - strlen(trans_buf));
             }
 
         } else {
 
-            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %s\n", 
+            snprintf(temp_buf, FUSE_FILE_DEFAULT_SIZE, "%-5s %d : %s\n",
                     "Channel", channel, "NA");
 
             if((strlen(trans_buf) + strlen(temp_buf)) < FUSE_FILE_DEFAULT_SIZE) {
-                
+
                 strncat(trans_buf, temp_buf, FUSE_FILE_DEFAULT_SIZE - strlen(trans_buf));
             }
-        } 
+        }
     }
 
     *len = strlen(trans_buf) + 1;
@@ -1296,43 +1316,43 @@ static void media_channel_status_get(
 /** Internal helper function to get the media threshold information */
 static void media_monitor_threshold_get(
         dev_node_t *node,
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         )
 {
     uint_t value = 0;
 
     if (STD_ERR_OK ==
-            sdi_media_module_monitor_threshold_get(node->fuse_resource_hdl, 
+            sdi_media_module_monitor_threshold_get(node->fuse_resource_hdl,
                 array, &value)) {
 
-        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, 
+        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len,
                 res, format, disp_str, value);
-    }        
+    }
 }
 
 /** Internal helper function to get the media vendor OUI */
 static void media_vendor_oui_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res)
 {
     char temp_buf[FUSE_FILE_DEFAULT_SIZE];
     if (STD_ERR_OK ==
-            sdi_media_vendor_info_get(node->fuse_resource_hdl, 
+            sdi_media_vendor_info_get(node->fuse_resource_hdl,
                 SDI_MEDIA_VENDOR_OUI, (char *) &temp_buf, FUSE_FILE_DEFAULT_SIZE)) {
 
         dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res,
                 format,
-                disp_str, 
+                disp_str,
                 temp_buf[0],
                 temp_buf[1],
                 temp_buf[2]);
@@ -1341,12 +1361,12 @@ static void media_vendor_oui_get(
 
 /** Internal helper function to get the media voltage */
 static void media_module_monitor_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         )
 {
@@ -1363,28 +1383,28 @@ static void media_module_monitor_get(
 
 /** Internal helper function to get the media diagnostic mode */
 static void media_diag_mode_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         )
 {
     dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res,
-            format, disp_str, 
+            format, disp_str,
             (dn_pald_diag_mode_get() ? "up" : "down"));
 }
 
 /** Internal helper function to get the media speed */
 static void media_speed_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         )
 {
@@ -1400,12 +1420,12 @@ static void media_speed_get(
 
 /** Internal helper function to get the media alias name */
 static void media_alias_name_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         )
 {
@@ -1419,12 +1439,12 @@ static void media_alias_name_get(
 
 /** Internal helper function to get the media presence */
 static void media_presence_get(
-        dev_node_t *node, 
-        int        array, 
-        char       *format, 
-        char       *disp_str, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
         )
 {
@@ -1434,7 +1454,7 @@ static void media_presence_get(
             sdi_media_presence_get(node->fuse_resource_hdl,
                 &presence)) {
 
-        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res, 
+        dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res,
                 format, disp_str, presence ? "True" : "False");
     }
 }
@@ -1504,29 +1524,60 @@ static void media_eeprom_data_read (
                 format, disp_str, data, data, bin_out, isprint(data) ? (char)data : '\0');
     }
 }
+
+
+/* Dump is raw data. Use utility such as hexdump to view output */
+static void media_eeprom_page_dump (
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
+        int        *res
+        )
+{
+    sdi_media_eeprom_addr_t addr = {
+                                    .device_addr = SDI_MEDIA_DEVICE_ADDR_AUTO,
+                                    .page        = SDI_MEDIA_PAGE_SELECT_NOT_SUPPORTED,
+                                    .offset      = 0
+                                   };
+    /* banks not yet implemented */
+    addr.device_addr = eeprom_cursor.device;
+    addr.page        = eeprom_cursor.page;
+
+    if (STD_ERR_OK ==
+            sdi_media_read_generic(node->fuse_resource_hdl,
+               &addr, (uint8_t*)trans_buf, EEPROM_PAGE_MAX_SIZE)){
+        *len = EEPROM_PAGE_MAX_SIZE;
+        *res = *len;
+    }
+}
+
+
 /** Internal helper function for media reads */
 static bool media_get(
-        dev_node_t *node, 
-        uint_t     filetype, 
-        char       *trans_buf, 
-        size_t     *len, 
+        dev_node_t *node,
+        uint_t     filetype,
+        char       *trans_buf,
+        size_t     *len,
         int        *res
-        ) 
+        )
 {
-    if(filetype >= FUSE_MEDIA_FILETYPE_MIN 
+    if(filetype >= FUSE_MEDIA_FILETYPE_MIN
             && filetype < FUSE_MEDIA_FILETYPE_MAX) {
 
         if(internal_media_func_tbl_t[filetype].status == SUPPORTED) {
 
             internal_media_func_tbl_t[filetype].func(
-                    node, 
-                    internal_media_func_tbl_t[filetype].args.array, 
+                    node,
+                    internal_media_func_tbl_t[filetype].args.array,
                     internal_media_func_tbl_t[filetype].args.format,
                     internal_media_func_tbl_t[filetype].args.disp_str,
                     trans_buf,
                     len,
                     res
-                    ); 
+                    );
             return true;
         }
     }

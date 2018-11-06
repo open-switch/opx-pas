@@ -29,7 +29,6 @@
 #include "std_error_codes.h"
 #include "sdi_entity.h"
 #include "sdi_thermal.h"
-#include "cps_api_service.h"
 #include "dell-base-platform-common.h"
 #include "dell-base-pas.h"
 
@@ -52,7 +51,7 @@ bool dn_temp_sensor_notify(pas_temperature_sensor_t *rec)
 
     dn_pas_obj_key_temperature_set(obj,
                                    cps_api_qualifier_OBSERVED,
-                                   true, rec->parent->entity_type, 
+                                   true, rec->parent->entity_type,
                                    true, rec->parent->slot,
                                    true, rec->name
                                    );
@@ -68,7 +67,7 @@ bool dn_temp_sensor_notify(pas_temperature_sensor_t *rec)
     cps_api_object_attr_add_u16(obj,
                                 BASE_PAS_TEMPERATURE_TEMPERATURE,
                                 rec->cur
-                                );    
+                                );
     cps_api_object_attr_add_u16(obj,
                                 BASE_PAS_TEMPERATURE_LAST_THRESH,
                                 rec->last_thresh_crossed->temperature
@@ -137,7 +136,7 @@ void dn_cache_init_temp_sensor(
     dn_pas_oper_fault_state_init(rec->oper_fault_state);
 
     if (!dn_pas_res_insertc(dn_pas_res_key_temp_sensor_name(res_key_name,
-                                                            sizeof(res_key_name), 
+                                                            sizeof(res_key_name),
                                                             parent->entity_type,
                                                             parent->slot,
                                                             rec->name
@@ -293,9 +292,9 @@ bool dn_temp_sensor_thresh_chk(pas_temperature_sensor_t *rec)
         thresh_crossed       = below;
         dir                  = -1;
     }
-        
+
     if ( rec->last_thresh_crossed->dir != dir
-         || rec->last_thresh_crossed->temperature != thresh_crossed 
+         || rec->last_thresh_crossed->temperature != thresh_crossed
         ) {
         rec->last_thresh_crossed->dir         = dir;
         rec->last_thresh_crossed->temperature = thresh_crossed;
@@ -319,7 +318,7 @@ bool dn_temp_sensor_poll(
     int                    temp;
     bool                   notif = false;
     bool                   fault_status = false;
-    
+
     /* To avoid polling a temperature sensor not handled by SDI (NPU temp sensor)*/
     if(rec->sdi_resource_hdl == NULL)  return (true);
 
@@ -330,7 +329,7 @@ bool dn_temp_sensor_poll(
             dn_pas_oper_fault_state_update(oper_fault_state,
                                            PLATFORM_FAULT_TYPE_ECOMM
                                            );
-            
+
             break;
         }
 
@@ -349,14 +348,7 @@ bool dn_temp_sensor_poll(
 
             break;
         }
-                
-        /*
-         * XXX: This is a hack for Starlynx platforms which have only one
-         * temperature sensor accessible through I2C. On all other platforms,
-         * the following function will return early because there is no
-         * comm_dev resource.
-         */
-        dn_pas_comm_dev_ambient_temp_set(temp);
+
         rec->prev = rec->cur;
         rec->cur  = temp;
         if (rec->nsamples < 2)  ++rec->nsamples;
@@ -371,7 +363,7 @@ bool dn_temp_sensor_poll(
     }
 
     *rec->oper_fault_state = *oper_fault_state;
-    
+
     rec->valid = true;
 
     if (notif)  dn_temp_sensor_notify(rec);

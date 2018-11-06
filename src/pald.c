@@ -16,8 +16,8 @@
 
 /*
  * filename: pald.c
- */ 
-     
+ */
+
 #include "private/pald.h"
 #include "private/pas_log.h"
 #include "private/pas_config.h"
@@ -123,7 +123,7 @@ static bool dn_pald_status(bool status)
     }
 
     dn_pas_myslot_get(&slot);
-    
+
     dn_pas_obj_key_pas_status_set(obj,
                               cps_api_qualifier_OBSERVED,
                               true,
@@ -151,7 +151,7 @@ static bool dn_pald_status(bool status)
  *
  ************************************************************************/
 void dn_pald_cleanup_previous_running_thread(
-         size_t thread_idx, 
+         size_t thread_idx,
          std_thread_create_param_t *pas_thread_entry
                                             )
 {
@@ -164,9 +164,9 @@ void dn_pald_cleanup_previous_running_thread(
         ) {
        pthread_kill(*(pthread_t *)pas_thread_entry[running_thread_idx].thread_id,
                     TERM_SIG
-                    );     
+                    );
        std_thread_destroy_struct(&pas_thread_entry[running_thread_idx]);
-    }                                                                    
+    }
 }
 
 /************************************************************************
@@ -243,7 +243,7 @@ t_std_error dn_pas_timedlock(void)
  ************************************************************************/
 
 static t_std_error dn_pas_config_file_handle(void)
-{ 
+{
     return (dn_pas_config_init(config_filename, cps_hdl)
             && dn_cache_init_chassis()
             && dn_cache_init_entity()
@@ -280,7 +280,7 @@ static t_std_error dn_pald_thread_init(void)
           std_thread_init_struct(&pas_thread_entry[thread_idx]);
           pas_thread_entry[thread_idx].name
               = thread_main_functions[thread_idx].name;
-          pas_thread_entry[thread_idx].thread_function = 
+          pas_thread_entry[thread_idx].thread_function =
               (std_thread_function_t)
                   thread_main_functions[thread_idx].main_thread;
           pas_thread_entry[thread_idx].param = 0;
@@ -289,7 +289,7 @@ static t_std_error dn_pald_thread_init(void)
               PAS_ERR("Failed to create thread %s",
                       pas_thread_entry[thread_idx].name
                       );
-                      
+
               dn_pald_cleanup_previous_running_thread(thread_idx,
                                                       pas_thread_entry
                                                       );
@@ -312,7 +312,7 @@ static t_std_error dn_pald_thread_init(void)
               PAS_ERR("Failed to create thread %s",
                       pas_thread_entry[thread_idx].name
                       );
-                      
+
               dn_pald_cleanup_previous_running_thread(thread_idx,
                                                       pas_thread_entry
                                                       );
@@ -399,7 +399,7 @@ static t_std_error dn_pald_init(int argc, char *argv[])
                 "usage: %s [ -f <config-filename> ] [ -m <fuse-mount-dir> ]\n",
                 progname
                 );
-        
+
         exit(1);
     }
 
@@ -433,7 +433,7 @@ static t_std_error dn_pald_init(int argc, char *argv[])
           break;
        }
 
-       
+
        // read pas config file and put read data into internal data structure
        ret = dn_pas_config_file_handle();
        if (STD_IS_ERR(ret)) {
@@ -441,7 +441,7 @@ static t_std_error dn_pald_init(int argc, char *argv[])
 
            break;
        }
-       
+
        std_mutex_lock_init_recursive(&pas_lock);
 
        /* init threads */
@@ -465,14 +465,14 @@ t_std_error dn_pald_reinit()
 {
     /** TODO */
 
-    /** Detele all the data from the internal datastore */   
-    
+    /** Delete all the data from the internal datastore */
+
     /** Sdi initialization */
-    
+
     /** Re-create a datastore for PAS */
 
     return STD_ERR_OK;
-} 
+}
 
 /*******************************************************************************
  *

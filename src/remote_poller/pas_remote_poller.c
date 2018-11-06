@@ -63,7 +63,7 @@ void dn_cache_init_remote_temp_sensor(void)
                                                                     )
                                               );
     if (NULL == parent) return;
-    
+
     rec = pas_temperature_new();
     if (rec == 0)  return;
 
@@ -154,7 +154,7 @@ static t_std_error dn_pas_npu_temperature_get(uint_t *temp)
 
             size_t mx = cps_api_object_list_size(gp.list);
             size_t ix = 0;
-        
+
             for (ix = 0 ; ix < mx ; ++ix ) {
 
                 cps_api_object_it_t   it;
@@ -203,15 +203,15 @@ static bool dn_remote_temp_sensor_poll(void)
     bool                     ret           = true;
     uint_t                   temp = 0;
     pas_oper_fault_state_t   oper_fault_state[1];
-    pas_temperature_sensor_t *temp_rec; 
-    pas_temperature_sensor_t *rec; 
+    pas_temperature_sensor_t *temp_rec;
+    pas_temperature_sensor_t *rec;
 
     /* get parent from cache */
 
     char res_key[PAS_RES_KEY_SIZE];
 
     pas_entity_t *parent = (pas_entity_t *)
-        dn_pas_res_getc(dn_pas_res_key_entity(res_key, 
+        dn_pas_res_getc(dn_pas_res_key_entity(res_key,
                                               sizeof(res_key),
                                               PLATFORM_ENTITY_TYPE_CARD,
                                               slot_no
@@ -246,7 +246,6 @@ static bool dn_remote_temp_sensor_poll(void)
             break;
         }
 
-        dn_pas_comm_dev_npu_temp_set(temp);
         rec->prev = rec->cur;
         rec->cur  = temp;
         if (rec->nsamples < 2)  ++rec->nsamples;

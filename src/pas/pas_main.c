@@ -42,9 +42,9 @@
  * -------------
  *
  ************************************************************************/
-cps_api_return_code_t dn_pas_read_function (void *context, 
+cps_api_return_code_t dn_pas_read_function (void *context,
                                             cps_api_get_params_t *param,
-                                            size_t key_ix) 
+                                            size_t key_ix)
 {
     cps_api_object_t obj      = cps_api_object_list_get(param->filters, key_ix);
     cps_api_key_t    *the_key = cps_api_object_key(obj);
@@ -57,7 +57,7 @@ cps_api_return_code_t dn_pas_read_function (void *context,
         case BASE_PAS_CHASSIS_OBJ:
               ret = dn_pas_chassis_get(param, key_ix);
               break;
-    
+
         case BASE_PAS_ENTITY_OBJ:
               ret = dn_pas_entity_get(param, key_ix);
               break;
@@ -73,7 +73,7 @@ cps_api_return_code_t dn_pas_read_function (void *context,
         case BASE_PAS_CARD_OBJ:
               ret = dn_pas_card_get(param, key_ix);
               break;
-    
+
         case BASE_PAS_FAN_OBJ:
               ret = dn_pas_fan_get(param, key_ix);
               break;
@@ -97,7 +97,7 @@ cps_api_return_code_t dn_pas_read_function (void *context,
         case BASE_PAS_POWER_MONITOR_OBJ:
               ret = dn_pas_power_monitor_get(param, key_ix);
               break;
-                              
+
         case BASE_PAS_PLD_OBJ:
               ret = dn_pas_pld_get(param, key_ix);
               break;
@@ -121,7 +121,7 @@ cps_api_return_code_t dn_pas_read_function (void *context,
         case BASE_PAS_PHY_OBJ:
               ret = dn_pas_phy_get(param, key_ix);
               break;
- 
+
         case BASE_PAS_READY_OBJ:
               ret = dn_pas_status_get(param, key_ix);
               break;
@@ -160,9 +160,9 @@ cps_api_return_code_t dn_pas_read_function (void *context,
  * -------------
  *
  ************************************************************************/
-cps_api_return_code_t dn_pas_write_function(void *context, 
-                                            cps_api_transaction_params_t *param, 
-                                            size_t index_of_element_being_updated) 
+cps_api_return_code_t dn_pas_write_function(void *context,
+                                            cps_api_transaction_params_t *param,
+                                            size_t index_of_element_being_updated)
 {
     cps_api_key_t    *the_key = NULL;
     cps_api_object_t obj     = CPS_API_OBJECT_NULL;
@@ -190,7 +190,7 @@ cps_api_return_code_t dn_pas_write_function(void *context,
             case BASE_PAS_CHASSIS_OBJ:
                   ret = dn_pas_chassis_set(param, obj);
                   break;
-        
+
             case BASE_PAS_ENTITY_OBJ:
                   ret = dn_pas_entity_set(param, obj);
                   break;
@@ -258,7 +258,7 @@ cps_api_return_code_t dn_pas_write_function(void *context,
             case BASE_PAS_HOST_SYSTEM_OBJ:
                   ret = dn_pas_host_system_set(param, obj);
                   break;
-         
+
             default:
                 PAS_WARN("Invalid subcategory");
 
@@ -295,7 +295,7 @@ cps_api_return_code_t dn_pas_rollback_function(void *context,
 
 /*******************************************************************************
  *
- * Name: dn_pas_main_thread 
+ * Name: dn_pas_main_thread
  *
  *      pas main thread
  *      It will handle cps get and set request

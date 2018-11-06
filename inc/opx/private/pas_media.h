@@ -195,7 +195,7 @@ typedef struct _phy_media_tbl_t {
     pas_media_channel_t    *channel_data;
     dn_pas_basic_media_info_t media_info;
     uint_t                 poll_cycles_to_skip;
-    bool                   module_ready;
+    uint_t                 mod_holding_so_far;
 } phy_media_tbl_t;
 
 /*
@@ -297,6 +297,9 @@ const char* pas_media_get_qsa_string_from_enum (PLATFORM_QSA_ADAPTER_t qsa_type)
 /* This assigns the PLATFORM_MEDIA_TYPE_t enum to new media, which previously do not have a type enum derivation from MSA */
 PLATFORM_MEDIA_TYPE_t  pas_media_get_enum_from_new_media_name (char* name);
 
+/* This function is used to override media names */
+const char* pas_media_get_media_name_override_from_derived_name (char* name);
+
 /* Functions for deriving media info from transceiver */
 bool dn_pas_std_media_get_basic_properties_sfp(phy_media_tbl_t *mtbl, dn_pas_basic_media_info_t* media_info);
 bool dn_pas_std_media_get_basic_properties_qsfp_plus(phy_media_tbl_t *mtbl, dn_pas_basic_media_info_t* media_info);
@@ -341,12 +344,6 @@ PLATFORM_MEDIA_CATEGORY_t dn_pas_category_get (pas_media_t *res_data);
 
 PLATFORM_MEDIA_TYPE_t dn_pas_media_type_get (pas_media_t *res_data);
 
-void dn_pas_phy_media_poll (uint_t port, bool publish);
-
-void dn_pas_phy_media_poll_all (void *arg);
-
-uint_t dn_phy_media_count_get (void);
-
 uint_t dn_pas_media_construct_media_capabilities(phy_media_tbl_t *mtbl);
 
 bool dn_pas_media_is_connector_separable(phy_media_tbl_t *mtbl);
@@ -357,6 +354,12 @@ BASE_IF_SPEED_t dn_pas_media_convert_num_to_speed (
                     uint_t num, BASE_IF_PHY_MODE_TYPE_t phy_mode);
 
 uint_t dn_pas_media_convert_speed_to_num (BASE_IF_SPEED_t speed);
+
+void dn_pas_phy_media_poll (uint_t port, bool publish);
+
+void dn_pas_phy_media_poll_all (void *arg);
+
+uint_t dn_phy_media_count_get (void);
 
 phy_media_tbl_t * dn_phy_media_entry_get(uint_t port);
 
@@ -373,6 +376,7 @@ sdi_media_type_t dn_pas_to_sdi_type_conv (PLATFORM_MEDIA_TYPE_t type);
 bool dn_pas_is_media_unsupported (phy_media_tbl_t *mtbl, bool log_msg);
 
 BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl);
+
 bool dn_pas_is_media_type_supported_in_fp (uint_t port,
         PLATFORM_MEDIA_TYPE_t type, bool *disable, bool *lr_mode,
         bool *supported);
@@ -444,6 +448,7 @@ pas_media_phy_defaults * dn_pas_media_phy_config_entry_get(
 bool dn_pas_media_phy_supported_speed_set (uint_t port, uint_t channel);
 
 bool dn_pas_media_phy_interface_mode_set (uint_t port, uint_t channel);
+
 /*
  * Enable/Disable Fiber/Serdes TX and RX, based on PHY link status.
  */
@@ -470,3 +475,4 @@ sdi_media_fw_rev_t pas_media_fw_rev_get (pas_media_t *res_data);
 }
 #endif
 #endif  //__PAS_DATA_STORE_H
+

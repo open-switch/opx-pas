@@ -16,8 +16,8 @@
 
 /*
  * filename: pas_fan_tray_handler.c
- */ 
-     
+ */
+
 #include "private/pald.h"
 #include "private/pas_log.h"
 #include "private/pas_main.h"
@@ -46,7 +46,7 @@ static t_std_error dn_pas_fan_tray_get1(
     cps_api_object_t resp_obj;
 
     /* Look up object in cache */
-    
+
     char res_key[PAS_RES_KEY_SIZE];
 
     rec = (pas_fan_tray_t *) dn_pas_res_getc(dn_pas_res_key_fan_tray(res_key,
@@ -59,7 +59,7 @@ static t_std_error dn_pas_fan_tray_get1(
 
         return (STD_ERR(PAS, NEXIST, 0));
     }
-        
+
     /* Compose respose object */
 
     resp_obj = cps_api_object_create();
@@ -75,16 +75,17 @@ static t_std_error dn_pas_fan_tray_get1(
         PAS_ERR("Not able to acquire the mutex (timeout)");
         return (STD_ERR(PAS, FAIL, 0));
     }
+
     if ((!rec->valid || qual == cps_api_qualifier_REALTIME) && !dn_pald_diag_mode_get()) {
         /* Cache not valid or realtime object requested
            => Update cache from hardware
         */
-        
+
         dn_entity_poll(rec->parent, true);
     }
-    
+
     if (rec->parent->present) {
-        /* Add result attributes to response object */    
+        /* Add result attributes to response object */
         if ((rec->fan_airflow_type != PLATFORM_FAN_AIRFLOW_TYPE_NORMAL) &&
             (rec->fan_airflow_type != PLATFORM_FAN_AIRFLOW_TYPE_REVERSE) &&
             (rec->fan_airflow_type != PLATFORM_FAN_AIRFLOW_TYPE_NOT_APPLICABLE)) {
@@ -97,9 +98,9 @@ static t_std_error dn_pas_fan_tray_get1(
                                    rec->fan_airflow_type
                                    );
     }
-    
+
     dn_pas_unlock();
-    
+
     /* Add response object to get response */
 
     if (!cps_api_object_list_append(param->list, resp_obj)) {
@@ -127,22 +128,22 @@ t_std_error dn_pas_fan_tray_get(cps_api_get_params_t * param, size_t key_idx)
         slot_start = slot_limit = slot;
     } else {
         struct pas_config_entity *e;
-        
+
         e = dn_pas_config_entity_get_type(PLATFORM_ENTITY_TYPE_FAN_TRAY);
         if (e == 0)  return (STD_ERR(PAS, FAIL, 0));
-        
+
         slot_start = 1;
         slot_limit = e->num_slots;
     }
 
     for (slot = slot_start; slot <= slot_limit; ++slot) {
         ret = dn_pas_fan_tray_get1(param, qual, slot);
-        
+
         if (ret == STD_ERR(PAS, NEXIST, 0)) {
             if (slot_valid) {
                 result = STD_ERR(PAS, NEXIST, 0);
             }
-            
+
             break;
         } else if (STD_IS_ERR(ret)) {
             result = STD_ERR(PAS, FAIL, 0);
