@@ -63,6 +63,7 @@ t_std_error dn_pas_media_get(cps_api_get_params_t * param,
     } else {
         start = end = port;
     }
+
     if (dn_pas_timedlock() != STD_ERR_OK) {
         PAS_ERR("Not able to acquire the mutex (timeout)");
         return (STD_ERR(PAS, FAIL, 0));
@@ -265,12 +266,12 @@ t_std_error dn_pas_media_set(cps_api_transaction_params_t * param,
                     break;
                 case BASE_PAS_MEDIA_TARGET_WAVELENGTH:
                     {
-                        float value;
+                        double value;
 
                         memcpy(&value, cps_api_object_attr_data_bin(it.attr),
                                 sizeof(value));
 
-                        if (dn_pas_media_wavelength_config_set(start, value,
+                        if (dn_pas_media_wavelength_config_set(start, (float)value,
                                     operation) == false) {
                             ret = STD_ERR(PAS, FAIL, 0);
                         }

@@ -16,8 +16,8 @@
 
 /*
  * filename: pas_fan_handler.c
- */ 
-     
+ */
+
 #include "private/pas_main.h"
 #include "private/pald.h"
 #include "private/pas_log.h"
@@ -52,7 +52,7 @@ static t_std_error dn_pas_fan_get1(
     cps_api_object_t resp_obj;
 
     /* Look up object in cache */
-    
+
     char res_key[PAS_RES_KEY_SIZE];
 
     rec = (pas_fan_t *) dn_pas_res_getc(dn_pas_res_key_fan(res_key,
@@ -67,7 +67,7 @@ static t_std_error dn_pas_fan_get1(
 
         return (STD_ERR(PAS, NEXIST, 0));
     }
-        
+
     /* Compose respose object */
 
     resp_obj = cps_api_object_create();
@@ -87,61 +87,62 @@ static t_std_error dn_pas_fan_get1(
         PAS_ERR("Not able to acquire the mutex (timeout)");
         return (STD_ERR(PAS, FAIL, 0));
     }
+
     if ((!rec->valid || qual == cps_api_qualifier_REALTIME) && !dn_pald_diag_mode_get()) {
         /* Cache not valid or realtime object requested
            => Update cache from hardware
         */
-        
+
         dn_entity_poll(rec->parent, true);
     }
 
     if (rec->parent && rec->parent->present) {
-        /* Add result attributes to response object */    
-        
+        /* Add result attributes to response object */
+
         if (qual == cps_api_qualifier_TARGET) {
             cps_api_object_attr_add_u16(resp_obj,
                                         BASE_PAS_FAN_SPEED,
                                         rec->targ_speed
                                         );
-           
+
             cps_api_object_attr_add_u16(resp_obj,
                                         BASE_PAS_FAN_SPEED_PCT,
                                         (rec->max_speed != 0)
                                         ? (100 * rec->targ_speed / rec->max_speed)
                                         : 0
-                                        ); 
+                                        );
         } else {
             cps_api_object_attr_add_u8(resp_obj,
                                        BASE_PAS_FAN_OPER_STATUS,
                                        rec->oper_fault_state->oper_status
                                        );
-            
+
             cps_api_object_attr_add_u8(resp_obj,
                                        BASE_PAS_FAN_FAULT_TYPE,
                                        rec->oper_fault_state->fault_type
                                        );
-            
+
             cps_api_object_attr_add_u16(resp_obj,
                                         BASE_PAS_FAN_SPEED,
                                         rec->obs_speed
                                         );
-            
+
             cps_api_object_attr_add_u8(resp_obj,
                                        BASE_PAS_FAN_SPEED_PCT,
                                        rec->max_speed != 0
                                        ? (100 * rec->obs_speed) / rec->max_speed
                                        : 0
                                        );
-            
+
             cps_api_object_attr_add_u16(resp_obj,
                                         BASE_PAS_FAN_MAX_SPEED,
                                         rec->max_speed
                                         );
         }
     }
-    
+
     dn_pas_unlock();
-    
+
     /* Add response object to get response */
 
     if (!cps_api_object_list_append(param->list, resp_obj)) {
@@ -200,12 +201,12 @@ t_std_error dn_pas_fan_get(cps_api_get_params_t * param, size_t key_idx)
 
             for (idx = fan_idx_start; idx <= fan_idx_limit; ++idx) {
                 ret = dn_pas_fan_get1(param, qual, e->entity_type, slot_idx, idx);
-                
+
                 if (ret == STD_ERR(PAS, NEXIST, 0)) {
                     if (entity_type_valid && slot_valid && fan_idx_valid) {
                         result = STD_ERR(PAS, NEXIST, 0);
                     }
-                    
+
                     break;
                 } else if (STD_IS_ERR(ret)) {
                     result = STD_ERR(PAS, FAIL, 0);
@@ -252,7 +253,7 @@ static t_std_error dn_pas_fan_set1(
     pas_entity_t           *parent;
 
     /* Look up object in cache */
-    
+
     char res_key[PAS_RES_KEY_SIZE];
 
     rec = (pas_fan_t *) dn_pas_res_getc(dn_pas_res_key_fan(res_key,
@@ -324,10 +325,10 @@ static t_std_error dn_pas_fan_set1(
     }
 
     if(!dn_pald_diag_mode_get()) {
-        
+
         rc = sdi_fan_speed_set(rec->sdi_resource_hdl, targ_speed);
     }
-    
+
     dn_pas_unlock();
 
     if (STD_IS_ERR(rc)) {
@@ -337,7 +338,7 @@ static t_std_error dn_pas_fan_set1(
     } else {
         rec->targ_speed = targ_speed;
     }
-    
+
     if (rec->oper_fault_state->oper_status != prev_oper_fault_state->oper_status) {
         notif = true;
     }
@@ -412,18 +413,18 @@ t_std_error dn_pas_fan_set(cps_api_transaction_params_t *param, cps_api_object_t
                                       qual,
                                       e->entity_type,
                                       slot_idx,
-                                      idx, 
+                                      idx,
                                       speed_valid,
                                       speed,
                                       speed_pct_valid,
                                       speed_pct
                                       );
-                
+
                 if (ret == STD_ERR(PAS, NEXIST, 0)) {
                     if (entity_type_valid && slot_valid && fan_idx_valid) {
                         result = STD_ERR(PAS, NEXIST, 0);
                     }
-                    
+
                     break;
                 } else if (STD_IS_ERR(ret)) {
                     result = STD_ERR(PAS, FAIL, 0);

@@ -166,7 +166,8 @@ static std::unordered_map<int, pas_media_breakout_info_t> breakout_info_map = {
     {BASE_CMN_BREAKOUT_TYPE_BREAKOUT_2X2, (pas_media_breakout_info_t){2,2}},
     {BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X1, (pas_media_breakout_info_t){1,4}},
     {BASE_CMN_BREAKOUT_TYPE_BREAKOUT_4X2, (pas_media_breakout_info_t){2,4}},
-    {BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X2, (pas_media_breakout_info_t){2,8}}
+    {BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X2, (pas_media_breakout_info_t){2,8}},
+    {BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X1, (pas_media_breakout_info_t){1,8}},
 };
 
 uint_t pas_media_map_get_breakout_near_end_val (BASE_CMN_BREAKOUT_TYPE_t brk)
@@ -260,7 +261,7 @@ static std::unordered_map<int, media_interface_prop_t> media_interface_prop_map 
     {PLATFORM_MEDIA_INTERFACE_SW, (media_interface_prop_t) {PLATFORM_MEDIA_CONNECTOR_TYPE_LC, PLATFORM_MEDIA_CABLE_TYPE_FIBER, "SW"}},
     {PLATFORM_MEDIA_INTERFACE_LW, (media_interface_prop_t) {PLATFORM_MEDIA_CONNECTOR_TYPE_LC, PLATFORM_MEDIA_CABLE_TYPE_FIBER, "LW"}},
     {PLATFORM_MEDIA_INTERFACE_RJ45, (media_interface_prop_t) {PLATFORM_MEDIA_CONNECTOR_TYPE_RJ45, PLATFORM_MEDIA_CABLE_TYPE_RJ45, "RJ45"}},
-    {PLATFORM_MEDIA_INTERFACE_ELECTRICAL_LOOPBACK, (media_interface_prop_t) {PLATFORM_MEDIA_CONNECTOR_TYPE_RJ45, PLATFORM_MEDIA_CABLE_TYPE_RJ45, "ELECTRICAL LOOPBACK"}},
+    {PLATFORM_MEDIA_INTERFACE_ELECTRICAL_LOOPBACK, (media_interface_prop_t) {PLATFORM_MEDIA_CONNECTOR_TYPE_RJ45, PLATFORM_MEDIA_CABLE_TYPE_RJ45, "E-LPBK"}},
     {PLATFORM_MEDIA_INTERFACE_BACKPLANE, (media_interface_prop_t) {PLATFORM_MEDIA_CONNECTOR_TYPE_BACKPLANE, PLATFORM_MEDIA_CABLE_TYPE_UNKNOWN, "BACKPLANE"}},
     {PLATFORM_MEDIA_INTERFACE_ESR, (media_interface_prop_t) {PLATFORM_MEDIA_CONNECTOR_TYPE_LC, PLATFORM_MEDIA_CABLE_TYPE_FIBER, "ESR"}},
     {PLATFORM_MEDIA_INTERFACE_CX, (media_interface_prop_t) {PLATFORM_MEDIA_CONNECTOR_TYPE_LC, PLATFORM_MEDIA_CABLE_TYPE_FIBER, "CX"}},
@@ -368,10 +369,10 @@ bool pas_media_is_media_connector_separable (PLATFORM_MEDIA_CONNECTOR_TYPE_t con
 }
 
 static std::unordered_map<int, std::string> qsa_enum_to_str_map = {
-    {PLATFORM_QSA_ADAPTER_UNKNOWN,      "(QSA?)"},
+    {PLATFORM_QSA_ADAPTER_UNKNOWN,      " (QSA?)"},
     {PLATFORM_QSA_ADAPTER_NO_QSA,       "\0"},
-    {PLATFORM_QSA_ADAPTER_QSA,          "(QSA)"},
-    {PLATFORM_QSA_ADAPTER_QSA28,        "(QSA28)"},
+    {PLATFORM_QSA_ADAPTER_QSA,          " (QSA)"},
+    {PLATFORM_QSA_ADAPTER_QSA28,        " (QSA28)"},
 };
 
 const char* pas_media_get_qsa_string_from_enum (PLATFORM_QSA_ADAPTER_t qsa_type)
@@ -379,6 +380,29 @@ const char* pas_media_get_qsa_string_from_enum (PLATFORM_QSA_ADAPTER_t qsa_type)
     auto it = qsa_enum_to_str_map.find(qsa_type);
     return ( it == qsa_enum_to_str_map.end()) ? NULL : (const char*)(it->second.c_str());
 }
+
+
+/* This allows one to override the name derived in the media function, with a custom name */
+static std::unordered_map<std::string, std::string> derived_media_name_to_desired_media_name_map = {
+    {"FIXED 25GBASE BACKPLANE", "INTERNAL"},
+    {"QSFP28-DD 100GBASE 2CWDM8", "QSFP28-DD 2x100GBASE 2CWDM4"},
+    {"QSFP28-DD 100GBASE 2CR8 0.5M", "QSFP28-DD 2x100GBASE 2CR4 0.5M"},
+    {"QSFP28-DD 8x(25GBASE 2CR) 1.5M", "QSFP28-DD 8x(25GBASE CR) 1.5M"},
+    {"QSFP28-DD 8x(25GBASE 2SR AOC) 10.0M", "QSFP28-DD 8x(25GBASE SR AOC) 10.0M"},
+
+    {"SFP 1GBASE T", "SFP 1000BASE-T"},
+    {"FIXED 1GBASE RJ45", "1000BASE-T-RJ45"},
+    {"FIXED 10GBASE RJ45", "10GBASE-T-RJ45"},
+
+};
+
+const char* pas_media_get_media_name_override_from_derived_name (char* name)
+{
+    std::string s = std::string(name);
+    auto it = derived_media_name_to_desired_media_name_map.find(s);
+    return ( it == derived_media_name_to_desired_media_name_map.end()) ? PAS_MEDIA_UNKNOWN_MEDIA : (const char*)(it->second.c_str());
+}
+
 
 /*Code beyind this point is to ensure backwards compatibility */
 

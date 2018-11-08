@@ -1,0 +1,7 @@
+#!/bin/bash
+
+opx-show-env
+./qsa_adapter_test.py
+exit 0
+
+

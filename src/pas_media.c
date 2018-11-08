@@ -41,7 +41,11 @@
 #define MEMEBER_SIZEOF(type, member)  (sizeof(((type *)NULL)->member))
 
 #define CPS_API_ATTR_KEY_ID CPS_API_ATTR_RESERVE_RANGE_END
+
 #define SYSTEM_BOARD_SLOT_NUMBER 1
+
+/* How many picmeters makes a nano meter */
+#define PICOMETER_TO_NANOMETER_DIV_FACTOR           1000
 
 /* Table to hold the sdi handle and media resource pointer and channel data
  * for all the ports*/
@@ -57,6 +61,7 @@ static const phy_media_member_info_t  media_mem_info[] = {
 
     {BASE_PAS_MEDIA_PRESENT, offsetof(pas_media_t, present),
         MEMEBER_SIZEOF(pas_media_t, present), cps_api_object_ATTR_T_BIN},
+
     {BASE_PAS_MEDIA_PORT_TYPE, offsetof(pas_media_t, port_type),
         MEMEBER_SIZEOF(pas_media_t, port_type), cps_api_object_ATTR_T_U32},
 
@@ -170,6 +175,9 @@ static const phy_media_member_info_t  media_mem_info[] = {
 
     {BASE_PAS_MEDIA_WAVELENGTH, offsetof(pas_media_t, wavelength),
         MEMEBER_SIZEOF(pas_media_t, wavelength), cps_api_object_ATTR_T_U32},
+
+    {BASE_PAS_MEDIA_WAVELENGTH_PICO_METERS, offsetof(pas_media_t, wavelength_pico_meters),
+        MEMEBER_SIZEOF(pas_media_t, wavelength_pico_meters), cps_api_object_ATTR_T_U32},
 
     {BASE_PAS_MEDIA_MEDIA_CATEGORY_QSFP_PLUS_WAVELENGTH_TOLERANCE,
         offsetof(pas_media_t, wavelength_tolerance),
@@ -396,7 +404,7 @@ static const phy_media_member_info_t media_ch_mem_info [] = {
 
 
 /* Presence publish attribute list */
-/* Note: some other attributes need special adding. 
+/* Note: some other attributes need special adding.
    This list is not exhaustive */
 static const cps_api_attr_id_t pp_list[] = { BASE_PAS_MEDIA_PRESENT,
                                       BASE_PAS_MEDIA_PORT_TYPE,
@@ -459,14 +467,12 @@ static bool dn_pas_media_add_basic_media_info_to_obj (dn_pas_basic_media_info_t*
 /* Returns whether a port is fixed(false) or pluggable (true)*/
 bool dn_pas_is_port_pluggable(uint_t port)
 {
-
     return (dn_pas_config_media_get()->port_info_tbl[port]->port_type
             == PLATFORM_PORT_TYPE_PLUGGABLE);
-
 }
 
 bool dn_pas_media_compare_capabilities(const media_capability_t* const cap1,
-                                       const media_capability_t* const cap2) 
+                                       const media_capability_t* const cap2)
 {
     return (cap1->media_speed == cap2->media_speed)
            && (cap1->breakout_speed == cap2->breakout_speed)
@@ -527,7 +533,7 @@ char* dn_pas_media_generate_port_str(phy_media_tbl_t *mtbl)
 
 bool dn_pas_is_media_present(uint_t port)
 {
-    return (phy_media_tbl[port].res_data == NULL) 
+    return (phy_media_tbl[port].res_data == NULL)
            ? false : phy_media_tbl[port].res_data->present;
 }
 
@@ -615,10 +621,7 @@ static void dn_pas_media_resource_cb (sdi_resource_hdl_t hdl, void *user_data)
 
     STD_ASSERT(hdl != NULL);
 
-
-
     if (sdi_resource_type_get(hdl) == SDI_RESOURCE_MEDIA) {
-
 
         STD_ASSERT(phy_media_tbl != NULL);
 
@@ -636,7 +639,6 @@ static void dn_pas_media_resource_cb (sdi_resource_hdl_t hdl, void *user_data)
         PAS_ERR("Disparity between pluggable media count from SDI: %u and config: %u",
             count_pluggable_from_sdi, count_pluggable_from_config);
     }
-
     return;
 }
 
@@ -646,7 +648,6 @@ static void dn_pas_media_resource_cb (sdi_resource_hdl_t hdl, void *user_data)
 
 bool dn_pas_phy_media_init (void)
 {
-
     bool                    ret = true;
     struct pas_config_media *cfg = dn_pas_config_media_get();
     sdi_entity_hdl_t        entity_hdl;
@@ -672,7 +673,7 @@ bool dn_pas_phy_media_init (void)
     ret = dn_media_data_store_init(phy_media_count);
 
     return ret;
-    }
+}
 
 static void dn_pas_media_generate_sub_ports(struct pas_config_media* cfg_media)
 {
@@ -685,12 +686,9 @@ static void dn_pas_media_generate_sub_ports(struct pas_config_media* cfg_media)
         while (density < cfg_media->port_info_tbl[count]->port_density) {
 
             phy_media_tbl[count].sub_port_ids[density++] = next_logical_port++;
-    }
-
+        }
         count++;
     }
-
-
 }
 
 /*
@@ -699,7 +697,6 @@ static void dn_pas_media_generate_sub_ports(struct pas_config_media* cfg_media)
 
 static bool dn_media_data_store_init (uint_t count)
 {
-
     uint_t               cnt;
     uint_t               slot = PAS_MEDIA_MY_SLOT; // My slot
     bool                 ret = true;
@@ -716,7 +713,6 @@ static bool dn_media_data_store_init (uint_t count)
         return false;
     }
 
-
     struct pas_config_media *cfg = dn_pas_config_media_get();
 
     for (cnt = PAS_MEDIA_START_PORT; cnt <= count; cnt++) {
@@ -725,8 +721,9 @@ static bool dn_media_data_store_init (uint_t count)
         phy_media_tbl[cnt].fp_port = cnt;
         phy_media_tbl[cnt].port_density = cfg->port_info_tbl[cnt]->port_density;
         phy_media_tbl[cnt].res_data->lockdown_state = false;
-        phy_media_tbl[cnt].poll_cycles_to_skip = cfg->poll_cycles_to_skip;
-        phy_media_tbl[cnt].module_ready = false;
+        phy_media_tbl[cnt].poll_cycles_to_skip = cfg->port_info_tbl[cnt]->poll_cycles_to_skip;
+        phy_media_tbl[cnt].mod_holding_so_far = 0;
+
         char res_key[PAS_RES_KEY_SIZE];
 
         if (dn_pas_res_insertc(dn_pas_res_key_media(res_key,
@@ -841,6 +838,8 @@ bool dn_pas_media_add_channel_info_to_cps_obj(cps_api_object_t obj,
 
     return true;
 }
+
+
 /*dn_pas_media_data_publish creates and populates an object which need to be
  * published as based on presence state and list of attributes. This function
  * can be called by get handler or poller or media init. If handler is true
@@ -893,6 +892,7 @@ cps_api_object_t  dn_pas_media_data_publish (uint_t port,
                         );
                 break;
             }
+
             /* Add basic media properties */
             if (!dn_pas_media_add_basic_media_info_to_obj(&(mtbl->media_info), obj)){
                 PAS_ERR("Failed to add basic media properties attrs, port %s",
@@ -935,6 +935,7 @@ cps_api_object_t  dn_pas_media_data_publish (uint_t port,
 
                 break;
             }
+
             attr = BASE_PAS_MEDIA_CAPABILITY;
 
             if (dn_pas_media_obj_all_attr_add(media_mem_info,
@@ -1050,6 +1051,7 @@ static bool dn_pas_media_channel_res_alloc (uint_t slot, uint_t port,
 
         phy_media_tbl[port].channel_cnt = count;
         phy_media_tbl[port].channel_data = ch_data;
+        phy_media_tbl[port].channel_data->rx_power = SDI_SFP_ZERO_WATT_POWER_IN_DBM;
     }
 
     return ret;
@@ -1094,16 +1096,28 @@ static bool dn_pas_media_presence_poll (uint_t port, cps_api_object_t obj)
     phy_media_tbl_t          *mtbl = NULL;
     uint_t                   slot = PAS_MEDIA_MY_SLOT;
     bool                     presence = false;
+    bool                     new_presence = false;
 
     mtbl = dn_phy_media_entry_get(port);
-
     STD_ASSERT(mtbl != NULL);
 
-    if (pas_sdi_media_presence_get(mtbl->res_hdl, &presence)
+    if (pas_sdi_media_presence_get(mtbl->res_hdl, &new_presence)
             != STD_ERR_OK) {
         PAS_ERR("Failed to get media presence, port %u", port);
 
         return false;
+    }
+
+    if (new_presence){
+        if (mtbl->mod_holding_so_far <= mtbl->poll_cycles_to_skip) {
+            mtbl->mod_holding_so_far++;
+        }
+
+        if (mtbl->mod_holding_so_far > mtbl->poll_cycles_to_skip) {
+            presence = true;
+        }
+    } else { /* Absence */
+        mtbl->mod_holding_so_far = 0;
     }
 
     if (mtbl->res_data->present != presence) {
@@ -1231,7 +1245,6 @@ static bool dn_pas_media_type_poll (uint_t port, cps_api_object_t obj)
     bool                     high_power_mode = true;
     bool                     ret = true;
 
-
     mtbl = dn_phy_media_entry_get(port);
     STD_ASSERT(mtbl != NULL);
 
@@ -1323,6 +1336,19 @@ static bool dn_pas_media_type_poll (uint_t port, cps_api_object_t obj)
         }
     }
 
+    /* Bring down all channels whenever media is seen. The xceiver state function argument is inverted */
+    if (!dn_pas_media_transceiver_state_set(port, true)) {
+        PAS_ERR("Unable to force tx state low for media on port %u", port);
+    }
+
+    /* Bring sfp t serdes down also */
+
+    if (mtbl->res_data->type == PLATFORM_MEDIA_TYPE_SFP_T) {
+        if (sdi_media_phy_serdes_control(mtbl->res_hdl, PAS_MEDIA_CH_START, SDI_MEDIA_DEFAULT, false) != STD_ERR_OK) {
+            PAS_ERR("Serdes control failed, port(%u), channel(%u), state(false)", port, PAS_MEDIA_CH_START);
+        }
+    }
+
     dn_pas_media_high_power_mode_set(port,
                 (high_power_mode == false) ? false : true);
 
@@ -1372,21 +1398,18 @@ static bool dn_pas_media_capability_poll (uint_t port, cps_api_object_t obj)
     STD_ASSERT(mtbl != NULL);
 
     if (mtbl->res_data->present == false) {
-    if (pas_sdi_media_speed_get(mtbl->res_hdl, &speed) != STD_ERR_OK) {
-        PAS_ERR("Failed to get media speed, port %u", port);
-
-        return false;
-    }
-
-    capability = dn_pas_capability_conv(speed);
+        if (pas_sdi_media_speed_get(mtbl->res_hdl, &speed) != STD_ERR_OK) {
+            PAS_ERR("Failed to get media speed, port %u", port);
+            return false;
+        }
+        capability = dn_pas_capability_conv(speed);
     } else {
         capability = dn_pas_media_capability_get(mtbl);
 
-    struct pas_config_media *cfg = dn_pas_config_media_get();
-
+        struct pas_config_media *cfg = dn_pas_config_media_get();
         if (cfg->lockdown && (mtbl->res_data->qualified == false)) {
             if (dn_pas_is_media_unsupported(mtbl, true)) {  /* log msg if unsupported */
-            dn_pas_media_transceiver_state_set(port, cfg->lockdown);
+                dn_pas_media_transceiver_state_set(port, cfg->lockdown);
             }
         }
     }
@@ -1416,29 +1439,54 @@ static bool dn_pas_media_wavelength_poll (uint_t port, cps_api_object_t obj)
 {
     phy_media_tbl_t        *mtbl = NULL;
     uint_t                 wavelength = 0;
-
+    uint_t                 wavelength_pico_meters = 0;
 
     mtbl = dn_phy_media_entry_get(port);
     STD_ASSERT(mtbl != NULL);
 
-    if (pas_sdi_media_parameter_get(mtbl->res_hdl, SDI_MEDIA_WAVELENGTH,
-                &wavelength) != STD_ERR_OK) {
-        PAS_ERR("Failed to get media wavelength, port %u", port);
+    if (!(mtbl->res_data->supported_feature_valid)) {
+        if (STD_ERR_OK != pas_sdi_media_feature_support_status_get(mtbl->res_hdl,
+                &(mtbl->res_data->supported_feature)) ){
+            PAS_ERR("Unable to read feature support status on media in port %u", mtbl->fp_port);
+        } else {
+            mtbl->res_data->supported_feature_valid = true;
+        }
+    }
 
-        return false;
+    /* For tunable media, look for wavelength with picometer level precision  */
+    if (mtbl->res_data->supported_feature.sfp_features.wavelength_tune_support_status){
+        if (STD_ERR_OK != pas_sdi_media_parameter_get(mtbl->res_hdl, SDI_TUNE_WAVELENGTH_PICO_METERS, &wavelength_pico_meters)){
+            PAS_ERR("Failed to get tunable wavelength for port %u", port);
+            return false;
+        }
+        wavelength = wavelength_pico_meters / PICOMETER_TO_NANOMETER_DIV_FACTOR;
+
+     /* Normal media use wavelength with nanometer precision */
+    } else {
+        if (pas_sdi_media_parameter_get(mtbl->res_hdl, SDI_MEDIA_WAVELENGTH,
+                &wavelength) != STD_ERR_OK) {
+            PAS_ERR("Failed to get media wavelength, port %u", port);
+            return false;
+        }
+        wavelength_pico_meters = wavelength * PICOMETER_TO_NANOMETER_DIV_FACTOR;
     }
 
     if(mtbl->res_data->wavelength != wavelength) {
 
         mtbl->res_data->wavelength = wavelength;
-
+        mtbl->res_data->wavelength_pico_meters = wavelength_pico_meters;
         if (obj != NULL) {
             if (cps_api_object_attr_add(obj, BASE_PAS_MEDIA_WAVELENGTH,
                         &wavelength, sizeof(wavelength)) == false) {
-                PAS_ERR("Failed to add object attribute, port %u", port);
-
+                PAS_ERR("Failed to add object attribute (wavelength), port %u", port);
                 return false;
             }
+            if (cps_api_object_attr_add(obj, BASE_PAS_MEDIA_WAVELENGTH_PICO_METERS,
+                        &wavelength_pico_meters, sizeof(wavelength_pico_meters)) == false) {
+                PAS_ERR("Failed to add object attribute (wavelength pico meters), port %u", port);
+                return false;
+            }
+
         }
     }
 
@@ -1744,7 +1792,7 @@ static bool dn_pas_media_channel_monitor_poll (uint_t port, uint_t channel,
         sdi_media_channel_monitor_t type)
 {
     phy_media_tbl_t       *mtbl = NULL;
-    float                 value = 0;
+    float                 value = SDI_SFP_ZERO_WATT_POWER_IN_DBM;
     bool                  ret = false;
 
     mtbl = dn_phy_media_entry_get(port);
@@ -1753,8 +1801,9 @@ static bool dn_pas_media_channel_monitor_poll (uint_t port, uint_t channel,
     if (((mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_SFP_PLUS)
                 || (mtbl->res_data->category ==  PLATFORM_MEDIA_CATEGORY_SFP))
             && (mtbl->res_data->supported_feature.sfp_features.diag_mntr_support_status
-                == false)) return true;
-
+                == false)){
+        return true;
+    }
     if (dn_phy_is_media_channel_valid(port, channel) == false) {
         PAS_ERR("Failed to validate media channel, port %u channel %u",
                 port, channel
@@ -2333,6 +2382,10 @@ static bool dn_pas_media_data_poll (uint_t port, cps_api_object_t obj)
     dn_pas_media_int_attr_poll(mtbl->res_hdl, SDI_MEDIA_WAVELENGTH,
             &mtbl->res_data->wavelength, obj, BASE_PAS_MEDIA_WAVELENGTH, &ret);
 
+    if (mtbl->res_data->type == PLATFORM_MEDIA_TYPE_SFPPLUS_10GBASE_ZR_TUNABLE) {
+        dn_pas_media_int_attr_poll(mtbl->res_hdl, SDI_TUNE_WAVELENGTH_PICO_METERS,
+            &mtbl->res_data->wavelength_pico_meters, obj, BASE_PAS_MEDIA_WAVELENGTH_PICO_METERS, &ret);
+    }
     if ((mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP)
             || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28)
             || (mtbl->res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD)
@@ -2719,7 +2772,7 @@ static bool dn_pas_media_default_capability_poll(uint_t port,
     phy_media_tbl_t* mtbl = NULL;
     int num_cap = 0;
     media_capability_t *cap_old = NULL, *cap_new = NULL;
-    
+
     mtbl = dn_phy_media_entry_get(port);
     STD_ASSERT(mtbl != NULL);
     STD_ASSERT(mtbl->res_data != NULL);
@@ -2739,7 +2792,7 @@ static bool dn_pas_media_default_capability_poll(uint_t port,
         mtbl->res_data->default_media_capability_index = 0;
     }
 
-    cap_new = dn_pas_media_get_default_media_capability(mtbl); 
+    cap_new = dn_pas_media_get_default_media_capability(mtbl);
 
     if (!dn_pas_media_compare_capabilities(cap_old, cap_new) && (obj !=NULL)) {
         if (!dn_pas_media_add_capabilities_to_obj(cap_new, obj)){
@@ -3002,6 +3055,7 @@ static bool dn_pas_media_oir_poll (uint_t port, cps_api_object_t obj)
 
         ret = false;
     }
+
     if (dn_pas_media_vendor_oui_poll(port, obj) == false) {
         PAS_ERR("Failed to poll media vendor OUI, port %u",
                 port
@@ -3221,6 +3275,7 @@ void dn_pas_phy_media_poll (uint_t port, bool publish)
     if (!dn_pas_is_port_pluggable(port)){
         return;
     }
+
     presence = mtbl->res_data->present;
 
     obj = publish ? cps_api_object_create() : CPS_API_OBJECT_NULL;
@@ -3245,7 +3300,6 @@ void dn_pas_phy_media_poll (uint_t port, bool publish)
                 && (mtbl->res_data->polling_count <= cfg->rtd_interval)) {
             mtbl->res_data->polling_count += 1;
         } else {
-
             mtbl->res_data->polling_count = 1;
             rtd_poll = true;
         }
@@ -3306,6 +3360,7 @@ void dn_pas_phy_media_poll (uint_t port, bool publish)
                         ARRAY_SIZE(media_mem_info), &attr, 1, obj,
                         mtbl->res_data);
             }
+
             dn_pas_media_add_port_info_to_cps_obj(obj, mtbl, port);
             dn_pas_media_add_channel_info_to_cps_obj(obj, mtbl, port);
 
@@ -3612,6 +3667,11 @@ bool dn_pas_media_channel_ext_rate_select (uint_t port, uint_t channel, bool ena
         return false;
     }
 
+    if (mtbl->res_data->qualified == false) {
+        PAS_NOTICE("Non qualified media in port(%u), CDR control not supported");
+        return true;
+    }
+
     rev = pas_media_fw_rev_get(mtbl->res_data);
 
     rc = sdi_media_ext_rate_select(mtbl->res_hdl, channel, rev, enable);
@@ -3730,7 +3790,7 @@ bool dn_pas_media_channel_state_set (uint_t port, uint_t channel,
 }
 
 /*
- * dn_pas_media_channel_serdes_control is to control Fiber/Serdes TX and RX 
+ * dn_pas_media_channel_serdes_control is to control Fiber/Serdes TX and RX
  * based on phy link status and tx-disable.
  */
 
@@ -3761,7 +3821,7 @@ bool dn_pas_media_channel_serdes_control (uint_t port, uint_t channel)
                     || (mtbl->channel_data[channel].phy_link_status != state)) {
                 mtbl->channel_data[channel].is_link_status_valid = true;
                 serdes_set = true;
-            } 
+            }
             mtbl->channel_data[channel].phy_link_status = state;
 
             if (serdes_set == true) {
@@ -4385,6 +4445,8 @@ bool dn_pas_media_wavelength_set (uint_t port)
             return false;
 
         }
+        mtbl->res_data->wavelength = (uint_t)mtbl->res_data->target_wavelength;
+        mtbl->res_data->wavelength_pico_meters = (uint_t)(mtbl->res_data->target_wavelength * PICOMETER_TO_NANOMETER_DIV_FACTOR);
     }
     return true;
 }

@@ -16,8 +16,8 @@
 
 /*
  * filename: pas_temperature_handler.c
- */ 
-     
+ */
+
 #include "private/pas_main.h"
 #include "private/pald.h"
 #include "private/pas_log.h"
@@ -46,7 +46,7 @@ static t_std_error dn_pas_temperature_get1(
                                    )
 {
     cps_api_object_t resp_obj;
-        
+
     /* Compose respose object */
 
     resp_obj = cps_api_object_create();
@@ -67,22 +67,22 @@ static t_std_error dn_pas_temperature_get1(
                                BASE_PAS_TEMPERATURE_OPER_STATUS,
                                rec->oper_fault_state->oper_status
                                );
-    
+
     cps_api_object_attr_add_u8(resp_obj,
                                BASE_PAS_TEMPERATURE_FAULT_TYPE,
                                rec->oper_fault_state->fault_type
                                );
-    
+
     cps_api_object_attr_add_u16(resp_obj,
                                 BASE_PAS_TEMPERATURE_TEMPERATURE,
                                 rec->cur
                                 );
-    
+
     cps_api_object_attr_add_u16(resp_obj,
                                 BASE_PAS_TEMPERATURE_SHUTDOWN_THRESHOLD,
                                 rec->shutdown_threshold
                                 );
-    
+
     cps_api_object_attr_add_u8(resp_obj,
                                BASE_PAS_TEMPERATURE_THRESH_ENABLE,
                                rec->thresh_en
@@ -125,7 +125,7 @@ t_std_error dn_pas_temperature_get(cps_api_get_params_t * param, size_t key_idx)
                                    &sensor_name_valid,
                                    sensor_name, sizeof(sensor_name)
                                    );
-    
+
     for (i = 0; (e = dn_pas_config_entity_get_idx(i)) != 0; ++i) {
         if (entity_type_valid && e->entity_type != entity_type)  continue;
 
@@ -147,7 +147,7 @@ t_std_error dn_pas_temperature_get(cps_api_get_params_t * param, size_t key_idx)
                 if (temp_rec != 0)  dn_pas_temperature_get1(param, qual, temp_rec);
 
                 dn_pas_unlock();
-                
+
                 continue;
             }
 
@@ -158,6 +158,7 @@ t_std_error dn_pas_temperature_get(cps_api_get_params_t * param, size_t key_idx)
                 PAS_ERR("Not able to acquire the mutex (timeout)");
                 return (STD_ERR(PAS, FAIL, 0));
             }
+
             for (sensor_idx = 1; sensor_idx <= entity_rec->num_temp_sensors; ++sensor_idx) {
                 temp_rec = dn_pas_temperature_rec_get_idx(e->entity_type, slot, sensor_idx);
                 if (temp_rec == 0)  continue;
@@ -203,7 +204,7 @@ static t_std_error dn_pas_temperature_set1(
                                 BASE_PAS_TEMPERATURE_SHUTDOWN_THRESHOLD,
                                 (uint16_t) rec->shutdown_threshold
                                 );
-    
+
     cps_api_object_attr_add_u8(old_obj,
                                BASE_PAS_TEMPERATURE_THRESH_ENABLE,
                                rec->thresh_en
@@ -220,16 +221,16 @@ static t_std_error dn_pas_temperature_set1(
     if (shutdown_thresh_valid) {
         rec->shutdown_threshold = shutdown_thresh;
     }
-    
+
     if (thresh_en_valid) {
         old_thresh_en  = rec->thresh_en;
         rec->thresh_en = thresh_en;
-        
+
         if (rec->thresh_en && !old_thresh_en) {
             rec->last_thresh_crossed->temperature = -9999;
             rec->last_thresh_crossed->dir         = 1;
             if (rec->nsamples >= 2)  rec->nsamples = 1;
-            
+
             dn_temp_sensor_thresh_chk(rec);
             dn_temp_sensor_notify(rec);
         }
@@ -306,7 +307,7 @@ t_std_error dn_pas_temperature_set(cps_api_transaction_params_t *param, cps_api_
                 }
 
                 dn_pas_unlock();
-                
+
                 continue;
             }
 
@@ -317,6 +318,7 @@ t_std_error dn_pas_temperature_set(cps_api_transaction_params_t *param, cps_api_
                 PAS_ERR("Not able to acquire the mutex (timeout)");
                 return (STD_ERR(PAS, FAIL, 0));
             }
+
             for (sensor_idx = 1; sensor_idx <= entity_rec->num_temp_sensors; ++sensor_idx) {
                 temp_rec = dn_pas_temperature_rec_get_idx(e->entity_type, slot, sensor_idx);
                 if (temp_rec == 0)  continue;

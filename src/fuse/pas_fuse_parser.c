@@ -239,17 +239,18 @@ static filename_enum_map_t media_files[] = {
     /** per channel 1..4 */
     {fuse_default_file_size, "media_internal_rx_power_monitor"  , FUSE_MEDIA_FILETYPE_INTERNAL_RX_POWER_MONITOR},
     {fuse_default_file_size, "media_internal_tx_power_bias"     , FUSE_MEDIA_FILETYPE_INTERNAL_TX_POWER_BIAS},
-    
+
     {fuse_default_file_size, "alias_name"                       , FUSE_MEDIA_FILETYPE_ALIAS},
     {fuse_default_file_size, "diag_mode"                        , FUSE_MEDIA_FILETYPE_DIAG_MODE},
 
     {fuse_default_file_size, "eeprom_cursor"                    , FUSE_MEDIA_FILETYPE_EEPROM_CURSOR},
     {fuse_default_file_size, "eeprom_data"                      , FUSE_MEDIA_FILETYPE_EEPROM_DATA},
+    {fuse_default_file_size, "eeprom_page_dump"                 , FUSE_MEDIA_FILETYPE_EEPROM_PAGE_DUMP},
 };
 
 
 typedef struct _resource_files_t {
-    
+
     char *dirname;
     uint_t max_file_count;
     uint_t min_file_count;
@@ -378,41 +379,41 @@ static uint_t fuse_resource_filetype_min(sdi_resource_type_t resource_type)
 /*---------------------------------------------------------------------*/
 
 /*
- * Method to retrieve entity type 
+ * Method to retrieve entity type
  */
 static void fuse_get_entity_type(
-        dev_node_t         *node, 
-        std_parsed_string_t tokens, 
+        dev_node_t         *node,
+        std_parsed_string_t tokens,
         int                count
         )
 {
     sdi_entity_type_t e_type = ENTITY_TYPE_UNDEFINED;
 
-    if(count >= E_TYPE_PATH_LEN && 
+    if(count >= E_TYPE_PATH_LEN &&
             count <= FILETYPE_PATH_LEN) {
-        
+
         const char   *entity_type = std_parse_string_at(tokens, E_TYPE_PATH_LEN);
         size_t       i            = 0;
 
         for(i = 0; i < ARRAY_SIZE(valid_entity_types); i++) {
-            
+
             if(0 == strcmp(entity_type, valid_entity_types[i].name)) {
 
                 e_type = valid_entity_types[i].type;
                 break;
             }
-        }     
-    }  
+        }
+    }
     node->fuse_entity_type = e_type;
 }
 
 
 /*
- * Method to retrieve entity instance 
+ * Method to retrieve entity instance
  */
 static void fuse_get_entity_instance(
-        dev_node_t          *node, 
-        std_parsed_string_t tokens, 
+        dev_node_t          *node,
+        std_parsed_string_t tokens,
         int                 count
         )
 {
@@ -420,7 +421,7 @@ static void fuse_get_entity_instance(
     uint_t            e_inst = ENTITY_INSTANCE_UNDEFINED;
 
 
-    if(count >= E_INST_PATH_LEN && 
+    if(count >= E_INST_PATH_LEN &&
             count <= FILETYPE_PATH_LEN &&
             e_type != ENTITY_TYPE_UNDEFINED) {
 
@@ -432,18 +433,18 @@ static void fuse_get_entity_instance(
             node->fuse_entity_instance = e_inst;
             return;
         }
-    } 
-    
+    }
+
     node->fuse_entity_instance = ENTITY_INSTANCE_UNDEFINED;
 }
 
 
 /*
- * Method to retrieve entity handle 
+ * Method to retrieve entity handle
  */
 static void fuse_get_entity_handle(
-        dev_node_t          *node, 
-        std_parsed_string_t tokens, 
+        dev_node_t          *node,
+        std_parsed_string_t tokens,
         int                 count
         )
 {
@@ -452,10 +453,10 @@ static void fuse_get_entity_handle(
     sdi_entity_hdl_t  e_hdl  = ENTITY_HDL_UNDEFINED;
 
 
-    if(count  >= E_INST_PATH_LEN && 
+    if(count  >= E_INST_PATH_LEN &&
             count  <= FILETYPE_PATH_LEN &&
-            e_type != ENTITY_TYPE_UNDEFINED && 
-            e_inst != ENTITY_INSTANCE_UNDEFINED) { 
+            e_type != ENTITY_TYPE_UNDEFINED &&
+            e_inst != ENTITY_INSTANCE_UNDEFINED) {
 
         e_hdl = sdi_entity_lookup(e_type, e_inst);
     }
@@ -465,41 +466,41 @@ static void fuse_get_entity_handle(
 
 
 /*
- * Method to get the resource type 
+ * Method to get the resource type
  */
 static void fuse_get_resource_type(
-        dev_node_t          *node, 
-        std_parsed_string_t tokens, 
+        dev_node_t          *node,
+        std_parsed_string_t tokens,
         int                 count
         )
 {
     sdi_resource_type_t r_type = RESOURCE_TYPE_UNDEFINED;
-    
-    if(count >= R_TYPE_PATH_LEN && 
+
+    if(count >= R_TYPE_PATH_LEN &&
             count <= FILETYPE_PATH_LEN) {
 
         const char *resource_type = std_parse_string_at(tokens, R_TYPE_PATH_LEN);
         size_t     i              = 0;
 
         for(i = 0; i < ARRAY_SIZE(valid_resource_types); i++) {
-            
+
             if(0 == strcmp(resource_type, valid_resource_types[i].name)) {
 
                 r_type = valid_resource_types[i].type;
                 break;
             }
-        }     
+        }
     }
     node->fuse_resource_type = r_type;
 }
 
 
 /*
- * Method to retrieve resource instance 
+ * Method to retrieve resource instance
  */
 static void fuse_get_resource_instance(
-        dev_node_t          *node, 
-        std_parsed_string_t tokens, 
+        dev_node_t          *node,
+        std_parsed_string_t tokens,
         int                 count
         )
 {
@@ -508,7 +509,7 @@ static void fuse_get_resource_instance(
     uint_t              r_inst = RESOURCE_INSTANCE_UNDEFINED;
 
 
-    if(count >= R_INST_PATH_LEN && 
+    if(count >= R_INST_PATH_LEN &&
             count <= FILETYPE_PATH_LEN &&
             e_hdl != ENTITY_HDL_UNDEFINED &&
             r_type != RESOURCE_TYPE_UNDEFINED) {
@@ -520,18 +521,18 @@ static void fuse_get_resource_instance(
             node->fuse_resource_instance = r_inst;
             return;
         }
-    } 
-    
+    }
+
     node->fuse_resource_instance = RESOURCE_INSTANCE_UNDEFINED;
 }
 
 
 /*
- * Method to retrieve resource handle 
+ * Method to retrieve resource handle
  */
 static void fuse_get_resource_handle(
-        dev_node_t          *node, 
-        std_parsed_string_t tokens, 
+        dev_node_t          *node,
+        std_parsed_string_t tokens,
         int                 count
         )
 {
@@ -539,10 +540,10 @@ static void fuse_get_resource_handle(
     sdi_entity_hdl_t        e_hdl      = node->fuse_entity_hdl;
     sdi_resource_type_t     r_type     = node->fuse_resource_type;
     uint_t                  r_inst     = node->fuse_resource_instance;
-    sdi_resource_hdl_t      r_hdl      = RESOURCE_HDL_UNDEFINED; 
+    sdi_resource_hdl_t      r_hdl      = RESOURCE_HDL_UNDEFINED;
 
 
-    if(count  >= R_INST_PATH_LEN && 
+    if(count  >= R_INST_PATH_LEN &&
             count  <= FILETYPE_PATH_LEN &&
             e_hdl  != ENTITY_HDL_UNDEFINED &&
             r_type != RESOURCE_TYPE_UNDEFINED &&
@@ -551,7 +552,7 @@ static void fuse_get_resource_handle(
         /** get number of resources per entity */
         uint_t             r_size = sdi_entity_resource_count_get(e_hdl, r_type);
         sdi_resource_hdl_t arr[r_size];
-        
+
         memset(&res_struct, 0, sizeof(res_struct));
         res_struct.resource_type    = r_type;
         res_struct.resource_hdl_tbl = arr;
@@ -561,24 +562,24 @@ static void fuse_get_resource_handle(
             /** number of resources = r_inst, index into table is r_inst-1 */
             r_hdl = arr[r_inst - 1];
         }
-    } 
-    
+    }
+
     node->fuse_resource_hdl = r_hdl;
     return;
 }
 
 
 /*
- * Method to get the fuse file mode 
+ * Method to get the fuse file mode
  */
 static void fuse_get_mode(
-        dev_node_t          *node, 
-        std_parsed_string_t tokens, 
+        dev_node_t          *node,
+        std_parsed_string_t tokens,
         int                 count
         )
 {
     if(count == FILETYPE_PATH_LEN) {
-        
+
         node->st_mode = FUSE_FILE_MODE_RW;
         return;
     }
@@ -589,11 +590,11 @@ static void fuse_get_mode(
 
 
 /*
- * Method to get the file size 
+ * Method to get the file size
  */
 static void fuse_get_size (
-        dev_node_t          *node, 
-        std_parsed_string_t tokens, 
+        dev_node_t          *node,
+        std_parsed_string_t tokens,
         int                 count
         )
 {
@@ -609,16 +610,16 @@ static void fuse_get_size (
 
 
 /*
- * Method to retrieve filetype 
+ * Method to retrieve filetype
  */
 static void fuse_get_filetype (
-        dev_node_t          *node, 
-        std_parsed_string_t tokens, 
+        dev_node_t          *node,
+        std_parsed_string_t tokens,
         int                 count)
 {
     uint_t filetype = FUSE_SDI_DEVICE_DIR;
 
-    if(count == FILETYPE_PATH_LEN) { 
+    if(count == FILETYPE_PATH_LEN) {
 
         int                   r_file_node = 0;
         sdi_resource_type_t   r_type      = node->fuse_resource_type;
@@ -626,11 +627,11 @@ static void fuse_get_filetype (
         const char            *filename   = std_parse_string_at(tokens, FILETYPE_PATH_LEN);
 
         /** for each resource filetype, register filespec in db */
-        for (r_file_node = fuse_resource_filetype_min(r_type);                
+        for (r_file_node = fuse_resource_filetype_min(r_type);
                 r_file_node < fuse_resource_filetype_max(r_type);
                 r_file_node++) {
 
-            if( r_type != RESOURCE_TYPE_UNDEFINED && 
+            if( r_type != RESOURCE_TYPE_UNDEFINED &&
                     r_hdl != RESOURCE_HDL_UNDEFINED) {
 
                 if(0 == strcmp(filename, resource_files[r_type].filename_map[r_file_node].filename)) {
@@ -654,11 +655,11 @@ static void fuse_get_filetype (
 
 
 /*
- * Method to retrieve number of links 
+ * Method to retrieve number of links
  */
 static void fuse_get_nlink (
-        dev_node_t          *node, 
-        std_parsed_string_t tokens, 
+        dev_node_t          *node,
+        std_parsed_string_t tokens,
         int                 count
         )
 {
@@ -666,13 +667,13 @@ static void fuse_get_nlink (
 
     switch(count)
     {
-        case FUSE_PATH_LEN    : 
+        case FUSE_PATH_LEN    :
             {
                 nlink += ARRAY_SIZE(valid_entity_types);
                 break;
             }
 
-        case E_TYPE_PATH_LEN  : 
+        case E_TYPE_PATH_LEN  :
             {
                 sdi_entity_type_t e_type = node->fuse_entity_type;
                 if(e_type != ENTITY_TYPE_UNDEFINED) {
@@ -681,7 +682,7 @@ static void fuse_get_nlink (
                 }
                 break;
             }
-    
+
         case E_INST_PATH_LEN  :
             {
                 sdi_entity_hdl_t e_hdl  = node->fuse_entity_hdl;
@@ -699,7 +700,7 @@ static void fuse_get_nlink (
                 }
                 break;
             }
-    
+
         case R_TYPE_PATH_LEN :
             {
                 sdi_entity_hdl_t    e_hdl   = node->fuse_entity_hdl;
@@ -719,8 +720,8 @@ static void fuse_get_nlink (
                     }
                 }
                 break;
-            } 
-    
+            }
+
         case R_INST_PATH_LEN :
             {
                 sdi_resource_type_t r_type  = node->fuse_resource_type;
@@ -736,9 +737,9 @@ static void fuse_get_nlink (
                         nlink += fuse_resource_filetype_max(r_type);
                     }
                 }
-                break;    
+                break;
             }
-    
+
         default: node->st_nlink = 0; return;
     }
 
@@ -747,8 +748,8 @@ static void fuse_get_nlink (
 
 /** Method to retrieve entity presence */
 static void fuse_get_entity_presence (
-        dev_node_t          *node, 
-        std_parsed_string_t tokens, 
+        dev_node_t          *node,
+        std_parsed_string_t tokens,
         int                 count
         )
 {
@@ -757,7 +758,7 @@ static void fuse_get_entity_presence (
 
     if(count >= E_TYPE_PATH_LEN &&
             count <= FILETYPE_PATH_LEN &&
-            e_hdl != ENTITY_HDL_UNDEFINED) { 
+            e_hdl != ENTITY_HDL_UNDEFINED) {
 
         if(STD_ERR_OK == sdi_entity_presence_get(e_hdl, &presence)) {
 
@@ -771,35 +772,35 @@ static void fuse_get_entity_presence (
 
 
 static std_parsed_string_t delim_tokenize(
-        char       *a_str, 
+        char       *a_str,
         const char *a_delim,
         size_t     *count
         )
 {
-    
+
     std_parsed_string_t handle;
-    
+
     if(!std_parse_string(&handle, a_str, a_delim)) {
 
         std_parse_string_free(handle);
         return NULL;
     }
-   
+
     /** count value is used in other functions */
     *count   = std_parse_string_num_tokens(handle) - 1;
-    
+
     return handle;
 }
-    
+
 
 /** Internal helper method to validate paths */
 static bool validate_path_format(
-        std_parsed_string_t tokens, 
+        std_parsed_string_t tokens,
         int                 count
         )
 {
     /** validate entity type in path */
-    bool e_type_valid = false;   
+    bool e_type_valid = false;
     if(count >= E_TYPE_PATH_LEN) {
 
         uint_t i                  = 0;
@@ -830,7 +831,7 @@ static bool validate_path_format(
         if(dn_pas_fuse_atoui((const char *) entity_inst, &uval)) {
 
             if(uval > 0) {
-                
+
                 e_inst_valid = true;
             }
         }
@@ -842,7 +843,7 @@ static bool validate_path_format(
     }
 
     /** validate resource type in path */
-    bool r_type_valid = false;   
+    bool r_type_valid = false;
     if(count >= R_TYPE_PATH_LEN) {
 
         uint_t             i = 0;
@@ -864,7 +865,7 @@ static bool validate_path_format(
     }
 
     /** validate resource instance in path */
-    bool r_inst_valid = false;   
+    bool r_inst_valid = false;
     if(count >= R_INST_PATH_LEN) {
 
         uint_t       uval           = 0;
@@ -873,7 +874,7 @@ static bool validate_path_format(
         if(dn_pas_fuse_atoui((const char *) resource_inst, &uval)) {
 
             if(uval > 0) {
-                
+
                 r_inst_valid = true;
             }
         }
@@ -905,7 +906,7 @@ static bool validate_path_format(
 
 /** Method to parse the path in realtime and make a valid node from it */
 void dn_pas_fuse_realtime_parser (
-        dev_node_t *node, 
+        dev_node_t *node,
         char       *path
         )
 {
@@ -918,8 +919,8 @@ void dn_pas_fuse_realtime_parser (
     char temp_path[FUSE_FUSE_MAX_PATH];
     if(!safestrncpy(temp_path, path, FUSE_FUSE_MAX_PATH)) {
         return;
-    }      
-    
+    }
+
     /** Root node handling */
     if(strcmp(temp_path, "/") == 0) {
         if(!safestrncpy(node->path, temp_path, FUSE_FUSE_MAX_PATH)) {
@@ -955,7 +956,7 @@ void dn_pas_fuse_realtime_parser (
         node->fuse_resource_instance = RESOURCE_INSTANCE_UNDEFINED;
         node->fuse_resource_hdl      = RESOURCE_HDL_UNDEFINED;
         node->fuse_entity_presence   = false;
-        node->st_mode                = FUSE_FILE_MODE_RW;   
+        node->st_mode                = FUSE_FILE_MODE_RW;
         node->get_st_size            = fuse_default_file_size;
         node->st_nlink               = 0;
         node->fuse_filetype          = FUSE_DIAG_MODE_FILETYPE;
@@ -976,7 +977,7 @@ void dn_pas_fuse_realtime_parser (
         node->fuse_resource_instance = RESOURCE_INSTANCE_UNDEFINED;
         node->fuse_resource_hdl      = RESOURCE_HDL_UNDEFINED;
         node->fuse_entity_presence   = false;
-        node->st_mode                = FUSE_FILE_MODE_RW;   
+        node->st_mode                = FUSE_FILE_MODE_RW;
         node->get_st_size            = fuse_default_file_size;
         node->st_nlink               = 0;
         node->fuse_filetype          = FUSE_DIR_MODE_DEFAULT;
@@ -986,7 +987,7 @@ void dn_pas_fuse_realtime_parser (
 
     /** Tokenize the path */
     tokens = delim_tokenize(temp_path, "/", &count);
-    
+
     do {
         if (tokens == 0) break;
 
@@ -1001,7 +1002,7 @@ void dn_pas_fuse_realtime_parser (
         /** make a valid node from path */
         if(!safestrncpy(node->path, path, FUSE_FUSE_MAX_PATH)) {
             node->valid = false;
-            break;  
+            break;
         }
 
         fuse_get_entity_type(node, tokens, count);
@@ -1018,14 +1019,14 @@ void dn_pas_fuse_realtime_parser (
         node->valid = true;
 
         /** Node correctness */
-        if(count > FILETYPE_PATH_LEN || 
-                (count == E_TYPE_PATH_LEN && 
+        if(count > FILETYPE_PATH_LEN ||
+                (count == E_TYPE_PATH_LEN &&
                  node->fuse_entity_type == ENTITY_TYPE_UNDEFINED) ||
-                (count == E_INST_PATH_LEN && 
+                (count == E_INST_PATH_LEN &&
                  node->fuse_entity_hdl == ENTITY_HDL_UNDEFINED) ||
-                (count == R_TYPE_PATH_LEN && 
+                (count == R_TYPE_PATH_LEN &&
                  node->fuse_resource_type == RESOURCE_TYPE_UNDEFINED) ||
-                (count == R_INST_PATH_LEN && 
+                (count == R_INST_PATH_LEN &&
                  node->fuse_resource_hdl == RESOURCE_HDL_UNDEFINED)) {
 
             memset(node, 0, sizeof(dev_node_t));
@@ -1036,7 +1037,7 @@ void dn_pas_fuse_realtime_parser (
 
         /** Test entity presence */
         bool presence = true;
-        if(count >= E_INST_PATH_LEN && 
+        if(count >= E_INST_PATH_LEN &&
                 STD_ERR_OK == sdi_entity_presence_get(node->fuse_entity_hdl, &presence)) {
 
             if(presence == false) {
@@ -1062,7 +1063,7 @@ void dn_pas_fuse_realtime_parser (
         }
 
         /** Test media presence */
-        if(count >= R_INST_PATH_LEN && 
+        if(count >= R_INST_PATH_LEN &&
                 node->fuse_resource_type == SDI_RESOURCE_MEDIA &&
                 STD_ERR_OK == sdi_media_presence_get(node->fuse_resource_hdl, &presence)) {
 
@@ -1080,10 +1081,10 @@ void dn_pas_fuse_realtime_parser (
 }
 
 /*
- * Internal helper functon to send sub directory inforation to FUSE 
+ * Internal helper functon to send sub directory inforation to FUSE
  */
 static void send_to_fuse_filler(
-        char            *temp_path, 
+        char            *temp_path,
         char            *subdir_root,
         fuse_fill_dir_t filler,
         void            *buf
@@ -1106,8 +1107,8 @@ static void send_to_fuse_filler(
  * Method to retrieve the sub-directory list, only children, grand-children will be avoided
  */
 void dn_pas_fuse_get_subdir_list(
-        void            *node, 
-        void            *buf, 
+        void            *node,
+        void            *buf,
         fuse_fill_dir_t filler
         )
 {
@@ -1120,7 +1121,7 @@ void dn_pas_fuse_get_subdir_list(
 
     if (strncmp(subdir_root, FUSE_DIR_NAME_BASE, FUSE_FUSE_MAX_PATH) != 0) {
 
-        strncat(subdir_root, 
+        strncat(subdir_root,
                 FUSE_DIR_NAME_BASE,
                 FUSE_FUSE_MAX_PATH - 1);
     }
@@ -1128,7 +1129,7 @@ void dn_pas_fuse_get_subdir_list(
 
     /* print subdirs  */
     filler(buf, FUSE_DIR_NAME_DEFAULT1, NULL, 0);
-    filler(buf, FUSE_DIR_NAME_DEFAULT2, NULL, 0); 
+    filler(buf, FUSE_DIR_NAME_DEFAULT2, NULL, 0);
 
 
     if(parent_node->fuse_resource_hdl != RESOURCE_HDL_UNDEFINED) {
@@ -1148,7 +1149,7 @@ void dn_pas_fuse_get_subdir_list(
                     parent_node->path,
                     resource_files[r_type].filename_map[i].filename);
 
-            send_to_fuse_filler(temp_path, subdir_root, filler, buf); 
+            send_to_fuse_filler(temp_path, subdir_root, filler, buf);
         }
 
 
@@ -1169,7 +1170,7 @@ void dn_pas_fuse_get_subdir_list(
                     parent_node->path,
                     i+1);
 
-            send_to_fuse_filler(temp_path, subdir_root, filler, buf); 
+            send_to_fuse_filler(temp_path, subdir_root, filler, buf);
         }
 
 
@@ -1190,7 +1191,7 @@ void dn_pas_fuse_get_subdir_list(
                         parent_node->path,
                         valid_resource_types[i].name);
 
-                send_to_fuse_filler(temp_path, subdir_root, filler, buf); 
+                send_to_fuse_filler(temp_path, subdir_root, filler, buf);
             }
         }
 
@@ -1211,7 +1212,7 @@ void dn_pas_fuse_get_subdir_list(
                         parent_node->path,
                         j+1);
 
-                send_to_fuse_filler(temp_path, subdir_root, filler, buf); 
+                send_to_fuse_filler(temp_path, subdir_root, filler, buf);
             }
         }
 
@@ -1229,7 +1230,7 @@ void dn_pas_fuse_get_subdir_list(
                     parent_node->path,
                     valid_entity_types[i].name);
 
-            send_to_fuse_filler(temp_path, subdir_root, filler, buf); 
+            send_to_fuse_filler(temp_path, subdir_root, filler, buf);
         }
 
         /** Adding Diagnostic mode file to the subdir list */
@@ -1239,6 +1240,6 @@ void dn_pas_fuse_get_subdir_list(
                     parent_node->path,
                     "diag_mode");
 
-        send_to_fuse_filler(temp_path, subdir_root, filler, buf); 
+        send_to_fuse_filler(temp_path, subdir_root, filler, buf);
     }
 }

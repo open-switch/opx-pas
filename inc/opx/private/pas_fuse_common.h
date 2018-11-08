@@ -50,7 +50,7 @@ enum {
     FUSE_DIR_MODE_DEFAULT            = (S_IFDIR | 0755),
 
     /** default size of FUSE (non-directory) file */
-    FUSE_FILE_DEFAULT_SIZE           = 128,
+    FUSE_FILE_DEFAULT_SIZE           = 256,
 
     /** default number of entries of FUSE (non-directory) file */
     FUSE_FILE_NUM_DEFAULT            = 1,
@@ -162,7 +162,7 @@ typedef enum {
 
 /** Enum to specify media filetypes. Used to redirect FUSE read/write handlers to appropriate SDI calls */
 typedef enum {
- 
+
     FUSE_MEDIA_FILETYPE_PRESENCE,
     FUSE_MEDIA_FILETYPE_TEMP_HIGH_ALARM_STATUS,
     FUSE_MEDIA_FILETYPE_TEMP_LOW_ALARM_STATUS,
@@ -245,6 +245,7 @@ typedef enum {
 
     FUSE_MEDIA_FILETYPE_EEPROM_CURSOR,
     FUSE_MEDIA_FILETYPE_EEPROM_DATA,
+    FUSE_MEDIA_FILETYPE_EEPROM_PAGE_DUMP,
 
     FUSE_MEDIA_FILETYPE_MAX,
     FUSE_MEDIA_FILETYPE_MIN = FUSE_MEDIA_FILETYPE_PRESENCE
@@ -259,7 +260,7 @@ typedef struct dev_node_struct {
 
     mode_t              st_mode;                   /** type of node and permissions */
     nlink_t             st_nlink;                  /** number of hard links */
-    off_t               (*get_st_size)(struct dev_node_struct *);    /** function to determine the size of the file */      
+    off_t               (*get_st_size)(struct dev_node_struct *);    /** function to determine the size of the file */
     char                path[FUSE_FUSE_MAX_PATH];  /** directory path */
     sdi_entity_type_t   fuse_entity_type;          /** physical interface class type */
     sdi_entity_hdl_t    fuse_entity_hdl;           /** identifier for class instance */
@@ -275,8 +276,8 @@ typedef struct dev_node_struct {
 
 
 /* Retrieve the fields and print them into a buffer */
-void dn_pas_fuse_print(char *buf, uint_t size, size_t *len, int *res, 
-        char *format, ...); 
+void dn_pas_fuse_print(char *buf, uint_t size, size_t *len, int *res,
+        char *format, ...);
 
 /** get mode for the file */
 int dn_pas_fuse_get_mode(dev_node_t * node, mode_t * mode);

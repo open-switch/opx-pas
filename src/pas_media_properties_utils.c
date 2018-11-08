@@ -31,15 +31,16 @@
 #include <stdlib.h>
 #include "std_utils.h"
 
-#include "std_utils.h"
-
 #define QSFP_PLUS_40G_BIDI_PART_NUMBER "AFBR-79EBPZ-CS"
 
 /* Function to construct the display string from a series of attibutes */
 /* Consumer services will add extra string if QSA detected  */
 
-static void pas_media_construct_display_string (dn_pas_basic_media_info_t*
-                                                   media_info)
+
+static void pas_media_construct_base_display_string (dn_pas_basic_media_info_t*
+                                                   media_info, char separator,
+                                                      char* output, size_t len)
+
 {
     char far_end_str[10]  = {0};
     char speed_str[20]    = {0};
@@ -47,9 +48,8 @@ static void pas_media_construct_display_string (dn_pas_basic_media_info_t*
     char media_if_str[20] = {0};
     char prefix_str[5]    = {0};
     char postfix_str[5]   = {0};
-    const char* qsa_str   = NULL;
 
-    const char fc_str[]   = " FC";
+    const char fc_str[]   = "-FC";
     const char* trans_str =
             pas_media_get_transceiver_type_display_string(media_info->transceiver_type);
     const char* media_interface_str =
@@ -74,55 +74,65 @@ static void pas_media_construct_display_string (dn_pas_basic_media_info_t*
 
     if (far_end > 1){
         snprintf (far_end_str, sizeof(far_end_str), "%ux(", far_end);
-    }
-    if (media_info->media_interface_prefix > 1){
+    } else if (media_info->media_interface_prefix > 1){
+
+        post_fix /= media_info->media_interface_prefix;
         snprintf (prefix_str, sizeof(prefix_str), "%d",
               media_info->media_interface_prefix);
+
+        snprintf (far_end_str, sizeof(far_end_str), "%ux", media_info->media_interface_prefix);
+        brk_speed /= media_info->media_interface_prefix;
     }
+
     if (post_fix > 1) {
         snprintf (postfix_str, sizeof(postfix_str), "%d", post_fix);
     }
 
     if (media_interface_qualifier_str[0] == '\0'){
-        snprintf (media_if_str, sizeof(media_if_str)," %s%s%s", prefix_str,
+        snprintf (media_if_str, sizeof(media_if_str),"%c%s%s%s", separator, prefix_str,
               media_interface_str, postfix_str);
     } else {
-        snprintf (media_if_str, sizeof(media_if_str)," %s%s%s %s", prefix_str,
-              media_interface_str, postfix_str, media_interface_qualifier_str);
+        snprintf (media_if_str, sizeof(media_if_str),"%c%s%s%s%c%s", separator, prefix_str,
+               media_interface_str, postfix_str, separator, media_interface_qualifier_str);
     }
 
     if (brk_speed > 0){
         snprintf (speed_str, sizeof(speed_str)," %s%d%cBASE%s", far_end_str
               , brk_speed
-              , brk_speed_unit 
+              , brk_speed_unit
               , (media_info->capability_list[0].phy_mode
                                == BASE_IF_PHY_MODE_TYPE_FC) ? fc_str : "");
     }
+
     if (media_info->cable_length_cm > 0) {
-        snprintf(length_str, sizeof(length_str)," %.1fM",
-                ((float)(media_info->cable_length_cm))/100.0);
-        snprintf(media_info->display_string,
-                sizeof(media_info->display_string),"%s%s%s%s%s",
+        snprintf(length_str, sizeof(length_str),"%c%.1fM",
+                separator, ((float)(media_info->cable_length_cm))/100.0);
+        snprintf(output, len,"%s%s%s%s%s",
                         trans_str, speed_str, media_if_str,(far_end > 1) ? ")" :"", length_str);
     }else {
-        snprintf(media_info->display_string,
-                sizeof(media_info->display_string),"%s%s%s%s",
+        snprintf(output, len,"%s%s%s%s",
                         trans_str, speed_str, media_if_str, (far_end > 1) ? ")" :"");
-    }
-
-    qsa_str = pas_media_get_qsa_string_from_enum(media_info->qsa_adapter_type);
-    if (qsa_str != NULL){
-        if (strlen(media_info->display_string) + strlen(qsa_str) <  sizeof(media_info->display_string)){
-            strcat(media_info->display_string, qsa_str);
-        } else {
-            PAS_ERR ("Unable to append QSA info %s to display name %s ; because name too long for buffer",
-                qsa_str, media_info->display_string);
-        }
     }
 }
 
+/* After creating display string, add the adapter info if it exists */
+static void pas_media_append_adapter_info(dn_pas_basic_media_info_t* media_info, char* output, size_t len)
+{
+    const char* qsa_str = pas_media_get_qsa_string_from_enum(media_info->qsa_adapter_type);
+     if (qsa_str != NULL){
+        if (strlen(output) + strlen(qsa_str) <  len){
+            strcat(output, qsa_str);
+         } else {
+            PAS_ERR ("Unable to append QSA info %s to media display string %s ; because name too long for buffer",
+                qsa_str, output);
+         }
+     }
+ }
+
+
 /* Get the cable length in cm */
 /* Need enhancement */
+
 
 uint_t pas_media_get_cable_length_cm (phy_media_tbl_t *mtbl)
 {
@@ -194,6 +204,10 @@ static bool pas_media_populate_basic_media_info(
                                 cab2 = PLATFORM_MEDIA_CABLE_TYPE_UNKNOWN;
     bool no_qual = true;
 
+    if (media_info->ext_spec_code_25g_dac == PLATFORM_EXT_SPEC_COMPLIANCE_CODE_UNKNOWN){
+        media_info->ext_spec_code_25g_dac = PLATFORM_EXT_SPEC_COMPLIANCE_CODE_NOT_APPLICABLE;
+    }
+
     conn_from_eeprom = pas_media_get_media_connector_enum(raw_conn);
     conn1 = pas_media_get_media_interface_connector_type_expected(
             media_info->media_interface);
@@ -211,11 +225,9 @@ static bool pas_media_populate_basic_media_info(
             cab2 = pas_media_get_media_interface_qualifier_cable_type_expected(
                   media_info->media_interface_qualifier);
         }
-        media_info->cable_type = cab2;
         no_qual = false;
-    } else {
-        media_info->cable_type = cab1;
     }
+    media_info->cable_type = (cab2 == PLATFORM_MEDIA_CABLE_TYPE_UNKNOWN) ? cab1: cab2;
 
     media_info->connector_type = ((conn_from_eeprom
                 == PLATFORM_MEDIA_CONNECTOR_TYPE_UNKNOWN)
@@ -243,21 +255,23 @@ bool pas_media_get_media_properties(phy_media_tbl_t *mtbl)
 {
     dn_pas_basic_media_info_t* media_info = &(mtbl->media_info);
     media_info->transceiver_type      = 0;
-    media_info->connector_type        = 0;
-    media_info->cable_type            = 0;
-    media_info->media_interface       = 0;
-    media_info->media_interface_qualifier = 0;
-    media_info->media_interface_lane_count = 0;
-    media_info->media_interface_prefix = 0;
+    media_info->connector_type        = PLATFORM_MEDIA_CONNECTOR_TYPE_UNKNOWN;
+    media_info->cable_type            = PLATFORM_MEDIA_CABLE_TYPE_UNKNOWN;
+    media_info->media_interface       = PLATFORM_MEDIA_INTERFACE_UNKNOWN;
+    media_info->media_interface_qualifier = PLATFORM_MEDIA_INTERFACE_QUALIFIER_UNKNOWN;
+    media_info->media_interface_lane_count = 1;
+    media_info->media_interface_prefix = 1;
     media_info->cable_length_cm      = 0;
     media_info->connector_separable  = false;
-    media_info->default_autoneg = 0;
+    media_info->default_autoneg = BASE_IF_SUPPORTED_AUTONEG_OFF_SUPPORTED;
     media_info->default_fec = 0;
-    media_info->qsa_adapter_type = 0;
+    media_info->qsa_adapter_type = PLATFORM_QSA_ADAPTER_UNKNOWN;
+    media_info->ext_spec_code_25g_dac = PLATFORM_EXT_SPEC_COMPLIANCE_CODE_UNKNOWN;
     media_info->qsa28_expected = false;
 
+    char temp_override_str[sizeof(media_info->media_name)] = {0};
 
-    pas_media_disc_cb_t disc_cb      = NULL;   
+    pas_media_disc_cb_t disc_cb      = NULL;
     bool ret                         = false;
 
     media_info->transceiver_type      = mtbl->res_data->category;
@@ -282,8 +296,10 @@ bool pas_media_get_media_properties(phy_media_tbl_t *mtbl)
         return false;
     }
     safestrncpy(media_info->transceiver_type_string,
-                pas_media_get_transceiver_type_display_string(media_info->transceiver_type),
-                          sizeof(media_info->transceiver_type_string));
+                  (mtbl->res_data->port_type == PLATFORM_PORT_TYPE_FIXED)
+                  ? "RJ45"
+                  : pas_media_get_transceiver_type_display_string(media_info->transceiver_type),
+                      sizeof(media_info->transceiver_type_string));
     ret = disc_cb (mtbl, media_info);
 
     /* to do capability stuff */
@@ -294,13 +310,40 @@ bool pas_media_get_media_properties(phy_media_tbl_t *mtbl)
     }
     media_info->cable_length_cm = (media_info->connector_separable) ? 0 : pas_media_get_cable_length_cm(mtbl);
 
+    /* This forces anything that either has no breakout or is 1x1, to be 1x1*/
+    if (pas_media_map_get_breakout_far_end_val(media_info->capability_list[0].breakout_mode) <= 1) {
+        media_info->capability_list[0].breakout_mode = BASE_CMN_BREAKOUT_TYPE_BREAKOUT_1X1;
+        mtbl->res_data->media_capabilities[0].breakout_mode = BASE_CMN_BREAKOUT_TYPE_BREAKOUT_1X1;
+    }
 
     media_info->qsa_adapter_type =  mtbl->res_data->qsa_adapter_type;
 
     media_info->qsa28_expected = ((media_info->qsa_adapter_type == PLATFORM_QSA_ADAPTER_QSA)
                                  && (media_info->capability_list[0].media_speed == BASE_IF_SPEED_25GIGE));
 
-    pas_media_construct_display_string(media_info);
+    /* Naming logic: Media name is used between applications to quickly refer to media
+       Media names follow a strict convention that does should never change
+       However the display string (which is what the user sees) may be slightly or completely different form the media name used by apps.
+       In most cases, display string only differs by the use of hyphens instead of spaces.
+       However in some cases, a very different string is needed, so overrides are used */
+
+    /* Media name uses spaces*/
+    pas_media_construct_base_display_string(media_info, ' ', media_info->media_name, sizeof(media_info->media_name));
+
+    /* Get media override */
+    safestrncpy(temp_override_str, pas_media_get_media_name_override_from_derived_name(media_info->media_name)
+                                                    , sizeof (temp_override_str));
+
+    /*If no override exists, PAS_MEDIA_UNKNOWN_MEDIA is returned. In this case, create the display string using hyphens. Else copy the override string  */
+    if (strncmp(temp_override_str, PAS_MEDIA_UNKNOWN_MEDIA, strlen(PAS_MEDIA_UNKNOWN_MEDIA)) == 0){
+        pas_media_construct_base_display_string(media_info, '-', media_info->display_string, sizeof(media_info->display_string));
+    } else {
+        safestrncpy(media_info->display_string, temp_override_str, sizeof(media_info->display_string));
+     }
+
+    /* Append extra info to display string */
+    pas_media_append_adapter_info(media_info, media_info->display_string, sizeof(media_info->display_string));
+
     pas_media_resolve_autoneg(mtbl);
 
     if ((media_info->display_string)[0] == '\0') {
@@ -312,7 +355,11 @@ bool pas_media_get_media_properties(phy_media_tbl_t *mtbl)
         mtbl->res_data->type = pas_media_get_enum_from_new_media_name (media_info->display_string);
     }
 
-    /* For now, media name is same as display str*/
-    safestrncpy(media_info->media_name, media_info->display_string, sizeof(media_info->media_name));
+    /* Update res_data struct */
+    memcpy(&(mtbl->res_data->media_capabilities[0]),
+               &(media_info->capability_list[0]),
+                    sizeof(media_capability_t));
+    mtbl->res_data->capability = media_info->capability_list[0].media_speed;
+
     return ret;
 }

@@ -32,6 +32,9 @@
 static uint_t dn_pas_media_pas_id_get (const sdi_to_pas_map_t *pmap,
         uint_t count, uint_t id);
 static PLATFORM_MEDIA_TYPE_t dn_pas_sfp_media_type_find (pas_media_t *res_data);
+
+uint_t dn_pas_media_convert_speed_to_num (BASE_IF_SPEED_t speed);
+
 /*
  * identifier to pas media category map table.
  */
@@ -46,8 +49,6 @@ static const sdi_to_pas_map_t id_to_category [] = {
     {0x12, PLATFORM_MEDIA_CATEGORY_CXP28},
     {0x18, PLATFORM_MEDIA_CATEGORY_QSFP_DD}
 };
-
-uint_t dn_pas_media_convert_speed_to_num (BASE_IF_SPEED_t speed);
 
 /*
  * SDI speed types to BASE interface speed types map table.
@@ -120,6 +121,7 @@ static const sdi_to_pas_map_t  media_sfp_gige_type_tbl [] = {
     {0x40, PLATFORM_MEDIA_TYPE_SFP_BX10},
     {0x80, PLATFORM_MEDIA_TYPE_SFP_PX}
 };
+
 
 static const media_type_to_breakout_map_t media_type_to_breakout_tbl[] = {
     {PLATFORM_MEDIA_TYPE_QSFPPLUS_4X16_16GBASE_FC_SW,
@@ -350,7 +352,7 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_sfp_media_type_find (pas_media_t *res_data)
 
                 optics_type = PLATFORM_MEDIA_TYPE_SFP_ZX;
             } else if (pas_id == PLATFORM_MEDIA_TYPE_SFP_BX10) {
-                if ((res_data->wavelength == 0x051E) 
+                if ((res_data->wavelength == 0x051E)
                         && (res_data->length_sfm_km == 0xA)) {
                     optics_type = PLATFORM_MEDIA_TYPE_SFP_BX10_UP;
                 } else if ((res_data->wavelength == 0x051E)
@@ -368,7 +370,7 @@ static PLATFORM_MEDIA_TYPE_t dn_pas_sfp_media_type_find (pas_media_t *res_data)
                 } else if ((res_data->wavelength == 0x060E)
                         && (res_data->length_sfm_km == 0x50)) {
                     optics_type = PLATFORM_MEDIA_TYPE_SFP_BX80_DOWN;
-                } 
+                }
             }
 
         } else if ((res_data->wavelength != 0xFFFF)
@@ -457,6 +459,7 @@ BASE_IF_SPEED_t dn_pas_max_fc_supported_speed(uint8_t sfp_fc_speed)
     }
     return BASE_IF_SPEED_0MBPS;
 }
+
 
 
 static PLATFORM_MEDIA_TYPE_t dn_pas_std_optics_type_get (pas_media_t *res_data)
@@ -713,7 +716,7 @@ PLATFORM_MEDIA_TYPE_t dn_pas_media_type_get (pas_media_t *res_data)
         && (ptr->sfp_descr.sdi_sfp_eth_10g_code == PAS_SFP_INVALID_GIGE_CODE)
         && (ptr->sfp_descr.sdi_sfp_eth_1g_code != PAS_SFP_INVALID_GIGE_CODE)
         && (ptr->sfp_descr.sdi_sfp_plus_cable_technology == PAS_SFP_INVALID_GIGE_CODE)) {
-        
+
         /* Must also not be 4,8,16,32GFC.
            Anything higher will never get to this portion of code anyways so no need to check */
         switch (dn_pas_max_fc_supported_speed(ptr->sfp_descr.sdi_sfp_fc_speed)){
@@ -722,7 +725,7 @@ PLATFORM_MEDIA_TYPE_t dn_pas_media_type_get (pas_media_t *res_data)
         case BASE_IF_SPEED_16GFC:
         case BASE_IF_SPEED_32GFC:
             break;
-            
+
         default:
             /* Has to be SFP at this point */
             res_data->category = PLATFORM_MEDIA_CATEGORY_SFP;
@@ -731,9 +734,8 @@ PLATFORM_MEDIA_TYPE_t dn_pas_media_type_get (pas_media_t *res_data)
         }
     }
 
-    
     if(op_type == PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_SW) {
-        
+
         if(res_data->wavelength == 1310 && res_data->length_sfm_km == 10) {
             op_type = PLATFORM_MEDIA_TYPE_SFPPLUS_8GBASE_FC_LW;
         }
@@ -840,7 +842,7 @@ sdi_media_type_t dn_pas_to_sdi_type_conv (PLATFORM_MEDIA_TYPE_t type)
  * dn_pas_media_capability_get is to get the media capability
  *
  * When non separable media with fc features is detected, eth speed is chosen
- * This will be changed when multi-mode support us enabled 
+ * This will be changed when multi-mode support us enabled
  */
 
 BASE_IF_SPEED_t dn_pas_media_capability_get (phy_media_tbl_t *mtbl)
@@ -981,7 +983,7 @@ bool dn_pas_is_media_unsupported (phy_media_tbl_t *mtbl, bool log_msg)
     speed_in_num = dn_pas_media_convert_speed_to_num(mtbl->res_data->capability);
 
     result = (separable) && (speed_in_num > reference_speed_in_num);
-    
+
     return result;
 }
 
@@ -1097,7 +1099,7 @@ uint_t dn_pas_media_convert_speed_to_num (BASE_IF_SPEED_t speed)
 }
 
 bool dn_pas_media_is_physical_breakout_valid (pas_media_t* res_data)
-{ 
+{
     if ((res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_PLUS)
        || (res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP28)
      /*|| (res_data->category == PLATFORM_MEDIA_CATEGORY_QSFP_DD) //Not yet supported  */
@@ -1107,7 +1109,7 @@ bool dn_pas_media_is_physical_breakout_valid (pas_media_t* res_data)
     return false;
 }
 
-BASE_IF_SPEED_t dn_pas_media_resolve_breakout_speed(BASE_IF_SPEED_t media_speed, 
+BASE_IF_SPEED_t dn_pas_media_resolve_breakout_speed(BASE_IF_SPEED_t media_speed,
                     BASE_CMN_BREAKOUT_TYPE_t brk)
 {
     uint_t divisor = 1;
@@ -1115,6 +1117,7 @@ BASE_IF_SPEED_t dn_pas_media_resolve_breakout_speed(BASE_IF_SPEED_t media_speed,
                                            media_speed);
 
     switch (brk) {
+        case BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X1:
         case BASE_CMN_BREAKOUT_TYPE_BREAKOUT_8X2:
             divisor = 8;
             break;
@@ -1194,7 +1197,7 @@ BASE_CMN_BREAKOUT_TYPE_t dn_pas_media_get_default_breakout_info(
                           brk_speed,
              dn_pas_media_get_phy_mode_from_speed(media_speed)))
         {
-            PAS_ERR("Could not set capability, port(s): %s" , mtbl->port_str); 
+            PAS_ERR("Could not set capability, port(s): %s" , mtbl->port_str);
         }
         return cap->breakout_mode;
     }
@@ -1218,7 +1221,7 @@ BASE_CMN_BREAKOUT_TYPE_t dn_pas_media_get_default_breakout_info(
             PAS_ERR("Capability set failed, ports(s): %s", mtbl->port_str);
         }
         return brk_map->breakout_mode;
-    } 
+    }
 
     switch (mtbl->res_data->free_side_dev_prop) {
         case 0x10:
@@ -1241,6 +1244,7 @@ BASE_CMN_BREAKOUT_TYPE_t dn_pas_media_get_default_breakout_info(
         default:
             brk = BASE_CMN_BREAKOUT_TYPE_BREAKOUT_UNKNOWN;
     }
+
     /* Divides media_speed by breakout to get the breakout speed */
 
     brk_speed = dn_pas_media_resolve_breakout_speed(media_speed, brk);
@@ -1329,7 +1333,7 @@ bool dn_pas_media_is_connector_separable(phy_media_tbl_t *mtbl)
     sdi_media_transceiver_descr_t *trans_desc =
         (sdi_media_transceiver_descr_t *) mtbl->res_data->transceiver;
 
-    /* Pluggable ports are not considered separable 
+    /* Pluggable ports are not considered separable
        Check for 200/100G AOC may be programmed as using optical connector, which is usually considered separable
        Check for 40G AOC for same reason
        Check for non separable connector
@@ -1383,11 +1387,10 @@ PLATFORM_QSA_ADAPTER_t pas_media_get_qsa_adapter_type (phy_media_tbl_t *mtbl)
         case SDI_QSA_ADAPTER_QSA:
             return PLATFORM_QSA_ADAPTER_QSA;
         case SDI_QSA_ADAPTER_QSA28:
-           return PLATFORM_QSA_ADAPTER_QSA28;
+            return PLATFORM_QSA_ADAPTER_QSA28;
         default:
             PAS_ERR("Undefined QSA type/presence on port %u. Oper returned  %u", mtbl->fp_port, adap);
             return PLATFORM_QSA_ADAPTER_UNKNOWN;
     }
 
 }
-

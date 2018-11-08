@@ -31,7 +31,7 @@ opx_pas_service_SOURCES = src/pas_lib.c src/pald.c src/pas_monitor/pas_monitor.c
                        src/pas/pas_media_handler.c src/pas/pas_media_channel_handler.c src/pas/pas_phy_handler.c \
                        src/pas/pas_temperature_handler.c src/pas/pas_media_config_handler.c src/pas/pas_power_monitor_handler.c src/pas_data_store.cpp \
                        src/pas_event.c src/pas_entity.c src/pas_psu.c src/pas_fan_tray.c src/pas_card.c src/pas_fan.c src/pas_media.c src/pas_media_utils.c \
-                       src/pas_utils.c src/pas_config.c src/pas_temp_sensor.c src/pas_led.c src/pas_display.c src/pas_power_monitor.c 
+                       src/pas_utils.c src/pas_config.c src/pas_temp_sensor.c src/pas_led.c src/pas_display.c src/pas_power_monitor.c
 
 opx_pas_service_SOURCES+= src/fuse/pas_fuse_fan.c src/fuse/pas_fuse_common.c src/fuse/pas_fuse_led.c src/fuse/pas_fuse_thermal_sensor.c \
                         src/fuse/pas_fuse_display_led.c src/fuse/pas_fuse_entity_info.c src/fuse/pas_fuse_media.c \
@@ -39,11 +39,11 @@ opx_pas_service_SOURCES+= src/fuse/pas_fuse_fan.c src/fuse/pas_fuse_common.c src
 			src/fuse/pas_fuse_nvram.c
 
 opx_pas_service_SOURCES += src/pas_comm_dev.c src/pas_host_system.c src/pas/pas_comm_dev_handler.c src/pas/pas_host_system_handler.c \
-                        src/pas_log.c src/pas_media_properties_discovery.c src/pas_media_info_map.cpp src/pas_media_properties_utils.c
+                        src/pas_log.c src/pas_media_properties_discovery.c src/pas_media_info_map.cpp src/pas_media_properties_utils.c src/pas_ext_ctrl.c
 
 opx_pas_service_CPPFLAGS= -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top_srcdir)/inc/opx/private -I$(includedir)/opx $(COMMON_HARDEN_FLAGS) $(C_HARDEN_FLAGS)
 opx_pas_service_CXXFLAGS= -std=c++11 $(COMMON_HARDEN_FLAGS)
-opx_pas_service_LDFLAGS= $(LD_HARDEN_FLAGS) 
+opx_pas_service_LDFLAGS= $(LD_HARDEN_FLAGS)
 opx_pas_service_LDADD= libopx_pas.la -lfuse -lopx_common -lopx_sdi_sys -lopx_cps_api_common -lopx_cps_class_map -lrt -lopx_logging -lpthread -lsystemd -ldl
 
 

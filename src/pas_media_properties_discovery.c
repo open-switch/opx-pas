@@ -176,7 +176,7 @@ bool dn_pas_std_media_get_basic_properties_qsfp28(phy_media_tbl_t *mtbl, dn_pas_
         case QSFP_100GBASE_CWDM4:
             media_interface = PLATFORM_MEDIA_INTERFACE_CWDM;
             media_interface_lane_count = PAS_MEDIA_INTERFACE_LANE_COUNT_QUAD;
-            media_interface_qualifier = PLATFORM_MEDIA_INTERFACE_QUALIFIER_NO_QUALIFIER;            
+            media_interface_qualifier = PLATFORM_MEDIA_INTERFACE_QUALIFIER_NO_QUALIFIER;
             break;
         case QSFP_100GBASE_PSM4_IR:
             media_interface = PLATFORM_MEDIA_INTERFACE_PSM;
@@ -233,7 +233,7 @@ bool dn_pas_std_media_get_basic_properties_qsfp28(phy_media_tbl_t *mtbl, dn_pas_
             case QSFP_COPPER_NEAR_FAR_EQ:
             case QSFP_COPPER_FAR_EQ:
             case QSFP_COPPER_NEAR_EQ:
-            case QSFP_COPPER_LINEAR_ACTIVE: 
+            case QSFP_COPPER_LINEAR_ACTIVE:
                 media_interface = PLATFORM_MEDIA_INTERFACE_CR;
                 media_interface_lane_count = PAS_MEDIA_INTERFACE_LANE_COUNT_QUAD;
                 media_interface_qualifier = PLATFORM_MEDIA_INTERFACE_QUALIFIER_NO_QUALIFIER;
@@ -385,7 +385,7 @@ bool dn_pas_std_media_get_basic_properties_sfp_plus(phy_media_tbl_t *mtbl,  dn_p
                     media_interface = PLATFORM_MEDIA_INTERFACE_ER;
                     break;
             }
-            break;    
+            break;
         default:
             break;
     }
@@ -526,7 +526,10 @@ bool dn_pas_std_media_get_basic_properties_qsfp28_depop(phy_media_tbl_t *mtbl, d
     PLATFORM_MEDIA_INTERFACE_QUALIFIER_t media_interface_qualifier = PLATFORM_MEDIA_INTERFACE_QUALIFIER_UNKNOWN;
     uint_t media_interface_lane_count = MEDIA_INTERFACE_LANE_COUNT_DEFAULT;
     PLATFORM_MEDIA_INTERFACE_PREFIX_t media_interface_prefix = PAS_MEDIA_INTERFACE_PREFIX_NORMAL;
+    PLATFORM_EXT_SPEC_COMPLIANCE_CODE_t ext_spec_code =
+            PLATFORM_EXT_SPEC_COMPLIANCE_CODE_NOT_APPLICABLE;
 
+    uint_t options = mtbl->res_data->options;
 
     media_interface = PLATFORM_MEDIA_INTERFACE_CR;
     media_interface_lane_count = PAS_MEDIA_INTERFACE_LANE_COUNT_DOUBLE;
@@ -535,9 +538,25 @@ bool dn_pas_std_media_get_basic_properties_qsfp28_depop(phy_media_tbl_t *mtbl, d
     media_info->media_interface = media_interface;
     media_info->media_interface_qualifier = media_interface_qualifier;
     media_info->media_interface_lane_count = media_interface_lane_count;
-    media_info->media_interface_prefix = media_interface_prefix;    
-    return (media_interface != PLATFORM_MEDIA_INTERFACE_UNKNOWN);
+    media_info->media_interface_prefix = media_interface_prefix;
 
+    switch ((options >> QSFP28_OPTION1_BIT_SHIFT) &
+            (QSFP28_OPTION1_BIT_MASK)) {
+        case PAS_MEDIA_QSFP28_ID_CR4_CA_L:
+            ext_spec_code = PLATFORM_EXT_SPEC_COMPLIANCE_CODE_25GBASE_CR_CA_L;
+            break;
+        case PAS_MEDIA_QSFP28_ID_CR4_CA_S:
+            ext_spec_code = PLATFORM_EXT_SPEC_COMPLIANCE_CODE_25GBASE_CR_CA_S;
+            break;
+        case PAS_MEDIA_QSFP28_ID_CR4_CA_N:
+            ext_spec_code = PLATFORM_EXT_SPEC_COMPLIANCE_CODE_25GBASE_CR_CA_N;
+            break;
+        default:
+            break;
+    }
+
+    media_info->ext_spec_code_25g_dac = ext_spec_code;
+    return (media_interface != PLATFORM_MEDIA_INTERFACE_UNKNOWN);
 }
 
 /*
