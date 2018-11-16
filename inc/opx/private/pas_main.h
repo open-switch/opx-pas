@@ -156,6 +156,11 @@ t_std_error dn_pas_phy_set(cps_api_key_t *key, cps_api_object_t obj);
 
 t_std_error dn_pas_power_monitor_get(cps_api_get_params_t * param, size_t key_idx);
 
+t_std_error dn_pas_nvram_get(cps_api_get_params_t *param, size_t key);
+
+t_std_error dn_pas_nvram_set(cps_api_transaction_params_t *param,
+                             cps_api_object_t obj);
+
 #endif
 
 

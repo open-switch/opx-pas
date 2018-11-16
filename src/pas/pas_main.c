@@ -134,6 +134,10 @@ cps_api_return_code_t dn_pas_read_function (void *context,
               ret = dn_pas_host_system_get(param, key_ix);
               break;
 
+        case BASE_PAS_NVRAM_OBJ:
+              ret = dn_pas_nvram_get(param, key_ix);
+              break;
+
         default:
             PAS_WARN("Invalid subcategory");
 
@@ -257,6 +261,10 @@ cps_api_return_code_t dn_pas_write_function(void *context,
 
             case BASE_PAS_HOST_SYSTEM_OBJ:
                   ret = dn_pas_host_system_set(param, obj);
+                  break;
+
+            case BASE_PAS_NVRAM_OBJ:
+                  ret = dn_pas_nvram_set(param, obj);
                   break;
 
             default:

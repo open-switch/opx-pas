@@ -1,3 +1,13 @@
+opx-pas (3.3.0+opx1) unstable; urgency=medium
+
+  * Feature: Add support for Solution ID fields to identify support level
+  * Bugfix: dn_pas_svc core is seen because admin user and eth0 not created
+  * Bugfix: Initialize NVRAM cache structure on CPS operations to prevent crash
+  * Update: Replace alloca with a VLA
+  * Update: debian/control to include libz library
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Fri, 16 Nov 2018 21:00:00 -0800
+
 opx-pas (3.3.0) unstable; urgency=medium
 
   * Update: Populate compliance code for QSFP28
