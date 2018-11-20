@@ -1257,3 +1257,57 @@ void dn_pas_obj_key_media_config_set(
                              );
     }
 }
+
+/* Get object qualifier and instance fields for an NVRAM object */
+
+void dn_pas_obj_key_nvram_get(
+    cps_api_object_t    obj,
+    cps_api_qualifier_t *qual,
+    bool                *tag_valid,
+    uint64_t            *tag
+                               )
+{
+    cps_api_key_t         *key = cps_api_object_key(obj);
+    cps_api_object_attr_t a;
+
+    *tag_valid = false;
+
+    *qual = cps_api_key_get_qual(key);
+
+    if (cps_api_key_get_len(key) <= CPS_OBJ_KEY_APP_INST_POS) {
+        /* Neither entity type, slot nor NVRAM name given */
+
+        return;
+    }
+
+    a = cps_api_get_key_data(obj, BASE_PAS_NVRAM_TAG);
+    if ((*tag_valid = (a != 0))) {
+        *tag = cps_api_object_attr_data_u64(a);
+    }
+}
+
+/* Set object qualifier and instance fields for an NVRAM object */
+
+void dn_pas_obj_key_nvram_set(
+    cps_api_object_t    obj,
+    cps_api_qualifier_t qual,
+    bool                tag_valid,
+    uint64_t            tag
+                               )
+{
+    cps_api_key_from_attr_with_qual(cps_api_object_key(obj),
+                                    BASE_PAS_NVRAM_OBJ,
+                                    qual
+                                    );
+
+    if (tag_valid) {
+        uint64_t temp = tag;
+
+        cps_api_set_key_data(obj,
+                             BASE_PAS_NVRAM_TAG,
+                             cps_api_object_ATTR_T_U64,
+                             &temp, sizeof(temp)
+                             );
+    }
+}
+

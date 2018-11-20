@@ -20,6 +20,7 @@ nobase_include_HEADERS = \
 	opx/private/pas_media.h \
 	opx/private/pas_media_sdi_wrapper.h \
 	opx/private/pas_monitor.h \
+        opx/private/pas_nvram.h \
 	opx/private/pas_psu.h \
 	opx/private/pas_res_structs.h \
 	opx/private/pas_temp_sensor.h \

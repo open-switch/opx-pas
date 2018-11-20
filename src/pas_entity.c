@@ -22,6 +22,7 @@
 #include "private/pas_fan.h"
 #include "private/pas_temp_sensor.h"
 #include "private/pas_led.h"
+#include "private/pas_nvram.h"
 #include "private/pas_power_monitor.h"
 #include "private/pas_display.h"
 #include "private/pas_res_structs.h"
@@ -215,6 +216,10 @@ static void _dn_cache_init_entity_res(
 
     case SDI_RESOURCE_EXT_CONTROL:
         func = dn_cache_init_extctrl;
+        break;
+
+    case SDI_RESOURCE_NVRAM:
+        func = dn_cache_init_nvram;
         break;
 
     default:

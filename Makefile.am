@@ -28,10 +28,10 @@ opx_pas_service_SOURCES = src/pas_lib.c src/pald.c src/pas_monitor/pas_monitor.c
                        src/pas/pas_chassis_handler.c src/pas/pas_entity_handler.c src/pas/pas_psu_handler.c src/pas/pas_fan_tray_handler.c \
                        src/pas/pas_card_handler.c src/pas/pas_fan_handler.c src/pas/pas_led_handler.c src/pas/pas_display_handler.c \
                        src/pas/pas_temp_threshold_handler.c src/pas/pas_pld_handler.c src/pas/pas_port_module_handler.c src/pas/pas_status_handler.c \
-                       src/pas/pas_media_handler.c src/pas/pas_media_channel_handler.c src/pas/pas_phy_handler.c \
+                       src/pas/pas_media_handler.c src/pas/pas_media_channel_handler.c src/pas/pas_phy_handler.c src/pas/pas_nvram_handler.c\
                        src/pas/pas_temperature_handler.c src/pas/pas_media_config_handler.c src/pas/pas_power_monitor_handler.c src/pas_data_store.cpp \
                        src/pas_event.c src/pas_entity.c src/pas_psu.c src/pas_fan_tray.c src/pas_card.c src/pas_fan.c src/pas_media.c src/pas_media_utils.c \
-                       src/pas_utils.c src/pas_config.c src/pas_temp_sensor.c src/pas_led.c src/pas_display.c src/pas_power_monitor.c
+                       src/pas_utils.c src/pas_config.c src/pas_temp_sensor.c src/pas_led.c src/pas_display.c src/pas_power_monitor.c src/pas_nvram.c
 
 opx_pas_service_SOURCES+= src/fuse/pas_fuse_fan.c src/fuse/pas_fuse_common.c src/fuse/pas_fuse_led.c src/fuse/pas_fuse_thermal_sensor.c \
                         src/fuse/pas_fuse_display_led.c src/fuse/pas_fuse_entity_info.c src/fuse/pas_fuse_media.c \
@@ -44,7 +44,7 @@ opx_pas_service_SOURCES += src/pas_comm_dev.c src/pas_host_system.c src/pas/pas_
 opx_pas_service_CPPFLAGS= -D_FILE_OFFSET_BITS=64 -I$(top_srcdir)/inc/opx -I$(top_srcdir)/inc/opx/private -I$(includedir)/opx $(COMMON_HARDEN_FLAGS) $(C_HARDEN_FLAGS)
 opx_pas_service_CXXFLAGS= -std=c++11 $(COMMON_HARDEN_FLAGS)
 opx_pas_service_LDFLAGS= $(LD_HARDEN_FLAGS)
-opx_pas_service_LDADD= libopx_pas.la -lfuse -lopx_common -lopx_sdi_sys -lopx_cps_api_common -lopx_cps_class_map -lrt -lopx_logging -lpthread -lsystemd -ldl
+opx_pas_service_LDADD= libopx_pas.la -lfuse -lopx_common -lopx_sdi_sys -lopx_cps_api_common -lopx_cps_class_map -lrt -lopx_logging -lpthread -lsystemd -ldl -lz
 
 
 # Tool scripts

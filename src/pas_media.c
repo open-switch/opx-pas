@@ -1124,6 +1124,7 @@ static bool dn_pas_media_presence_poll (uint_t port, cps_api_object_t obj)
         if (presence == false) {
             dn_pas_media_channel_res_free(slot, port);
             memset(mtbl->res_data, 0, sizeof(*(mtbl->res_data)));
+            memset(&(mtbl->media_info), 0, sizeof(mtbl->media_info));
             mtbl->res_data->type = PLATFORM_MEDIA_TYPE_AR_POPTICS_NOTPRESENT;
             dn_pas_media_capability_poll(port, NULL);
             mtbl->res_data->port_type = PLATFORM_PORT_TYPE_PLUGGABLE;
@@ -2870,7 +2871,7 @@ static bool dn_pas_media_add_basic_media_info_to_obj (dn_pas_basic_media_info_t*
     if (cps_api_object_attr_add(obj,
             BASE_PAS_MEDIA_DISPLAY_STRING,
             &(media_info->display_string),
-            sizeof(media_info->display_string)) == false) {
+            strlen(media_info->display_string)+1) == false) {
         PAS_ERR("Failed to add media info (display string) object attr");
         ret &= false;
      }
@@ -2891,14 +2892,14 @@ static bool dn_pas_media_add_basic_media_info_to_obj (dn_pas_basic_media_info_t*
     if (cps_api_object_attr_add(obj,
             BASE_PAS_MEDIA_CATEGORY_STRING,
             &(media_info->transceiver_type_string),
-            sizeof(media_info->transceiver_type_string)) == false) {
+            strlen(media_info->transceiver_type_string)+1) == false) {
         PAS_ERR("Failed to add media info (category string) object attr");
         ret &= false;
      }
     if (cps_api_object_attr_add(obj,
             BASE_PAS_MEDIA_MEDIA_NAME,
             &(media_info->media_name),
-            sizeof(media_info->media_name)) == false) {
+            strlen(media_info->media_name)+1) == false) {
         PAS_ERR("Failed to add media info (media_name) object attr");
         ret &= false;
      }

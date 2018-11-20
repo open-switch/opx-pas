@@ -596,6 +596,37 @@ void dn_pas_obj_key_media_config_set(
     bool                slot_valid,
     uint_t              slot
                                );
+/** ************************************************************************
+ *
+ * Get object qualifier and instance fields for an NVRAM object
+ *
+ * Function to extract instance information from the given PAS NVRAM
+ * object.  Tag is extracted, with a flag indicating whether or not
+ * it was specified in the given object.
+ */
+
+void dn_pas_obj_key_nvram_get(
+    cps_api_object_t    obj,
+    cps_api_qualifier_t *qual,
+    bool                *tag_valid,
+    uint64_t            *tag
+                            );
+
+/** ************************************************************************
+ *
+ * Set object qualifier and instance fields for an NVRAM object
+ *
+ * Function to set instance information in the given PAS NVRAM object.
+ * Tag may be given
+ */
+
+void dn_pas_obj_key_nvram_set(
+    cps_api_object_t    obj,
+    cps_api_qualifier_t qual,
+    bool                tag_valid,
+    uint64_t            tag
+                               );
+
 #ifdef __cplusplus
 }
 #endif

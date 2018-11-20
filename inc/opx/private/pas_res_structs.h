@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Dell Inc.
+ * Copyright (c) 2018 Dell Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -34,6 +34,7 @@
 #include "sdi_entity_info.h"
 #include "private/pas_config.h"
 #include "sdi_led.h"
+#include "std_llist.h"
 
 #include <time.h>
 #include <stdio.h>
@@ -687,5 +688,20 @@ static inline const char *dn_pas_res_key_media_chan(char   *buf,
     return ((const char *) buf);
 }
 
+/*
+ * pas_nvram_t structure is to hold NVRAM tag-value pairs and it
+ * will be used to cache the data for further access. Only 1 NVRAM
+ * instance is allowed.
+ */
+
+typedef struct _pas_nvram_t {
+    pas_entity_t           *parent;          /* Parent entity */
+    sdi_resource_hdl_t     sdi_resource_hdl; /* SDI resource handle */
+
+    bool                   initialized;      /* Flag to indicate if initialized */
+    uint_t                 nvram_size;       /* Maximum capacity of NVRAM */
+    std_dll_head           nvram_data;       /* Linked list of NVRAM TLVs */
+    uint_t                 tlv_size;         /* Maximum size of TLV data */
+} pas_nvram_t;
 
 #endif  //__PAS_RES_STRUCTS_H

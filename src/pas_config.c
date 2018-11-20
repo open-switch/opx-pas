@@ -1266,6 +1266,10 @@ static struct pas_config_subcat {
     { subcat:        BASE_PAS_HOST_SYSTEM_OBJ,
       name:          "host-system",
       inst_scheme:   SUBCAT_INST_SCHEME_NONE
+    },
+    { subcat:        BASE_PAS_NVRAM_OBJ,
+      name:          "nvram",
+      inst_scheme:   SUBCAT_INST_SCHEME_NONE
     }
 };
 
