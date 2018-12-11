@@ -1,3 +1,5 @@
+© 2018 OpenSwitch project. All information is contributed to and made available by OPX under the Creative Commons Attribution 4.0 International License (available at http://creativecommons.org/licenses/by/4.0/).
+
 # opx-pas
 This repository contains the platform adaptation service (PAS) daemon implementation.
 
@@ -8,4 +10,3 @@ This repository contains the platform adaptation service (PAS) daemon implementa
 
 See [Architecture](https://github.com/open-switch/opx-docs/wiki/Architecture) for more information on the PAS module.
 
-(c) 2018 Dell Inc. or its subsidiaries. All Rights Reserved.
