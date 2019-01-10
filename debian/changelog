@@ -1,3 +1,9 @@
+opx-pas (3.3.0+opx6) unstable; urgency=medium
+
+  * feat: Add plugin for sosreport
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Wed, 9 Jan 2019 16:30:00 -0800
+
 opx-pas (3.3.0+opx5) unstable; urgency=medium
 
   * fix: Correct contents of dev packages
