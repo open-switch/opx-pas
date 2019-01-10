@@ -17,11 +17,17 @@ Description: This package contains the Platform Adaptation Service.
 Package: opx-pas-dev
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
- libopx-pas1 (=${binary:Version}),fuse
+ libopx-pas-dev (=${binary:Version}),fuse
 Description: This package contains the Platform Adaptation Service.
 
 Package: libopx-pas1
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: This package contains the Platform Adaptation Service.
+
+Package: libopx-pas-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+ libopx-pas1 (=${binary:Version})
 Description: This package contains the Platform Adaptation Service.
 

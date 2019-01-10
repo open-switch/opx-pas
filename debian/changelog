@@ -1,3 +1,9 @@
+opx-pas (3.3.0+opx5) unstable; urgency=medium
+
+  * fix: Correct contents of dev packages
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Wed, 9 Jan 2019 16:20:00 -0800
+
 opx-pas (3.3.0+opx4) unstable; urgency=medium
 
   * refactor: Move scripts to opx-tools
