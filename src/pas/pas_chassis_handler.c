@@ -34,6 +34,7 @@
 #include "cps_class_map.h"
 
 #include <stdlib.h>
+#include "std_time_tools.h"
 
 #define CALLOC_T(_type, _n)  ((_type *) calloc((_n), sizeof(_type)))
 
@@ -268,6 +269,8 @@ bool dn_pas_chassis_poll(pas_chassis_t *rec)
 
     if (notif)  dn_pas_chassis_notify(rec);
 
+    rec->polltime_from_epoch = std_time_get_current_from_epoch_in_nanoseconds();
+
     return (result);
 }
 
@@ -368,6 +371,8 @@ t_std_error dn_pas_chassis_get(cps_api_get_params_t * param, size_t key_idx)
                               rec->reboot_type
                               );
 
+   cps_api_object_set_timestamp(obj, rec->polltime_from_epoch);
+
     dn_pas_unlock();
 
     if (!cps_api_object_list_append(param->list, obj)) {
@@ -381,12 +386,14 @@ t_std_error dn_pas_chassis_get(cps_api_get_params_t * param, size_t key_idx)
 #define PAS_REBOOT_CMD_LEN      (128)
 #define PAS_REBOOT_REASON_LEN   (4096)
 #define PAS_CMD_BUFF_SIZE       (PAS_REBOOT_REASON_LEN + PAS_REBOOT_CMD_LEN)
+#define PAS_INIT_REBOOT_TYPE    (0xff)
 
 static t_std_error dn_pas_chassis_set1(
                     cps_api_transaction_params_t *param,
                     cps_api_qualifier_t           qual,
                     uint8_t                       reboot_type,
-                    char                         *reboot_reason)
+                    char                         *reboot_reason,
+                    bool                          dom_enable)
 {
     cps_api_object_t old_obj;
     pas_chassis_t    *rec;
@@ -407,25 +414,40 @@ static t_std_error dn_pas_chassis_set1(
         return (STD_ERR(PAS, NOMEM, 0));
     }
 
-    dn_pas_obj_key_chassis_set(old_obj, qual, reboot_type);
+    if (reboot_type != PAS_INIT_REBOOT_TYPE) {
 
-    if (!cps_api_object_list_append(param->prev, old_obj)) {
-        cps_api_object_delete(old_obj);
+        dn_pas_obj_key_chassis_set(old_obj, qual, reboot_type, dom_enable);
 
-        return (STD_ERR(PAS, FAIL, 0));
+        if (!cps_api_object_list_append(param->prev, old_obj)) {
+            cps_api_object_delete(old_obj);
+
+            return (STD_ERR(PAS, FAIL, 0));
+        }
+
+        old_obj = CPS_API_OBJECT_NULL; /* No longer owned */
+
+        rec->reboot_type = reboot_type;
+        snprintf(cmd_buf, sizeof(cmd_buf) - 1, "/usr/sbin/reload %s",
+                 reboot_reason);
+
+        if (system(cmd_buf) != 0) {
+            PAS_ERR("Reboot failed");
+
+            return (STD_ERR(PAS, FAIL, 0));
+        }
     }
+    else {
+            dn_pas_obj_key_chassis_set(old_obj, qual, reboot_type, dom_enable);
 
-    old_obj = CPS_API_OBJECT_NULL; /* No longer owned */
+            if (!cps_api_object_list_append(param->prev, old_obj)) {
+                cps_api_object_delete(old_obj);
 
-    rec->reboot_type = reboot_type;
+                return (STD_ERR(PAS, FAIL, 0));
+            }
 
-    snprintf(cmd_buf, sizeof(cmd_buf) - 1, "/usr/sbin/opx-reload %s",
-             reboot_reason);
+            old_obj = CPS_API_OBJECT_NULL; /* No longer owned */
 
-    if (system(cmd_buf) != 0) {
-        PAS_ERR("Reboot failed");
-
-        return (STD_ERR(PAS, FAIL, 0));
+            rec->dom_enable = dom_enable;
     }
 
     return (STD_ERR_OK);
@@ -436,38 +458,47 @@ t_std_error dn_pas_chassis_set(cps_api_transaction_params_t* param,
 {
 
     cps_api_qualifier_t      qual;
-    uint8_t                  reboot_type;
-    cps_api_object_attr_t    a;
+    uint8_t                  reboot_type = PAS_INIT_REBOOT_TYPE;
+    cps_api_object_attr_t    a, dom;
     char                     reboot_reason[PAS_REBOOT_REASON_LEN];
     uint32_t                 len = 0;
+    bool                     dom_enable = false;
 
     if (cps_api_object_type_operation(cps_api_object_key(obj)) != cps_api_oper_SET) {
         return cps_api_ret_code_ERR;
     }
 
-    a = cps_api_object_attr_get(obj, BASE_PAS_CHASSIS_REBOOT);
-    if (a == CPS_API_ATTR_NULL) {
+    a   = cps_api_object_attr_get(obj, BASE_PAS_CHASSIS_REBOOT);
+    dom = cps_api_object_attr_get(obj, BASE_PAS_CHASSIS_DOM);
+
+    if (a == CPS_API_ATTR_NULL && dom == CPS_API_ATTR_NULL) {
         return (STD_ERR(PAS, FAIL, 0));
     }
-    reboot_type = cps_api_object_attr_data_u8(a);
 
-    if (reboot_type != PLATFORM_REBOOT_TYPE_COLD &&
-        reboot_type != PLATFORM_REBOOT_TYPE_WARM ) {
-        PAS_WARN("Invalid reboot type (%u)", reboot_type);
-
-        return (STD_ERR(PAS, FAIL, 0));
-    }
-    memset(reboot_reason, 0, sizeof(reboot_reason));
-    a = cps_api_object_attr_get(obj, BASE_PAS_CHASSIS_REBOOT_REASON);
     if (a != CPS_API_ATTR_NULL) {
-        len = (cps_api_object_attr_len(a) > sizeof(reboot_reason) - 1)
-            ?  sizeof(reboot_reason) - 1 : cps_api_object_attr_len(a);
-        strncpy(reboot_reason, (char *) cps_api_object_attr_data_bin(a), len);
+        reboot_type = cps_api_object_attr_data_u8(a);
+
+        if (reboot_type != PLATFORM_REBOOT_TYPE_COLD &&
+            reboot_type != PLATFORM_REBOOT_TYPE_WARM ) {
+            PAS_WARN("Invalid reboot type (%u)", reboot_type);
+
+            return (STD_ERR(PAS, FAIL, 0));
+        }
+        memset(reboot_reason, 0, sizeof(reboot_reason));
+        a = cps_api_object_attr_get(obj, BASE_PAS_CHASSIS_REBOOT_REASON);
+        if (a != CPS_API_ATTR_NULL) {
+            len = (cps_api_object_attr_len(a) > sizeof(reboot_reason) - 1)
+                ?  sizeof(reboot_reason) - 1 : cps_api_object_attr_len(a);
+            strncpy(reboot_reason, (char *) cps_api_object_attr_data_bin(a), len);
+        }
+    }
+    if (dom != CPS_API_ATTR_NULL) {
+        dom_enable = cps_api_object_attr_data_u8(dom);
     }
 
     qual = cps_api_key_get_qual(cps_api_object_key(obj));
 
-    dn_pas_chassis_set1(param, qual, reboot_type, reboot_reason);
+    dn_pas_chassis_set1(param, qual, reboot_type, reboot_reason, dom_enable);
 
     return STD_ERR_OK;
 }

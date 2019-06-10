@@ -171,6 +171,8 @@ static t_std_error dn_pas_entity_get1(
                                    );
     }
     
+    cps_api_object_set_timestamp(resp_obj, rec->polltime_from_epoch);
+
     dn_pas_unlock();
     
     /* Add response object to get response */

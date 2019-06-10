@@ -32,12 +32,14 @@
 #include "sdi_media.h"
 #include "cps_api_events.h"
 #include "private/pas_config.h"
+#include "private/pas_job_queue.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#define PAS_MEDIA_VENDOR_FUNC(nm)  ((typeof(& nm)) pas_media_vendor_func(# nm))
 
 #define PAS_MEDIA_NO_QSA_STR             "\0"
 #define PAS_MEDIA_UNKNOWN_MEDIA          "UNKNOWN MEDIA"
@@ -178,6 +180,27 @@ typedef enum {
     QSFP_TRANS_TECH_UNKNOWN
 } pas_qsfp_tx_tech_t;
 
+
+/* media data monitor category */
+typedef enum {
+    TEMPERATURE,
+    VOLTAGE,
+    RX_POWER,
+    TX_POWER,
+    BIAS,
+    MAX_CATEGORY
+} pas_media_mon_category_t;
+
+/* media data monitor category count */
+typedef struct {
+            uint_t media_mon_high_count;
+            uint_t media_mon_high_warn_count;
+            uint_t media_mon_low_warn_count;
+            uint_t media_mon_low_count;
+            bool   media_mon_skip;
+} pas_media_mon_count_t;
+
+
 /*
  * phy_media_tbl_t is to hold sdi handle, resource data address
  * and chaneel info per port and will used for faster access.
@@ -196,6 +219,7 @@ typedef struct _phy_media_tbl_t {
     dn_pas_basic_media_info_t media_info;
     uint_t                 poll_cycles_to_skip;
     uint_t                 mod_holding_so_far;
+    pas_media_mon_count_t  count[MAX_CATEGORY];
 } phy_media_tbl_t;
 
 /*
@@ -219,6 +243,15 @@ typedef struct _sdi_to_pas_map_t {
     uint_t  pas_id;
 } sdi_to_pas_map_t;
 
+/*
+ *  PHY Control Support Types
+ */
+
+typedef enum {
+    PHY_CTRL_NO_SUPP,
+    PHY_CTRL_CUSFP_SUPP,
+    PHY_CTRL_AQ_SUPP,
+} pas_media_phy_ctrl_sup_t;
 
 /*
  * SFP Media type map by vendor PN name
@@ -250,6 +283,21 @@ typedef struct _media_type_to_breakout_map_t {
     BASE_IF_SPEED_t          media_speed;
     BASE_IF_SPEED_t          breakout_speed;
 } media_type_to_breakout_map_t;
+
+/*
+ * Type for use with media speed set
+ */
+typedef struct _pas_media_speed_set_job_arg_t {
+    uint_t port;
+    BASE_IF_SPEED_t speed;
+} pas_media_speed_set_job_arg_t;
+
+t_std_error dn_pas_media_phy_arb_speed_set(uint_t port, BASE_IF_SPEED_t speed);
+
+t_std_error dn_pas_media_speed_set_job_handler(void* arg);
+
+/* Look up a function in the vendor media plug-in */
+void *pas_media_vendor_func(const char *name);
 
 /* Callback function type for getting media info from transceiver types*/
 typedef bool (*pas_media_disc_cb_t)(phy_media_tbl_t *, dn_pas_basic_media_info_t*);
@@ -470,6 +518,10 @@ bool dn_pas_media_wavelength_config_set (uint_t port, float value,
  */
 sdi_media_fw_rev_t pas_media_fw_rev_get (pas_media_t *res_data);
 
+/*
+ * This function returns the type of phy control supported, if any. This is because of nuances associated with BASE-T media
+ */
+pas_media_phy_ctrl_sup_t dn_pas_is_phy_ctrl_supported(phy_media_tbl_t * mtbl);
 
 #ifdef __cplusplus
 }

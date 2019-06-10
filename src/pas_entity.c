@@ -34,6 +34,7 @@
 
 #include "std_type_defs.h"
 #include "std_error_codes.h"
+#include "std_time_tools.h"
 #include "sdi_entity.h"
 
 #include <stdlib.h>
@@ -442,7 +443,7 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
     enum { ENTITY_INIT_MAX_TRIES = 3 };
     enum { FAULT_LIMIT = 3 };
 
-    bool              present, notif = false, power_status, fault_status;
+    bool              present = false, notif = false, power_status = false, fault_status = false;
     sdi_entity_info_t entity_info[1];
     pas_entity_t     *parent = NULL;
 
@@ -697,6 +698,8 @@ bool dn_entity_poll(pas_entity_t *rec, bool update_allf)
     }
 
     if (notif)  dn_entity_notify(rec);
+
+    rec->polltime_from_epoch = std_time_get_current_from_epoch_in_nanoseconds();
 
     return (true);
 }

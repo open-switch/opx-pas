@@ -52,7 +52,7 @@ t_std_error dn_pas_pld_get(cps_api_get_params_t * param, size_t key_idx)
 
     bool       entity_type_valid = false, slot_valid = false, name_valid = false;
     uint_t     entity_type = 0, slot = 0;
-    const char *name;
+    const char *name = NULL;
 
     cps_api_object_attr_t a;
     a = cps_api_get_key_data(req_obj, BASE_PAS_PLD_ENTITY_TYPE);

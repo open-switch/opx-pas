@@ -39,6 +39,8 @@
 
 #define PAS_EXTCTRL_MAX_SSOR_IN_LIST   (16)
 
+#define PAS_FAN_ALLWED_ERR_MARGIN_BUF  (5)
+
 #define PRE_STRINGIZE(enm) #enm
 #define STRINGIZE_ENUM(enm) PRE_STRINGIZE(enm)
 

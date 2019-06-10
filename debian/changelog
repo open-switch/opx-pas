@@ -1,3 +1,14 @@
+opx-pas (3.4.0) unstable; urgency=medium
+
+  * Feature: Add pas job queue
+  * Update: updated mapping for 80G speed
+  * Update: added sleep to thread to prevent high cpu usage
+  * Bugfix: Correct the higher speed on fan
+  * Update: Removed call to SDI for SFP PHY speed get
+
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Wed, 9 Jun 2019 16:30:00 -0800
+
 opx-pas (3.3.0+opx5) unstable; urgency=medium
 
   * feat: Add plugin for sosreport

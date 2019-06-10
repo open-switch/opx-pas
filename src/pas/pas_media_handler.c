@@ -119,6 +119,8 @@ t_std_error dn_pas_media_get(cps_api_get_params_t * param,
         dn_pas_obj_key_media_set(obj, qualifier, true, slot, false,
                 PAS_MEDIA_INVALID_PORT_MODULE, true, start);
 
+        cps_api_object_set_timestamp(obj, mtbl->res_data->polltime_from_epoch);
+
         if (!cps_api_object_list_append(param->list, obj)) {
 
             cps_api_object_delete(obj);

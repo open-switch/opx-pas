@@ -52,7 +52,7 @@ opx_pas_service_SOURCES = src/pas_lib.c src/pald.c src/pas_monitor/pas_monitor.c
 opx_pas_service_SOURCES+= src/fuse/pas_fuse_fan.c src/fuse/pas_fuse_common.c src/fuse/pas_fuse_led.c src/fuse/pas_fuse_thermal_sensor.c \
                         src/fuse/pas_fuse_display_led.c src/fuse/pas_fuse_entity_info.c src/fuse/pas_fuse_media.c \
 			src/fuse/pas_fuse_parser.c src/fuse/pas_fuse_diag_mode.c src/remote_poller/pas_remote_poller.c \
-			src/fuse/pas_fuse_nvram.c
+			src/fuse/pas_fuse_nvram.c src/pas_job_queue.cpp
 
 opx_pas_service_SOURCES += src/pas_comm_dev.c src/pas_host_system.c src/pas/pas_comm_dev_handler.c src/pas/pas_host_system_handler.c \
                         src/pas_log.c src/pas_media_properties_discovery.c src/pas_media_info_map.cpp src/pas_media_properties_utils.c src/pas_ext_ctrl.c

@@ -46,6 +46,8 @@
 #include "dell-base-platform-common.h"
 #include "dell-base-pas.h"
 
+#include <stdlib.h>
+
 #define ARRAY_SIZE(a)  (sizeof(a) / sizeof((a)[0]))
 
 
@@ -261,21 +263,21 @@ t_std_error dn_pas_nvram_set(cps_api_transaction_params_t *param, cps_api_object
 
     /* Send a notification */
     if (notif) {
-        cps_api_object_t obj;
+        cps_api_object_t _obj;
 
-        obj = cps_api_object_create();
-        if (obj == CPS_API_OBJECT_NULL) {
+        _obj = cps_api_object_create();
+        if (_obj == CPS_API_OBJECT_NULL) {
             PAS_ERR("Failed to allocate CPS Event object");
 
             return (STD_ERR(PAS, NOMEM, 0));
         }
 
-        dn_pas_obj_key_nvram_set(obj, cps_api_qualifier_OBSERVED,
+        dn_pas_obj_key_nvram_set(_obj, cps_api_qualifier_OBSERVED,
                                  true, tag);
-        cps_api_object_attr_add(obj, BASE_PAS_NVRAM_VALUE, data, length);
+        cps_api_object_attr_add(_obj, BASE_PAS_NVRAM_VALUE, data, length);
 
         /* Object is deleted in dn_pas_cps_notify */
-        if (!dn_pas_cps_notify(obj)) {
+        if (!dn_pas_cps_notify(_obj)) {
             PAS_ERR("Failed to send NVRAM notification");
 
             return (STD_ERR(PAS, FAIL, 0));

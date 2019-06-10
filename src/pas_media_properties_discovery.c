@@ -371,8 +371,8 @@ bool dn_pas_std_media_get_basic_properties_sfp_plus(phy_media_tbl_t *mtbl,  dn_p
             break;
 
         case SFP_10GBASE_ER:
+            media_interface_qualifier = PLATFORM_MEDIA_INTERFACE_QUALIFIER_NO_QUALIFIER;
             switch (wavelength){
-                media_interface_qualifier = PLATFORM_MEDIA_INTERFACE_QUALIFIER_NO_QUALIFIER;
                 case PAS_MEDIA_BX_UP_WAVELENGTH_ID:
                     media_interface = PLATFORM_MEDIA_INTERFACE_BX40;
                     media_interface_qualifier = PLATFORM_MEDIA_INTERFACE_QUALIFIER_UP;
@@ -504,7 +504,10 @@ bool dn_pas_std_media_get_basic_properties_sfp28(phy_media_tbl_t *mtbl, dn_pas_b
             break;
 
         default:
-            PAS_ERR("Error identifying SFP28 media on port(s) %s", mtbl->port_str);
+            PAS_ERR("Error identifying SFP28 media on port(s) %s. Will default to DAC", mtbl->port_str);
+            ext_spec_code = PLATFORM_EXT_SPEC_COMPLIANCE_CODE_25GBASE_CR_CA_L;
+            media_interface = PLATFORM_MEDIA_INTERFACE_CR;
+            media_interface_qualifier = PLATFORM_MEDIA_INTERFACE_QUALIFIER_NO_QUALIFIER;
             break;
     }
 

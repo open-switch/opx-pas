@@ -228,7 +228,8 @@ void dn_pas_obj_key_chassis_get(
 void dn_pas_obj_key_chassis_set(
     cps_api_object_t    obj,
     cps_api_qualifier_t qual,
-    uint8_t             reboot_type
+    uint8_t             reboot_type,
+    bool                enable_dom 
                                 );
 
 /** ************************************************************************

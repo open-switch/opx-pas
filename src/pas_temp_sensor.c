@@ -27,6 +27,7 @@
 
 #include "std_type_defs.h"
 #include "std_error_codes.h"
+#include "std_time_tools.h"
 #include "sdi_entity.h"
 #include "sdi_thermal.h"
 #include "dell-base-platform-common.h"
@@ -367,6 +368,8 @@ bool dn_temp_sensor_poll(
     rec->valid = true;
 
     if (notif)  dn_temp_sensor_notify(rec);
+
+    rec->polltime_from_epoch = std_time_get_current_from_epoch_in_nanoseconds();
 
     return (true);
 }

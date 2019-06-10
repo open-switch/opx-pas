@@ -160,10 +160,13 @@ static int dn_pas_fuse_device_read(
     dev_node_t    node;
     bool          is_printable = true;
 
+    if (NULL == path){
+        return -ENOENT;
+    }
+
     dn_pas_fuse_realtime_parser(&node, (char *) path);
 
-    if (NULL == path || 
-        0 != strncmp(node.path, path, strlen(path))){
+    if (0 != strncmp(node.path, path, strlen(path))){
         
         return -ENOENT;
     }
@@ -244,10 +247,13 @@ static int dn_pas_fuse_device_write(
     int           res       = 0;
     dev_node_t    node;
 
+    if (NULL == path){
+        return -ENOENT;
+    }
+
     dn_pas_fuse_realtime_parser(&node, (char *) path);
 
-    if (NULL == path || 
-        0 != strncmp(node.path, path, strlen(path))){
+    if (0 != strncmp(node.path, path, strlen(path))){
         
         return -ENOENT;
     }
