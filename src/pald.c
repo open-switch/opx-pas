@@ -32,6 +32,7 @@
 #include "private/pas_utils.h"
 #include "private/pas_data_store.h"
 #include "private/pas_comm_dev.h"
+#include "private/pas_job_queue.h"
 
 #include "std_thread_tools.h"
 #include "private/dn_pas.h"
@@ -68,7 +69,10 @@ static t_pald_thread_list thread_main_functions [] = {
     { "pas_remote_poller_thread", dn_pas_remote_poller_thread, NULL },
 
     //pas FUSE handler main thread
-    { "pas_fuse_handler_thread", NULL, dn_pas_fuse_handler_thread }
+    { "pas_fuse_handler_thread", NULL, dn_pas_fuse_handler_thread },
+
+    //pas job queue thread 
+    {"pas_queue_job_thread", pas_job_q_thread, NULL}
 };
 
 

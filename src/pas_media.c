@@ -30,11 +30,13 @@
 #include "private/pas_utils.h"
 #include "dn_pas_media_vendor.h"
 #include "cps_api_operation.h"
-#include "cps_api_service.h"
 #include "cps_api_events.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <dlfcn.h>
+#include <math.h>
+#include "std_time_tools.h"
+#include "std_time_tools.h"
 
 #define ARRAY_SIZE(a)         (sizeof(a)/sizeof(a[0]))
 
@@ -43,6 +45,11 @@
 #define CPS_API_ATTR_KEY_ID CPS_API_ATTR_RESERVE_RANGE_END
 
 #define SYSTEM_BOARD_SLOT_NUMBER 1
+#define ALM_MAX_COUNT            3
+#define THRESHOLD_LOC_LEN        20
+#define THRESHOLD_START_LOC      49
+#define THRESHOLD_END_LOC        (THRESHOLD_START_LOC + THRESHOLD_LOC_LEN)
+
 
 /* How many picmeters makes a nano meter */
 #define PICOMETER_TO_NANOMETER_DIV_FACTOR           1000
@@ -52,6 +59,7 @@
 
 static phy_media_tbl_t *phy_media_tbl = NULL;
 static uint_t phy_media_count = 0;
+
 
 /* Mapping of media Attribute and corresponding member of _pas_media_t struct
  * and struct member info
@@ -839,6 +847,18 @@ bool dn_pas_media_add_channel_info_to_cps_obj(cps_api_object_t obj,
     return true;
 }
 
+static void dn_pas_media_add_port_threshold_to_cps_obj(cps_api_object_t obj,
+                                                       void*            res_data,
+                                                       uint_t           port) {
+
+    uint_t cnt;
+
+    for (cnt = THRESHOLD_START_LOC; cnt < THRESHOLD_END_LOC; cnt++) {
+        if (dn_pas_media_obj_attr_add(&media_mem_info[cnt], obj, res_data) == false) {
+            PAS_ERR("Failed to add attribute to object for port (%u)", port);
+        }
+    }
+}
 
 /*dn_pas_media_data_publish creates and populates an object which need to be
  * published as based on presence state and list of attributes. This function
@@ -1342,14 +1362,6 @@ static bool dn_pas_media_type_poll (uint_t port, cps_api_object_t obj)
         PAS_ERR("Unable to force tx state low for media on port %u", port);
     }
 
-    /* Bring sfp t serdes down also */
-
-    if (mtbl->res_data->type == PLATFORM_MEDIA_TYPE_SFP_T) {
-        if (sdi_media_phy_serdes_control(mtbl->res_hdl, PAS_MEDIA_CH_START, SDI_MEDIA_DEFAULT, false) != STD_ERR_OK) {
-            PAS_ERR("Serdes control failed, port(%u), channel(%u), state(false)", port, PAS_MEDIA_CH_START);
-        }
-    }
-
     dn_pas_media_high_power_mode_set(port,
                 (high_power_mode == false) ? false : true);
 
@@ -1496,7 +1508,7 @@ static bool dn_pas_media_wavelength_poll (uint_t port, cps_api_object_t obj)
 
 /* Look up a function in the vendor media plug-in */
 
-static void *pas_media_vendor_func(const char *name)
+void *pas_media_vendor_func(const char *name)
 {
     static const char filename[] = "/usr/lib/libopx_pas_media_vendor.so";
     static void       *dlhdl;
@@ -1507,7 +1519,6 @@ static void *pas_media_vendor_func(const char *name)
     }
     return (dlhdl == 0 ? 0 : dlsym(dlhdl, name));
 }
-#define PAS_MEDIA_VENDOR_FUNC(nm)  ((typeof(& nm)) pas_media_vendor_func(# nm))
 
 /*
  * dn_pas_media_dq_poll is to poll and get the qualified attribute
@@ -1519,17 +1530,21 @@ static bool dn_pas_media_dq_poll (uint_t port, cps_api_object_t obj)
 
     phy_media_tbl_t        *mtbl = NULL;
     bool                   qualified = true; /* Assume is qualified */
+    PLATFORM_MEDIA_TYPE_t   type = PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN;
 
     mtbl = dn_phy_media_entry_get(port);
     STD_ASSERT(mtbl != NULL);
 
     /* Call vendor media plug-in */
-    typeof(&dn_pas_media_vendor_is_qualified) func = PAS_MEDIA_VENDOR_FUNC(dn_pas_media_vendor_is_qualified);
-    if (func != 0 && (*func)(mtbl->res_hdl, &qualified) != STD_ERR_OK) {
-        PAS_ERR("Failed to get qualified attribute, port %u", port);
-
-        return false;
+    typeof(&dn_pas_media_vendor_get_media_type) func = PAS_MEDIA_VENDOR_FUNC(dn_pas_media_vendor_get_media_type);
+    if (func != 0 && (type = (*func)(mtbl->res_hdl, &qualified)) == PLATFORM_MEDIA_TYPE_AR_POPTICS_UNKNOWN ) {
+        if (qualified){
+            PAS_ERR("Failed to get media type of qualified media, port %u", port);
+            return false;
+        }
+        return true;
     }
+    mtbl->res_data->type = type;
 
     if(mtbl->res_data->qualified != qualified) {
 
@@ -3101,6 +3116,16 @@ static bool dn_pas_media_oir_poll (uint_t port, cps_api_object_t obj)
         ret = false;
     }
     pas_media_get_media_properties(mtbl);
+
+
+    /* Bring sfp t serdes down also */
+
+    if (dn_pas_is_phy_ctrl_supported(mtbl) != PHY_CTRL_NO_SUPP) {
+        if (sdi_media_phy_serdes_control(mtbl->res_hdl, PAS_MEDIA_CH_START, SDI_MEDIA_DEFAULT, false) != STD_ERR_OK) {
+            PAS_ERR("Serdes control failed, port(%u), channel(%u), state(false)", port, PAS_MEDIA_CH_START);
+        }
+    }
+
     return ret;
 }
 
@@ -3195,10 +3220,10 @@ bool dn_pas_phy_media_is_present (uint_t port)
 
 void dn_pas_phy_media_channel_poll (uint_t port, uint_t channel, bool publish)
 {
-
+    phy_media_tbl_t       *mtbl = NULL;
     cps_api_object_t      obj = CPS_API_OBJECT_NULL;
     uint_t                slot;
-
+    pas_media_channel_t   *ch_data = NULL;
 
     obj = publish ? cps_api_object_create() : CPS_API_OBJECT_NULL;
 
@@ -3229,6 +3254,15 @@ void dn_pas_phy_media_channel_poll (uint_t port, uint_t channel, bool publish)
             dn_media_obj_publish(obj);
         }
     }
+
+    mtbl = dn_phy_media_entry_get(port);
+    if (mtbl !=NULL) {
+        ch_data = &(mtbl->channel_data[channel]);
+
+        if (ch_data != NULL) {
+            ch_data->polltime_from_epoch = std_time_get_current_from_epoch_in_nanoseconds();
+        }
+    }
 }
 
 void dn_pas_phy_media_channel_poll_all (uint_t port, bool publish)
@@ -3250,6 +3284,487 @@ void dn_pas_phy_media_channel_poll_all (uint_t port, bool publish)
             dn_pas_phy_media_channel_poll(port, channel, publish);
         }
     }
+}
+
+static bool dn_pas_phy_media_mon_normal_check(pas_media_mon_count_t *count)
+{
+    if (count->media_mon_high_warn_count == 0 &&  count->media_mon_high_count == 0 &&
+        count->media_mon_low_warn_count  == 0 &&  count->media_mon_low_count == 0)  {
+
+        // normal case where there are no any cross over events occurred before
+        return true;
+    }
+    return false;
+}
+
+static void dn_pas_phy_media_mon_check(uint_t *c1, uint_t *c2, uint_t *c3, uint_t *c4,
+                                       bool *skip, cps_api_object_t obj,
+                                       cps_api_attr_id_t id, const void *data, size_t len)
+{
+    if (++(*c1) < ALM_MAX_COUNT) {
+        if (*c1 == 1) {
+            *c2 = *c3 = *c4 = 0;
+        }
+        *skip = true;
+    }
+    else if (*c1 == ALM_MAX_COUNT) { // notify
+             cps_api_object_attr_add(obj, id, data, len);
+    }
+    else { /* sometime, high and high_warning thresholds could be the same i(e.g. bias),
+              just update the value so that app won't get 0 value */
+
+           cps_api_object_attr_add(obj, id, data, len);
+           *skip = true;
+    }
+}
+
+/*  Only one zone as shown following x will be checking at any given time
+
+    x  < low < x < low warning < normal < high warning < x < high < x
+
+    low, low warning, high warning, high are thresholds of (temperature, voltage, rx power, tx power and bias).
+
+    Any value x in the category of temperature, voltage, rx power, tx power, bias can fit in the position of x and
+    normal section.
+
+    For example, take temperature as an example:
+    If x < low threshold, it will be in lower than low threshold,
+    if x > high threshold, it will be higher than high threshold.
+
+    To avoid alarm flapping, report corss-over event after its zone is occurred 3 times
+*/
+
+static void dn_pas_phy_media_mon_temperature(uint_t                port,
+                                             pas_media_t           *res_data,
+                                             pas_media_mon_count_t *count,
+                                             cps_api_object_t      obj)
+{
+    if ((res_data->temp_high_alarm   == 0 &&
+         res_data->temp_low_alarm    == 0 &&
+         res_data->temp_high_warning == 0 &&
+         res_data->temp_low_warning  == 0)   ||
+        (isnan(res_data->current_temperature) != 0)) {
+
+        PAS_TRACE("Not all media temerature thresholds are programmed on port %u or current_temperature = %0.2f is invalid",
+                   port, res_data->current_temperature);
+        count->media_mon_skip = true;
+        return;
+    }
+
+    count->media_mon_skip = false;
+    if (res_data->current_temperature > res_data->temp_high_alarm) {
+
+        dn_pas_phy_media_mon_check(&count->media_mon_high_count,     &count->media_mon_high_warn_count,
+                                   &count->media_mon_low_warn_count, &count->media_mon_low_count,
+                                   &count->media_mon_skip, obj,
+                                   BASE_PAS_MEDIA_CURRENT_TEMPERATURE, &res_data->current_temperature,
+                                   sizeof(res_data->current_temperature));
+    }
+    else if (res_data->current_temperature >= res_data->temp_high_warning) {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_high_warn_count, &count->media_mon_high_count,
+                                       &count->media_mon_low_warn_count,  &count->media_mon_low_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CURRENT_TEMPERATURE, &res_data->current_temperature,
+                                       sizeof(res_data->current_temperature));
+    }
+    else if (res_data->current_temperature >= res_data->temp_low_warning) { // normal case
+             if (! dn_pas_phy_media_mon_normal_check(count)) {
+                  memset(count, 0, sizeof(pas_media_mon_count_t));
+                  cps_api_object_attr_add(obj, BASE_PAS_MEDIA_CURRENT_TEMPERATURE,
+                                          &res_data->current_temperature, sizeof(res_data->current_temperature));
+             }
+             else {
+                    count->media_mon_skip = true;
+             }
+    }
+    else if (res_data->current_temperature >= res_data->temp_low_alarm) {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_low_warn_count, &count->media_mon_high_warn_count,
+                                       &count->media_mon_high_count,     &count->media_mon_low_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CURRENT_TEMPERATURE, &res_data->current_temperature,
+                                       sizeof(res_data->current_temperature));
+    }
+    else {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_low_count, &count->media_mon_high_count,
+                                       &count->media_mon_high_warn_count, &count->media_mon_low_warn_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CURRENT_TEMPERATURE, &res_data->current_temperature,
+                                       sizeof(res_data->current_temperature));
+    }
+}
+
+
+static void dn_pas_phy_media_mon_voltage(uint_t                port,
+                                         pas_media_t           *res_data,
+                                         pas_media_mon_count_t *count,
+                                         cps_api_object_t      obj)
+{
+    if ((res_data->voltage_high_alarm   == 0 &&
+         res_data->voltage_low_alarm    == 0 &&
+         res_data->voltage_high_warning == 0 &&
+         res_data->voltage_low_warning  == 0)   ||
+        (isnan(res_data->current_voltage) != 0)) {
+
+        PAS_TRACE("Not all media voltage thresholds are programmed on port %u or current_voltage = %0.2f is invalid",
+                   port, res_data->current_voltage);
+        count->media_mon_skip = true;
+        return;
+    }
+
+    count->media_mon_skip = false;
+    if (res_data->current_voltage > res_data->voltage_high_alarm) {
+
+        dn_pas_phy_media_mon_check(&count->media_mon_high_count,     &count->media_mon_high_warn_count,
+                                   &count->media_mon_low_warn_count, &count->media_mon_low_count,
+                                   &count->media_mon_skip, obj,
+                                   BASE_PAS_MEDIA_CURRENT_VOLTAGE, &res_data->current_voltage,
+                                   sizeof(res_data->current_voltage));
+    }
+    else if (res_data->current_voltage >= res_data->voltage_high_warning) {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_high_warn_count, &count->media_mon_high_count,
+                                       &count->media_mon_low_warn_count,  &count->media_mon_low_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CURRENT_VOLTAGE, &res_data->current_voltage,
+                                       sizeof(res_data->current_voltage));
+    }
+    else if (res_data->current_voltage >= res_data->voltage_low_warning) { // normal case
+             if (! dn_pas_phy_media_mon_normal_check(count)) {
+                  memset(count, 0, sizeof(pas_media_mon_count_t));
+                  cps_api_object_attr_add(obj, BASE_PAS_MEDIA_CURRENT_VOLTAGE,
+                                           &res_data->current_voltage, sizeof(res_data->current_voltage));
+             }
+             else {
+                    count->media_mon_skip = true;
+             }
+    }
+    else if (res_data->current_voltage >= res_data->voltage_low_alarm) {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_low_warn_count, &count->media_mon_high_warn_count,
+                                       &count->media_mon_high_count,     &count->media_mon_low_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CURRENT_VOLTAGE, &res_data->current_voltage,
+                                       sizeof(res_data->current_voltage));
+    }
+    else {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_low_count,       &count->media_mon_high_count,
+                                       &count->media_mon_high_warn_count, &count->media_mon_low_warn_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CURRENT_VOLTAGE, &res_data->current_voltage,
+                                       sizeof(res_data->current_voltage));
+    }
+}
+
+static void dn_pas_phy_media_mon_rx_power(uint_t                 port,
+                                          pas_media_channel_t   *channel_data,
+                                          pas_media_t           *res_data,
+                                          pas_media_mon_count_t *count,
+                                          cps_api_object_t       obj)
+{
+    if ((res_data->rx_power_high_alarm   == 0 &&
+         res_data->rx_power_low_alarm    == 0 &&
+         res_data->rx_power_high_warning == 0 &&
+         res_data->rx_power_low_warning  == 0)    ||
+        (isnan(channel_data->rx_power) != 0)) {
+
+        PAS_TRACE("Not all media rx_power thresholds are programmed on port %u or rx_power = %0.2f is invalid",
+                   port, channel_data->rx_power);
+        count->media_mon_skip = true;
+        return;
+    }
+
+    count->media_mon_skip = false;
+    if (channel_data->rx_power > res_data->rx_power_high_alarm) {
+
+        dn_pas_phy_media_mon_check(&count->media_mon_high_count,     &count->media_mon_high_warn_count,
+                                   &count->media_mon_low_warn_count, &count->media_mon_low_count,
+                                   &count->media_mon_skip, obj,
+                                   BASE_PAS_MEDIA_CHANNEL_RX_POWER, &channel_data->rx_power,
+                                   sizeof(channel_data->rx_power));
+    }
+    else if (channel_data->rx_power >= res_data->rx_power_high_warning) {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_high_warn_count, &count->media_mon_high_count,
+                                       &count->media_mon_low_warn_count,  &count->media_mon_low_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CHANNEL_RX_POWER, &channel_data->rx_power,
+                                       sizeof(channel_data->rx_power));
+    }
+    else if (channel_data->rx_power >= res_data->rx_power_low_warning) { // normal case
+             if (! dn_pas_phy_media_mon_normal_check(count)) {
+                  memset(count, 0, sizeof(pas_media_mon_count_t));
+                  cps_api_object_attr_add(obj, BASE_PAS_MEDIA_CHANNEL_RX_POWER,
+                                          &channel_data->rx_power, sizeof(channel_data->rx_power));
+             }
+             else {
+                    count->media_mon_skip = true;
+             }
+    }
+    else if (channel_data->rx_power >= res_data->rx_power_low_alarm) {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_low_warn_count, &count->media_mon_high_warn_count,
+                                       &count->media_mon_high_count,     &count->media_mon_low_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CHANNEL_RX_POWER, &channel_data->rx_power,
+                                       sizeof(channel_data->rx_power));
+    }
+    else {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_low_count,       &count->media_mon_high_count,
+                                       &count->media_mon_high_warn_count, &count->media_mon_low_warn_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CHANNEL_RX_POWER, &channel_data->rx_power,
+                                       sizeof(channel_data->rx_power));
+    }
+}
+
+
+static void dn_pas_phy_media_mon_tx_power(uint_t                port,
+                                          pas_media_channel_t   *channel_data,
+                                          pas_media_t           *res_data,
+                                          pas_media_mon_count_t *count,
+                                          cps_api_object_t      obj)
+{
+    if ((res_data->tx_power_high_alarm   == 0 &&
+         res_data->tx_power_low_alarm    == 0 &&
+         res_data->tx_power_high_warning == 0 &&
+         res_data->rx_power_low_warning  == 0)    ||
+        (isnan(channel_data->tx_power) != 0)) {
+
+        PAS_TRACE("Not all media tx_power thresholds are programmed on port %u or tx_power = %0.2f is invalid",
+                   port, channel_data->tx_power);
+        count->media_mon_skip = true;
+        return;
+    }
+
+    count->media_mon_skip = false;
+    if (channel_data->tx_power > res_data->tx_power_high_alarm) {
+
+        dn_pas_phy_media_mon_check(&count->media_mon_high_count,     &count->media_mon_high_warn_count,
+                                   &count->media_mon_low_warn_count, &count->media_mon_low_count,
+                                   &count->media_mon_skip, obj,
+                                   BASE_PAS_MEDIA_CHANNEL_TX_POWER, &channel_data->tx_power,
+                                   sizeof(channel_data->tx_power));
+    }
+    else if (channel_data->tx_power >= res_data->tx_power_high_warning) {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_high_warn_count, &count->media_mon_high_count,
+                                       &count->media_mon_low_warn_count,  &count->media_mon_low_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CHANNEL_TX_POWER, &channel_data->tx_power,
+                                       sizeof(channel_data->tx_power));
+    }
+    else if (channel_data->tx_power >= res_data->tx_power_low_warning) { // normal case
+             if (! dn_pas_phy_media_mon_normal_check(count)) {
+                  memset(count, 0, sizeof(pas_media_mon_count_t));
+                  cps_api_object_attr_add(obj, BASE_PAS_MEDIA_CHANNEL_TX_POWER,
+                                          &channel_data->tx_power, sizeof(channel_data->tx_power));
+             }
+             else {
+                    count->media_mon_skip = true;
+             }
+    }
+    else if (channel_data->tx_power >= res_data->tx_power_low_alarm) {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_low_warn_count, &count->media_mon_high_warn_count,
+                                       &count->media_mon_high_count,     &count->media_mon_low_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CHANNEL_TX_POWER, &channel_data->tx_power,
+                                       sizeof(channel_data->tx_power));
+    }
+    else {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_low_count,       &count->media_mon_high_count,
+                                       &count->media_mon_high_warn_count, &count->media_mon_low_warn_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CHANNEL_TX_POWER, &channel_data->tx_power,
+                                       sizeof(channel_data->tx_power));
+    }
+}
+
+static void dn_pas_phy_media_mon_bias(uint_t                 port,
+                                      pas_media_channel_t   *channel_data,
+                                      pas_media_t           *res_data,
+                                      pas_media_mon_count_t *count,
+                                      cps_api_object_t       obj)
+{
+    if ((res_data->bias_high_alarm   == 0 &&
+         res_data->bias_low_alarm    == 0 &&
+         res_data->bias_high_warning == 0 &&
+         res_data->bias_low_warning  == 0)    ||
+        (isnan(channel_data->tx_bias_current) != 0)) {
+
+        PAS_TRACE("Not all media bias thresholds are programmed on port %u or bias = %0.2f is invalid",
+                   port, channel_data->tx_bias_current);
+        count->media_mon_skip = true;
+        return;
+    }
+
+    count->media_mon_skip = false;
+    if (channel_data->tx_bias_current > res_data->bias_high_alarm) {
+
+        dn_pas_phy_media_mon_check(&count->media_mon_high_count,     &count->media_mon_high_warn_count,
+                                   &count->media_mon_low_warn_count, &count->media_mon_low_count,
+                                   &count->media_mon_skip, obj,
+                                   BASE_PAS_MEDIA_CHANNEL_TX_BIAS_CURRENT, &channel_data->tx_bias_current,
+                                   sizeof(channel_data->tx_bias_current));
+    }
+    else if (channel_data->tx_bias_current >= res_data->bias_high_warning) {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_high_warn_count, &count->media_mon_high_count,
+                                       &count->media_mon_low_warn_count,  &count->media_mon_low_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CHANNEL_TX_BIAS_CURRENT, &channel_data->tx_bias_current,
+                                       sizeof(channel_data->tx_bias_current));
+    }
+    else if (channel_data->tx_bias_current >= res_data->bias_low_warning) { // normal case
+             if (! dn_pas_phy_media_mon_normal_check(count)) {
+                  memset(count, 0, sizeof(pas_media_mon_count_t));
+                  cps_api_object_attr_add(obj, BASE_PAS_MEDIA_CHANNEL_TX_BIAS_CURRENT,
+                                          &channel_data->tx_bias_current, sizeof(channel_data->tx_bias_current));
+             }
+             else {
+                    count->media_mon_skip = true;
+             }
+    }
+    else if (channel_data->tx_bias_current >= res_data->bias_low_alarm) {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_low_warn_count, &count->media_mon_high_warn_count,
+                                       &count->media_mon_high_count,     &count->media_mon_low_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CHANNEL_TX_BIAS_CURRENT, &channel_data->tx_bias_current,
+                                       sizeof(channel_data->tx_bias_current));
+    }
+    else {
+
+            dn_pas_phy_media_mon_check(&count->media_mon_low_count,       &count->media_mon_high_count,
+                                       &count->media_mon_high_warn_count, &count->media_mon_low_warn_count,
+                                       &count->media_mon_skip, obj,
+                                       BASE_PAS_MEDIA_CHANNEL_TX_BIAS_CURRENT, &channel_data->tx_bias_current,
+                                       sizeof(channel_data->tx_bias_current));
+    }
+}
+
+static void dn_pas_phy_media_mon_trace(uint_t port, pas_media_t *res_data, pas_media_channel_t *channel_data)
+{
+    if (res_data == NULL || channel_data == NULL) {
+        PAS_ERR("get invalid media or channel data on port (%u)", port);
+        return;
+    }
+
+    PAS_TRACE("port=%u, temp=%0.2f, voltage=%0.2f, tx_power=%0.2f, rx_power=%0.2f, bias=%0.2f",
+               port, res_data->current_temperature, res_data->current_voltage,
+               channel_data->rx_power, channel_data->tx_power, channel_data->tx_bias_current);
+
+    PAS_TRACE("port=%u, temp_high_alarm=%0.2f, temp_high_warning=%0.2f, temp_low_warning=%0.2f, temp_low_alarm=%0.2f",
+               port, res_data->temp_high_alarm, res_data->temp_high_warning, res_data->temp_low_warning, res_data->temp_low_alarm);
+
+    PAS_TRACE("port=%u, voltage_high_alarm=%0.2f, voltage_high_warning=%0.2f, voltage_low_warning=%0.2f, voltage_low_alarm=%0.2f",
+                port, res_data->voltage_high_alarm, res_data->voltage_high_warning, res_data->voltage_low_warning, res_data->voltage_low_alarm);
+
+    PAS_TRACE("port=%u, rx_power_high_alarm=%0.2f, rx_power_high_warning=%0.2f, rx_power_low_warning=%0.2f, rx_power_low_alarm=%0.2f",
+               port, res_data->rx_power_high_alarm, res_data->rx_power_high_warning, res_data->rx_power_low_warning, res_data->rx_power_low_alarm);
+
+    PAS_TRACE("port=%u, tx_power_high_alarm=%0.2f, tx_power_high_warning=%0.2f, tx_power_low_warning=%0.2f, tx_power_low_alarm=%0.2f",
+               port, res_data->tx_power_high_alarm, res_data->tx_power_high_warning, res_data->tx_power_low_warning, res_data->tx_power_low_alarm);
+
+    PAS_TRACE("port=%u, bias_high_alarm=%0.2f, bias_high_warning=%0.2f, bias_low_warning=%0.2f, bias_low_alarm=%0.2f",
+               port, res_data->bias_high_alarm, res_data->bias_high_warning, res_data->bias_low_warning, res_data->bias_low_alarm);
+    PAS_TRACE("\n");
+}
+
+
+/* check if dom is enable or not */
+static bool dn_pas_media_get_dom_enable(void)
+{
+   pas_chassis_t    *rec = NULL;
+
+   rec = (pas_chassis_t *) dn_pas_res_getc(dn_pas_res_key_chassis());
+   if (rec == 0) {
+      PAS_ERR("Failed to get chassis info in dn_pas_media_get_dom_enable()");
+      return false;
+   }
+   return rec->dom_enable;
+}
+
+static bool dn_pas_phy_media_mon(uint_t port)
+{
+    phy_media_tbl_t       *mtbl;
+    pas_media_t           *res_data     = NULL;
+    pas_media_channel_t   *channel_data = NULL;
+    pas_media_mon_count_t *count        = NULL;
+    cps_api_object_t      obj           = NULL;
+    uint_t                slot          = 0;
+
+    if (dn_pas_media_get_dom_enable() == false) {
+        PAS_TRACE("dom is disabled ... on port  %u", port);
+        return true;
+    }
+    else {
+           PAS_TRACE("dom is enabled ... on port  %u", port);
+    }
+
+    mtbl = dn_phy_media_entry_get(port);
+    STD_ASSERT(mtbl != NULL);
+
+    res_data     = mtbl->res_data;
+    channel_data = mtbl->channel_data;
+    count        = mtbl->count;
+
+    if (res_data == NULL || channel_data == NULL) {
+        PAS_ERR("invalid pas_media or media channel data for port (%u)", port);
+        return false;
+    }
+
+    if ((obj = cps_api_object_create()) == CPS_API_OBJECT_NULL) {
+        PAS_ERR("Failed to create an obj for port (%u)", port);
+        return false;
+    }
+
+    dn_pas_phy_media_mon_trace(port, res_data, channel_data);
+
+    dn_pas_phy_media_mon_temperature(port, res_data,     &count[TEMPERATURE],        obj);
+    dn_pas_phy_media_mon_voltage    (port, res_data,     &count[VOLTAGE],            obj);
+    dn_pas_phy_media_mon_rx_power   (port, channel_data, res_data, &count[RX_POWER], obj);
+    dn_pas_phy_media_mon_tx_power   (port, channel_data, res_data, &count[TX_POWER], obj);
+    dn_pas_phy_media_mon_bias       (port, channel_data, res_data, &count[BIAS],     obj);
+
+
+    if (count[TEMPERATURE].media_mon_skip &&
+        count[VOLTAGE].media_mon_skip     &&
+        count[RX_POWER].media_mon_skip    &&
+        count[TX_POWER].media_mon_skip    &&
+        count[BIAS].media_mon_skip)  {
+
+        cps_api_object_delete(obj);
+        obj = CPS_API_OBJECT_NULL;
+        return true;
+    }
+
+    dn_pas_media_add_port_threshold_to_cps_obj(obj, mtbl->res_data, port);
+
+    if (! dn_pas_myslot_get(&slot)) {
+        PAS_ERR("Invalid slot (%u)", slot);
+        cps_api_object_delete(obj);
+        obj = CPS_API_OBJECT_NULL;
+        return false;
+    }
+
+    dn_pas_obj_key_media_set(obj, cps_api_qualifier_OBSERVED, true, slot,
+                             false, PAS_MEDIA_INVALID_PORT_MODULE, true, port);
+
+    PAS_TRACE("publish on port=%u, temp skip=%d, vol skip=%d, bias skip=%d, rx skip=%d, tx skip=%d", port, count[TEMPERATURE].media_mon_skip,
+              count[VOLTAGE].media_mon_skip, count[RX_POWER].media_mon_skip, count[TX_POWER].media_mon_skip,  count[BIAS].media_mon_skip);
+
+    dn_media_obj_publish(obj);
+
+    obj = CPS_API_OBJECT_NULL;
+
+    return true;
 }
 
 
@@ -3357,13 +3872,22 @@ void dn_pas_phy_media_poll (uint_t port, bool publish)
             if (mtbl->res_data->present == false) {
                 cps_api_attr_id_t attr = BASE_PAS_MEDIA_TYPE;
 
-                dn_pas_media_obj_all_attr_add(media_mem_info,
+                if (!dn_pas_media_obj_all_attr_add(media_mem_info,
                         ARRAY_SIZE(media_mem_info), &attr, 1, obj,
-                        mtbl->res_data);
+                        mtbl->res_data)){
+                    PAS_ERR("Error adding attr info on port %u", port);
+                }
             }
 
             dn_pas_media_add_port_info_to_cps_obj(obj, mtbl, port);
             dn_pas_media_add_channel_info_to_cps_obj(obj, mtbl, port);
+
+            /* poll port thresholds */
+            if ((dn_pas_media_get_dom_enable() == true) &&
+                (dn_pas_media_threshold_poll(port, obj) == false)) {
+
+                PAS_ERR("Failed to poll media threshold, port %u", port);
+            }
 
             dn_pas_obj_key_media_set(obj, cps_api_qualifier_REALTIME, true, slot,
                     false, PAS_MEDIA_INVALID_PORT_MODULE, true, port);
@@ -3377,7 +3901,14 @@ void dn_pas_phy_media_poll (uint_t port, bool publish)
 
     if (rtd_poll == true) {
         dn_pas_phy_media_channel_poll_all(port, publish);
+
+        /* media monitoring */
+        if (dn_pas_phy_media_mon(port) == false) {
+            PAS_ERR("Failed to monitor media port %u", port);
+        }
     }
+
+    mtbl->res_data->polltime_from_epoch = std_time_get_current_from_epoch_in_nanoseconds();
 }
 
 /*
@@ -3605,6 +4136,8 @@ bool dn_pas_channel_get (cps_api_qualifier_t qualifier, uint_t slot,
         }
     }
 
+    cps_api_object_set_timestamp(obj, chdata->polltime_from_epoch);
+
     if (!cps_api_object_list_append(param->list, obj)) {
         PAS_ERR("Failed to append response object");
 
@@ -3806,7 +4339,7 @@ bool dn_pas_media_channel_serdes_control (uint_t port, uint_t channel)
         return false;
     }
 
-    if ((mtbl->res_data->type == PLATFORM_MEDIA_TYPE_SFP_T)
+    if ((dn_pas_is_phy_ctrl_supported(mtbl) != PHY_CTRL_NO_SUPP)
             && (mtbl->channel_data[channel].state == true)) {
         bool state = false;
         bool serdes_set = false;
@@ -4308,7 +4841,7 @@ bool dn_pas_media_populate_current_data (BASE_PAS_OBJECTS_t objid,
     cps_api_attr_id_t       attr_id;
     uint_t                  max_count;
     void                    *data = NULL;
-
+    bool                    ret = true;
 
     if ((mtbl = dn_phy_media_entry_get(port)) == NULL) {
         return false;
@@ -4339,14 +4872,16 @@ bool dn_pas_media_populate_current_data (BASE_PAS_OBJECTS_t objid,
 
         if (dn_pas_media_is_key_attr(objid, attr_id) == false) {
 
-            dn_pas_media_obj_all_attr_add(memp, max_count, &attr_id, 1,
-                    rollback_obj, data);
+            if (!dn_pas_media_obj_all_attr_add(memp, max_count, &attr_id, 1,
+                    rollback_obj, data)){
+                ret &= false;
+            }
         }
 
         cps_api_object_it_next (&it);
     }
 
-    return true;
+    return ret;
 }
 
 /** Free code */
@@ -4452,3 +4987,84 @@ bool dn_pas_media_wavelength_set (uint_t port)
     return true;
 }
 
+
+/*
+ * This function returns the type of phy control supported, if any. This is because of nuances associated with BASE-T media
+ */
+
+pas_media_phy_ctrl_sup_t dn_pas_is_phy_ctrl_supported(phy_media_tbl_t * mtbl)
+{
+    if (mtbl == NULL){
+        PAS_ERR("Error, null media record");
+        return false;
+    }
+
+    if (mtbl->media_info.media_interface != PLATFORM_MEDIA_INTERFACE_BASE_T){
+        return PHY_CTRL_NO_SUPP;
+    }
+
+    if (!(mtbl->res_data->supported_feature_valid)) {
+        if (STD_ERR_OK != pas_sdi_media_feature_support_status_get(mtbl->res_hdl,
+                &(mtbl->res_data->supported_feature)) ){
+            PAS_ERR("Unable to read feature support status on media in port %u", mtbl->fp_port);
+        } else {
+            mtbl->res_data->supported_feature_valid = true;
+        }
+    }
+    if (mtbl->media_info.transceiver_type == PLATFORM_MEDIA_CATEGORY_SFP){
+        return PHY_CTRL_CUSFP_SUPP;
+    } else if ((mtbl->media_info.transceiver_type == PLATFORM_MEDIA_CATEGORY_SFP_PLUS) 
+        && (mtbl->res_data->supported_feature.sfp_features.ext_mod_ctrl_support_status)){
+        return PHY_CTRL_AQ_SUPP;
+    }
+    return PHY_CTRL_NO_SUPP;
+}
+
+
+t_std_error dn_pas_media_phy_arb_speed_set(uint_t port, BASE_IF_SPEED_t speed){
+
+    phy_media_tbl_t         *mtbl;
+    t_std_error             rc = STD_ERR_OK;
+    sdi_media_speed_t spd = dn_pas_to_sdi_capability_conv(speed);
+
+    if (((mtbl = dn_phy_media_entry_get(port)) == NULL)
+            || (dn_phy_is_media_channel_valid(port, PAS_MEDIA_CH_START) == false)) {
+        PAS_ERR("Invalid port (%u)", port);
+
+        return rc;
+    }
+    rc = sdi_media_phy_speed_set(mtbl->res_hdl, PAS_MEDIA_CH_START, SDI_MEDIA_DEFAULT, &spd, 1);
+    if (rc != STD_ERR_OK) {
+        PAS_ERR("Failed to set speed, port %u, rc %u",
+                port, rc);
+    }
+    return rc;
+}
+
+
+/**/
+t_std_error dn_pas_media_speed_set_job_handler(void* arg){
+
+    uint_t port = ((pas_media_speed_set_job_arg_t*)arg)->port;
+    phy_media_tbl_t         *mtbl = NULL;
+    bool                    presence = false;
+
+    if (((mtbl = dn_phy_media_entry_get(port)) == NULL)
+            || (dn_phy_is_media_channel_valid(port, PAS_MEDIA_CH_START) == false)) {
+        PAS_ERR("Invalid port (%u)", port);
+
+        return EINVAL;
+    }
+
+    if (pas_sdi_media_presence_get(mtbl->res_hdl, &presence)
+            != STD_ERR_OK) {
+        PAS_ERR("Failed to get media presence, port %u", port);
+
+        return false;
+    }
+
+    /* Only process job if module is present */
+    return presence ? dn_pas_media_phy_arb_speed_set(port,
+                ((pas_media_speed_set_job_arg_t*)arg)->speed)
+                    : EPERM;
+}

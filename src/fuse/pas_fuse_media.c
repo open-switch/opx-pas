@@ -254,6 +254,27 @@ static void media_eeprom_page_dump(
         int        *res
         );
 
+static void media_phy_serdes_get (
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
+        int        *res
+        );
+
+static void media_phy_speed_get(
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
+        int        *res
+        );
+
+
 typedef struct {
 
     int  array;
@@ -895,6 +916,26 @@ struct {
                   }
     },
 
+    [FUSE_MEDIA_FILETYPE_PHY_SERDES] = {
+        status  : SUPPORTED,
+        func    : media_phy_serdes_get,
+        args    : {
+                    0,
+                    "%-25s : %s",
+                    "Phy serdes"
+                  }
+    },
+
+    [FUSE_MEDIA_FILETYPE_PHY_SPEED] = {
+        status  : SUPPORTED,
+        func    : media_phy_speed_get,
+        args    : {
+                    0,
+                    "%-25s : %s",
+                    "Phy speed"
+                  }
+    },
+    
 };
 
 /** PAS Daemon entity_info read interface */
@@ -1022,6 +1063,18 @@ int dn_pas_fuse_media_write(
                 res = size;
             }
            break;
+        case FUSE_MEDIA_FILETYPE_PHY_SPEED:
+            ret = sscanf(buf, "%u", &data);
+            res = (STD_ERR_OK != sdi_media_phy_speed_set(node->fuse_resource_hdl, 0, 0, (sdi_media_speed_t*)&data, 1))
+                ? -EPERM
+                : size;
+            break;
+        case FUSE_MEDIA_FILETYPE_PHY_SERDES:
+            ret = sscanf(buf, "%u", &data);
+            res = (STD_ERR_OK != sdi_media_phy_serdes_control(node->fuse_resource_hdl, 0, 0, (bool)data))
+                ? -EPERM
+                : size;
+                break;
         default:
             {
                 if(node->fuse_filetype >= FUSE_MEDIA_FILETYPE_MIN &&
@@ -1042,6 +1095,8 @@ int dn_pas_fuse_media_write(
 static const char *int_to_str_speed(sdi_media_speed_t speed)
 {
     switch (speed) {
+        case SDI_MEDIA_SPEED_100M:
+            return "100 Mbps";
         case SDI_MEDIA_SPEED_1G:
             return "1 Gbps";
         case SDI_MEDIA_SPEED_10G:
@@ -1554,7 +1609,39 @@ static void media_eeprom_page_dump (
     }
 }
 
+static void media_phy_serdes_get (
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
+        int        *res
+        )
+{
+    if (STD_ERR_OK ==
+            sdi_media_phy_link_status_get(node->fuse_resource_hdl,
+               0, 0, (bool*)trans_buf)){
+            dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res, 
+                format, disp_str, (bool)(trans_buf[0]) ? "True" : "False");
+    }
 
+}
+
+
+static void media_phy_speed_get (
+        dev_node_t *node,
+        int        array,
+        char       *format,
+        char       *disp_str,
+        char       *trans_buf,
+        size_t     *len,
+        int        *res
+        )
+{
+    dn_pas_fuse_print(trans_buf, FUSE_FILE_DEFAULT_SIZE, len, res, 
+                format, disp_str, "N/A");
+}
 /** Internal helper function for media reads */
 static bool media_get(
         dev_node_t *node,

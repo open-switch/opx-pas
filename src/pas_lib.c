@@ -357,7 +357,8 @@ void dn_pas_obj_key_chassis_get(
 void dn_pas_obj_key_chassis_set(
     cps_api_object_t    obj,
     cps_api_qualifier_t qual,
-    uint8_t             reboot_type
+    uint8_t             reboot_type,
+    bool                enable_dom
                              )
 {
     cps_api_key_from_attr_with_qual(cps_api_object_key(obj),
@@ -366,6 +367,7 @@ void dn_pas_obj_key_chassis_set(
                                     );
 
     cps_api_object_attr_add_u8(obj, BASE_PAS_CHASSIS_REBOOT, reboot_type);
+    cps_api_object_attr_add_u8(obj, BASE_PAS_CHASSIS_DOM,    (uint8_t)enable_dom);
 }
 
 /* Get object qualifier and instance fields for a fan object */

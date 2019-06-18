@@ -246,6 +246,9 @@ static filename_enum_map_t media_files[] = {
     {fuse_default_file_size, "eeprom_cursor"                    , FUSE_MEDIA_FILETYPE_EEPROM_CURSOR},
     {fuse_default_file_size, "eeprom_data"                      , FUSE_MEDIA_FILETYPE_EEPROM_DATA},
     {fuse_default_file_size, "eeprom_page_dump"                 , FUSE_MEDIA_FILETYPE_EEPROM_PAGE_DUMP},
+
+    {fuse_default_file_size, "media_phy_serdes"                 , FUSE_MEDIA_FILETYPE_PHY_SERDES},
+    {fuse_default_file_size, "media_phy_speed"                 , FUSE_MEDIA_FILETYPE_PHY_SPEED},
 };
 
 

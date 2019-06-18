@@ -207,6 +207,7 @@ static std::unordered_map<int, pas_media_speed_info_t> speed_info_map = {
     {BASE_IF_SPEED_40GIGE,     (pas_media_speed_info_t){40000, BASE_IF_PHY_MODE_TYPE_ETHERNET}},
     {BASE_IF_SPEED_50GIGE,     (pas_media_speed_info_t){50000, BASE_IF_PHY_MODE_TYPE_ETHERNET}},
     {BASE_IF_SPEED_64GFC,      (pas_media_speed_info_t){64000, BASE_IF_PHY_MODE_TYPE_FC}},
+    {BASE_IF_SPEED_80GIGE,    (pas_media_speed_info_t){80000, BASE_IF_PHY_MODE_TYPE_ETHERNET}},
     {BASE_IF_SPEED_100GIGE,    (pas_media_speed_info_t){100000, BASE_IF_PHY_MODE_TYPE_ETHERNET}},
     {BASE_IF_SPEED_128GFC,     (pas_media_speed_info_t){128000, BASE_IF_PHY_MODE_TYPE_FC}},
     {BASE_IF_SPEED_200GIGE,    (pas_media_speed_info_t){200000, BASE_IF_PHY_MODE_TYPE_ETHERNET}},

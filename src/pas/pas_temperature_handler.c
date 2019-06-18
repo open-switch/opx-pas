@@ -93,6 +93,8 @@ static t_std_error dn_pas_temperature_get1(
                                 rec->last_thresh_crossed->temperature
                                );
 
+    cps_api_object_set_timestamp(resp_obj, rec->polltime_from_epoch);
+
     /* Add response object to get response */
 
     if (!cps_api_object_list_append(param->list, resp_obj)) {

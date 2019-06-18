@@ -1038,6 +1038,8 @@ BASE_IF_SPEED_t dn_pas_media_convert_num_to_speed (
            return BASE_IF_SPEED_50GIGE;
         case 64:
            return BASE_IF_SPEED_64GFC;
+        case 80:
+           return BASE_IF_SPEED_80GIGE;
         case 100:
            return BASE_IF_SPEED_100GIGE;
         case 128:
@@ -1084,6 +1086,8 @@ uint_t dn_pas_media_convert_speed_to_num (BASE_IF_SPEED_t speed)
            return 50;
         case BASE_IF_SPEED_64GFC:
            return 64;
+        case BASE_IF_SPEED_80GIGE:
+            return 80;
         case BASE_IF_SPEED_100GIGE:
            return 100;
         case BASE_IF_SPEED_128GFC:
@@ -1254,11 +1258,13 @@ BASE_CMN_BREAKOUT_TYPE_t dn_pas_media_get_default_breakout_info(
     }
 
 
-    dn_pas_media_set_capability_values(cap,
+    if (!dn_pas_media_set_capability_values(cap,
                                        media_speed,
                                        brk,
                                        brk_speed,
-              dn_pas_media_get_phy_mode_from_speed(media_speed));
+              dn_pas_media_get_phy_mode_from_speed(media_speed))){
+        return BASE_CMN_BREAKOUT_TYPE_BREAKOUT_UNKNOWN;
+    }
 
    return brk;
 }

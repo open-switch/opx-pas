@@ -60,12 +60,11 @@ static pas_nvram_t nvram;
 static void _dn_nvram_free_entries(void)
 {
     std_dll *entry;
-
-    for (entry = std_dll_getfirst(&nvram.nvram_data);
-         entry; entry = std_dll_getnext(&nvram.nvram_data, entry)) {
-
+    /* While not empty */
+    while ((entry = std_dll_getfirst(&nvram.nvram_data)) != (std_dll *)0) {
+        /* Remove entry from the list */
         std_dll_remove(&nvram.nvram_data, entry);
-
+        /* Desroty (now dangling) entry */
         free(entry);
     }
 }
@@ -82,7 +81,10 @@ void dn_nvram_init(void)
 
     sdi_resource_hdl_t *nvram = sdi_entity_resource_lookup(parent,
                                     SDI_RESOURCE_NVRAM, "NVRAM");
-
+    if(nvram == NULL){
+        PAS_ERR("NVRAM resource not found");
+        return;
+    }
     dn_cache_init_nvram(nvram, NULL);
 }
 

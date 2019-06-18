@@ -233,48 +233,57 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
                                     &&(status == true)) {
                                 status = false;
                             }
+                            /* Check for Aq 10G-T media. If not present, use normal method of setting state after configs */
+                            if (!(dn_pas_is_phy_ctrl_supported(mtbl) == PHY_CTRL_AQ_SUPP)){
+                                if ((status == true)
+                                        && (dn_pas_is_media_type_supported_in_fp(start, mtbl->res_data->type,
+                                            &disable, &high_power_mode, &supported) == false)) {
+                                    if ((disable == true) || (supported == false)) status = false;
+                                }
 
-                            if ((status == true)
-                                    && (dn_pas_is_media_type_supported_in_fp(start, mtbl->res_data->type,
-                                        &disable, &high_power_mode, &supported) == false)) {
-                                if ((disable == true) || (supported == false)) status = false;
-                            }
+                                if (dn_pas_media_channel_state_set(start, ch_start,
+                                            status) == false) {
 
-                            if (dn_pas_media_channel_state_set(start, ch_start,
-                                        status) == false) {
+                                    ret = STD_ERR(PAS, FAIL, 0);
+                                }
 
-                                ret = STD_ERR(PAS, FAIL, 0);
-                            }
-
-                            if ((mtbl->res_data->type == PLATFORM_MEDIA_TYPE_SFP_T) && (!status)) {
-                                sdi_media_phy_serdes_control(mtbl->res_hdl, PAS_MEDIA_CH_START, SDI_MEDIA_DEFAULT, false);
-                            }
-
-                            mtbl->channel_data[ch_start].is_link_status_valid = false;
-
-                            if (status == true) {
-                                phy_config_entry = dn_pas_media_phy_config_entry_get(mtbl->res_data->type);
-
-                                if (phy_config_entry != NULL) {
-
-                                    if (dn_pas_media_phy_interface_mode_set(start, ch_start) == false) {
-                                        PAS_ERR("Failed to set PHY interface mode, port %u, channel %u",
-                                                start, ch_start
-                                                );
-                                    }
-
-                                    if (dn_pas_media_phy_autoneg_set(start, ch_start) == false) {
-                                        PAS_ERR("Failed to set PHY autoneg mode, port %u, channel %u",
-                                                start, ch_start
-                                                );
-                                    }
-
-                                    if (dn_pas_media_phy_supported_speed_set(start, ch_start) == false) {
-                                        PAS_ERR("Failed to set PHY supported speed, port %u, channel %u",
-                                                start, ch_start
-                                                );
+                                if ((dn_pas_is_phy_ctrl_supported(mtbl) == PHY_CTRL_CUSFP_SUPP) && (!status)) {
+                                    if (STD_ERR_OK != sdi_media_phy_serdes_control(mtbl->res_hdl, PAS_MEDIA_CH_START, SDI_MEDIA_DEFAULT, false)){
+                                        PAS_ERR("Failed to set phy serdes control off on port %u", port);
                                     }
                                 }
+
+                                mtbl->channel_data[ch_start].is_link_status_valid = false;
+
+                                if (status == true) {
+                                    phy_config_entry = dn_pas_media_phy_config_entry_get(mtbl->res_data->type);
+
+                                    if (phy_config_entry != NULL) {
+
+                                        if (dn_pas_media_phy_interface_mode_set(start, ch_start) == false) {
+                                            PAS_ERR("Failed to set PHY interface mode, port %u, channel %u",
+                                                    start, ch_start
+                                                    );
+                                        }
+
+                                        if (dn_pas_media_phy_autoneg_set(start, ch_start) == false) {
+                                            PAS_ERR("Failed to set PHY autoneg mode, port %u, channel %u",
+                                                    start, ch_start
+                                                    );
+                                        }
+
+                                        if (dn_pas_media_phy_supported_speed_set(start, ch_start) == false) {
+                                            PAS_ERR("Failed to set PHY supported speed, port %u, channel %u",
+                                                    start, ch_start
+                                                    );
+                                        }
+                                    }
+                                
+                                }
+                            } else { /* 10G T case. Channel state is set after speed etc*/
+                                if(STD_ERR_OK != sdi_media_phy_serdes_control(mtbl->res_hdl, PAS_MEDIA_CH_START, SDI_MEDIA_DEFAULT, status)){
+                                    ret = STD_ERR(PAS, FAIL, 0);
+                               }
                             }
                             break;
                         }
@@ -309,6 +318,34 @@ t_std_error dn_pas_media_channel_set(cps_api_transaction_params_t * param,
                                     } else {
                                         mtbl->channel_data[ch_start].cdr_enable = cdr_enable;
                                     }
+                                }
+                            }
+                            if (dn_pas_is_phy_ctrl_supported(mtbl) == PHY_CTRL_AQ_SUPP){
+                                if (!channel_valid){
+                                    break;
+                                } else if (channel != PAS_MEDIA_CH_START){
+                                    break;
+                                }
+                                if (speed == BASE_IF_SPEED_AUTO){
+                                    break;
+                                }
+                                /* This task is time consuming, so use job q, which is a separate thread */
+                                pas_job_q_job_t job;
+                                pas_job_q_t* jq = pas_media_job_q_get();
+                                pas_media_speed_set_job_arg_t* arg = (pas_media_speed_set_job_arg_t*)malloc(sizeof(pas_media_speed_set_job_arg_t));
+                                /* memory is freed by job q thread upon completion */
+                                arg->port = mtbl->fp_port;
+                                arg->speed = speed;
+
+                                snprintf(job.name, sizeof(job.name), "media phy speed set port %d, speed %d", mtbl->fp_port, speed);
+                                job.job_func = &dn_pas_media_speed_set_job_handler;
+                                job.job_type = PAS_JOB_TYPE_BLOCKING;
+                                job.args = arg;
+
+                                PAS_NOTICE("Pushing CPS job \"%s\" to queue \"%s\"", job.name, jq->name);
+                                if (pas_job_q_push_job(jq, &job) != STD_ERR_OK){
+                                    PAS_ERR("Failed to set speed on BASE T media on port %u", start);
+                                    ret = STD_ERR(PAS, FAIL, 0);
                                 }
                             }
 

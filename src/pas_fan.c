@@ -25,6 +25,7 @@
 
 #include "std_type_defs.h"
 #include "std_error_codes.h"
+#include "std_time_tools.h"
 #include "sdi_entity.h"
 #include "sdi_fan.h"
 #include "dell-base-platform-common.h"
@@ -144,7 +145,7 @@ bool dn_fan_poll(
     sdi_entity_info_t      entity_info[1];
     pas_entity_t           *parent = rec->parent;
     bool                   fault_status;
-    uint_t                 speed, targ_speed;
+    uint_t                 speed, targ_speed, drift;
     bool                   notif = false, power_status;
 
     pas_oper_fault_state_t prev_oper_fault_state[1];
@@ -242,9 +243,10 @@ bool dn_fan_poll(
         /* Skip speed monitoring, if so configured */
         if (!rec->speed_control_en)  break;
 
-        if ( ((int) rec->obs_speed < (int) targ_speed) && ((100 * abs((int) rec->obs_speed - (int) targ_speed)) / targ_speed)
-            >= rec->speed_err_margin
-            ) {
+        drift = (100 * abs(((int) rec->obs_speed - (int) targ_speed))) / targ_speed;
+        if ((rec->obs_speed < targ_speed && drift >= rec->speed_err_margin) ||
+            (rec->obs_speed > targ_speed &&
+            drift >= (rec->speed_err_margin + PAS_FAN_ALLWED_ERR_MARGIN_BUF))) {
             /* | Observed speed - target speed | exceeds margin */
 
             /* Try to set proper speed */
@@ -300,6 +302,8 @@ bool dn_fan_poll(
     }
 
     if (notif)  dn_fan_notify(rec);
+
+    rec->polltime_from_epoch = std_time_get_current_from_epoch_in_nanoseconds();
 
     return (true);
 }

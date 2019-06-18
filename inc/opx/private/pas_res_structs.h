@@ -95,6 +95,8 @@ typedef struct _pas_chassis_t {
     bool                        power_off;      /* Kill power to chassis */
     uint_t                      active_rpm_slot;/* Slot of active RPM */
     uint8_t                     reboot_type;    /* 1 for Cold reboot, 2 for Warm reboot */
+    bool                        dom_enable;     /* eanble or disable digital media monitoring */
+    uint64_t                    polltime_from_epoch;
 } pas_chassis_t;
 
 static inline const char *dn_pas_res_key_chassis(void)
@@ -210,6 +212,7 @@ typedef struct _pas_entity_t {
     uint_t                       num_plds;
     uint_t                       num_power_monitors;
     uint8_t                      reboot_type;    /* 1 for Cold reboot, 2 for Warm reboot */
+    uint64_t                     polltime_from_epoch;
 } pas_entity_t;
 
 /*
@@ -303,6 +306,7 @@ typedef struct _pas_fan_t {
     } speed_err_integ;
     bool                   speed_err;
     uint_t                 max_speed;
+    uint64_t               polltime_from_epoch;
 } pas_fan_t;
 
 static inline const char *dn_pas_res_key_fan(
@@ -462,6 +466,7 @@ typedef struct _pas_temperature_sensor_t {
         int  dir;
         int  temperature;
     } last_thresh_crossed[1];
+    uint64_t               polltime_from_epoch;
 } pas_temperature_sensor_t;
 
 static inline const char *dn_pas_res_key_temp_sensor_idx(
@@ -628,6 +633,7 @@ typedef struct _pas_media_t {
     /* config attributes per media */
 
     float                        target_wavelength; /* user configured wavelength */
+    uint64_t                     polltime_from_epoch;
 } pas_media_t;
 
 static inline const char *dn_pas_res_key_media(char   *buf,
@@ -675,6 +681,7 @@ typedef struct _pas_media_channel_t {
     bool                         autoneg;
     uint_t                       supported_speed_count;
     BASE_IF_SPEED_t              supported_speed [MAX_SUPPORTED_SPEEDS];
+    uint64_t                     polltime_from_epoch;
 } pas_media_channel_t;
 
 static inline const char *dn_pas_res_key_media_chan(char   *buf,
